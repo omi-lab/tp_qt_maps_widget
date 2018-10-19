@@ -16,6 +16,8 @@ namespace
 class Map_lt : public tp_maps::Map
 {
 public:
+  TP_NONCOPYABLE(Map_lt);
+
   //################################################################################################
   Map_lt(MapWidget* mapWidget_):
     tp_maps::Map(false)
@@ -24,20 +26,20 @@ public:
   }
 
   //################################################################################################
-  ~Map_lt()
+  ~Map_lt() final
   {
     preDelete();
   }
 
   // GL functions
   //################################################################################################
-  virtual void makeCurrent()
+  void makeCurrent() final
   {
     mapWidget->makeCurrent();
   }
 
   //################################################################################################
-  virtual void update()
+  void update() final
   {
     mapWidget->update();
   }
@@ -49,6 +51,8 @@ private:
 
 struct MapWidget::Private
 {
+  TP_NONCOPYABLE(Private);
+
   MapWidget* q;
   Map_lt* map;
 
