@@ -4,7 +4,7 @@
 
 #include "tp_utils/DebugUtils.h"
 
-#include <QGLFramebufferObject>
+#include <QGLFormat>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimer>
