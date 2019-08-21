@@ -1,11 +1,10 @@
 #ifndef tdp_maps_widget_MapWidget_h
 #define tdp_maps_widget_MapWidget_h
 
-#include <QOpenGLWidget>
-
 #include "tdp_maps_widget/Globals.h"
 #include "tp_maps/Map.h"
 
+#include <QOpenGLWidget>
 
 namespace tdp_maps_widget
 {
