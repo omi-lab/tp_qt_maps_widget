@@ -8,7 +8,7 @@
 
 namespace tp_qt_maps_widget
 {
-class tp_qt_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
+class TP_QT_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
 {
   Q_OBJECT
 

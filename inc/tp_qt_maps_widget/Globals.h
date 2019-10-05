@@ -3,10 +3,10 @@
 
 #include "tp_utils/StringID.h"
 
-#if defined(tp_qt_MAPS_WIDGET_LIBRARY)
-#  define tp_qt_MAPS_WIDGET_SHARED_EXPORT TP_EXPORT
+#if defined(TP_QT_MAPS_WIDGET_LIBRARY)
+#  define TP_QT_MAPS_WIDGET_SHARED_EXPORT TP_EXPORT
 #else
-#  define tp_qt_MAPS_WIDGET_SHARED_EXPORT TP_IMPORT
+#  define TP_QT_MAPS_WIDGET_SHARED_EXPORT TP_IMPORT
 #endif
 
 //##################################################################################################
