@@ -1,4 +1,4 @@
-#include "tdp_maps_widget/MapWidget.h"
+#include "tp_qt_maps_widget/MapWidget.h"
 
 #include "tp_maps/MouseEvent.h"
 
@@ -9,7 +9,7 @@
 #include <QWheelEvent>
 #include <QTimer>
 
-namespace tdp_maps_widget
+namespace tp_qt_maps_widget
 {
 namespace
 {
@@ -75,7 +75,7 @@ struct MapWidget::Private
   {
     QGLFormat glf = QGLFormat::defaultFormat();
 
-#ifdef TDP_OSX
+#ifdef tp_qt_OSX
     glf.setProfile(QGLFormat::CompatibilityProfile);
     glf.setVersion(2, 1);
     glf.setSampleBuffers(true);

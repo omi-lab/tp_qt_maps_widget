@@ -1,14 +1,14 @@
-#ifndef tdp_maps_widget_MapWidget_h
-#define tdp_maps_widget_MapWidget_h
+#ifndef tp_qt_maps_widget_MapWidget_h
+#define tp_qt_maps_widget_MapWidget_h
 
-#include "tdp_maps_widget/Globals.h"
+#include "tp_qt_maps_widget/Globals.h"
 #include "tp_maps/Map.h"
 
 #include <QOpenGLWidget>
 
-namespace tdp_maps_widget
+namespace tp_qt_maps_widget
 {
-class TDP_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
+class tp_qt_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
 {
   Q_OBJECT
 
