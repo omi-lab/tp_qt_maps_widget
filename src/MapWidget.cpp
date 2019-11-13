@@ -3,6 +3,7 @@
 #include "tp_maps/MouseEvent.h"
 
 #include "tp_utils/DebugUtils.h"
+#include "tp_utils/TimeUtils.h"
 
 #include <QGLFormat>
 #include <QMouseEvent>
@@ -55,6 +56,8 @@ struct MapWidget::Private
 
   MapWidget* q;
   Map_lt* map;
+
+  int animationTimerID{-1};
 
   //################################################################################################
   Private(MapWidget* q_):
@@ -139,6 +142,14 @@ QSize MapWidget::sizeHint() const
 }
 
 //##################################################################################################
+void MapWidget::setAnimationInterval(int64_t interval)
+{
+  if(d->animationTimerID>0)
+    killTimer(d->animationTimerID);
+  d->animationTimerID = startTimer(int(interval));
+}
+
+//##################################################################################################
 void MapWidget::initializeGL()
 {
   d->map->initializeGL();
@@ -165,7 +176,7 @@ void MapWidget::paintGL()
   d->map->paintGL();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWidget::mousePressEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
@@ -178,7 +189,7 @@ void MapWidget::mousePressEvent(QMouseEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWidget::mouseMoveEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
@@ -191,7 +202,7 @@ void MapWidget::mouseMoveEvent(QMouseEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWidget::mouseReleaseEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
@@ -204,7 +215,7 @@ void MapWidget::mouseReleaseEvent(QMouseEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWidget::wheelEvent(QWheelEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
@@ -218,7 +229,7 @@ void MapWidget::wheelEvent(QWheelEvent* event)
     event->accept();
 }
 
-//################################################################################################
+//##################################################################################################
 void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::DoubleClick);
@@ -229,5 +240,12 @@ void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+}
+
+//##################################################################################################
+void MapWidget::timerEvent(QTimerEvent* event)
+{
+  if(event->timerId() == d->animationTimerID)
+    d->map->animate(double(tp_utils::currentTimeMS()));
 }
 }
