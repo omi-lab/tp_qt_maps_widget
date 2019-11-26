@@ -50,8 +50,10 @@ private:
 };
 }
 
+//##################################################################################################
 struct MapWidget::Private
 {
+  TP_REF_COUNT_OBJECTS("tp_qt_maps_widget::MapWidget::Private");
   TP_NONCOPYABLE(Private);
 
   MapWidget* q;
