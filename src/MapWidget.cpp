@@ -80,7 +80,7 @@ struct MapWidget::Private
   {
     QGLFormat glf = QGLFormat::defaultFormat();
 
-#ifdef tp_qt_OSX
+#ifdef TP_OSX
     glf.setProfile(QGLFormat::CompatibilityProfile);
     glf.setVersion(2, 1);
     glf.setSampleBuffers(true);
