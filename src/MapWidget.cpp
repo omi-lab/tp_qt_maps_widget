@@ -76,23 +76,6 @@ struct MapWidget::Private
   }
 
   //################################################################################################
-  static QGLFormat glFormat()
-  {
-    QGLFormat glf = QGLFormat::defaultFormat();
-
-#ifdef TP_OSX
-    glf.setProfile(QGLFormat::CompatibilityProfile);
-    glf.setVersion(2, 1);
-    glf.setSampleBuffers(true);
-    glf.setSamples(4);
-#else
-    glf.setSampleBuffers(true);
-    glf.setSamples(4);
-#endif
-    return glf;
-  }
-
-  //################################################################################################
   static tp_maps::Button convertMouseButton(Qt::MouseButton button)
   {
     switch(button)
@@ -112,11 +95,12 @@ MapWidget::MapWidget(QWidget *parent):
 {
   setFocusPolicy(Qt::StrongFocus);
 
-  QSurfaceFormat format;
-  format.setMajorVersion(3);
-  format.setMinorVersion(2);
-  QSurfaceFormat::setDefaultFormat(format);
-  setFormat(format);
+  //Moved into staticInit()
+  //  QSurfaceFormat format;
+  //  format.setMajorVersion(3);
+  //  format.setMinorVersion(2);
+  //  QSurfaceFormat::setDefaultFormat(format);
+  //  setFormat(format);
 }
 
 //##################################################################################################
