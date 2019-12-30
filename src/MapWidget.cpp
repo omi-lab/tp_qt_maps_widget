@@ -1,5 +1,7 @@
 #include "tp_qt_maps_widget/MapWidget.h"
 
+#include "tp_qt_maps/Globals.h"
+
 #include "tp_maps/MouseEvent.h"
 
 #include "tp_utils/DebugUtils.h"
@@ -24,6 +26,8 @@ public:
     tp_maps::Map(false)
   {
     mapWidget = mapWidget_;
+    setOpenGLProfile(tp_qt_maps::getOpenGLProfile());
+    //tpWarning() << int(tp_qt_maps::getOpenGLProfile());
   }
 
   //################################################################################################
