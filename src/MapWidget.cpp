@@ -3,6 +3,7 @@
 #include "tp_qt_maps/Globals.h"
 
 #include "tp_maps/MouseEvent.h"
+#include "tp_maps/KeyEvent.h"
 
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
@@ -16,6 +17,26 @@ namespace tp_qt_maps_widget
 {
 namespace
 {
+
+//##################################################################################################
+int32_t toScancode(int key)
+{
+  switch(key)
+  {
+  case Qt::Key_PageUp:	   return tp_maps::PAGE_UP_KEY;
+  case Qt::Key_PageDown:   return tp_maps::PAGE_DOWN_KEY;
+  case Qt::Key_Up:		     return tp_maps::UP_KEY;
+  case Qt::Key_Down:		   return tp_maps::DOWN_KEY;
+  case Qt::Key_Left:		   return tp_maps::LEFT_KEY;
+  case Qt::Key_Right:		   return tp_maps::RIGHT_KEY;
+  case Qt::Key_Space:		   return tp_maps::SPACE_KEY;
+  case Qt::Key_Shift:      return tp_maps::L_SHIFT_KEY;
+  case Qt::Key_Control:    return tp_maps::L_CTRL_KEY;
+  }
+
+  return int32_t(key - Qt::Key_A) + tp_maps::A_KEY;
+}
+
 class Map_lt : public tp_maps::Map
 {
 public:
@@ -97,7 +118,8 @@ MapWidget::MapWidget(QWidget *parent):
   QOpenGLWidget(parent),
   d(new Private(this))
 {
-  setFocusPolicy(Qt::StrongFocus);
+  //setFocusPolicy(Qt::StrongFocus);
+  setFocusPolicy(Qt::ClickFocus);
 
   //Moved into staticInit()
   //  QSurfaceFormat format;
@@ -230,6 +252,22 @@ void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+}
+
+//##################################################################################################
+void MapWidget::keyPressEvent(QKeyEvent *event)
+{
+  tp_maps::KeyEvent e(tp_maps::KeyEventType::Press);
+  e.scancode = toScancode(event->key());
+  d->map->keyEvent(e);
+}
+
+//##################################################################################################
+void MapWidget::keyReleaseEvent(QKeyEvent *event)
+{
+  tp_maps::KeyEvent e(tp_maps::KeyEventType::Release);
+  e.scancode = toScancode(event->key());
+  d->map->keyEvent(e);
 }
 
 //##################################################################################################
