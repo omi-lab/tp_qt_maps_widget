@@ -16,6 +16,7 @@ int staticInit()
 #else
   format.setMajorVersion(3);
   format.setMinorVersion(2);
+  format.setSamples(4);
 #endif
   QSurfaceFormat::setDefaultFormat(format);
 

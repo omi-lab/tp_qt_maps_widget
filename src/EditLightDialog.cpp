@@ -5,6 +5,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QSlider>
 #include <QPushButton>
 #include <QPointer>
 #include <QDialogButtonBox>
@@ -35,12 +36,24 @@ struct EditLightDialog::Private
   QPushButton* diffuseColorButton {nullptr};
   QPushButton* specularColorButton{nullptr};
 
-  QDoubleSpinBox* diffuseScale    {nullptr};
+  QSlider*        diffuseScale    {nullptr};
   QDoubleSpinBox* diffuseTranslate{nullptr};
 
   QDoubleSpinBox* spotLightConstant {nullptr};
   QDoubleSpinBox* spotLightLinear   {nullptr};
   QDoubleSpinBox* spotLightQuadratic{nullptr};
+
+
+  QDoubleSpinBox* spotLightUVX{nullptr};
+  QDoubleSpinBox* spotLightUVY{nullptr};
+
+  QDoubleSpinBox* spotLightWHX{nullptr};
+  QDoubleSpinBox* spotLightWHY{nullptr};
+
+  QDoubleSpinBox* near      {nullptr};
+  QDoubleSpinBox* far       {nullptr};
+  QDoubleSpinBox* fov       {nullptr};
+  QDoubleSpinBox* orthoRadius{nullptr};
 
   //################################################################################################
   void updateColors()
@@ -151,11 +164,10 @@ EditLightDialog::EditLightDialog(QWidget* parent):
   }
 
   l->addWidget(new QLabel("Diffuse scale"));
-  d->diffuseScale = new QDoubleSpinBox();
+  d->diffuseScale = new QSlider(Qt::Horizontal);
   l->addWidget(d->diffuseScale);
-  d->diffuseScale->setRange(0.01, 5.0);
-  d->diffuseScale->setDecimals(2);
-  d->diffuseScale->setSingleStep(0.01);
+  d->diffuseScale->setRange(1, 10000);
+  d->diffuseScale->setSingleStep(1);
 
   l->addWidget(new QLabel("Diffuse translate"));
   d->diffuseTranslate = new QDoubleSpinBox();
@@ -163,12 +175,6 @@ EditLightDialog::EditLightDialog(QWidget* parent):
   d->diffuseTranslate->setRange(-1.0, 1.0);
   d->diffuseTranslate->setDecimals(2);
   d->diffuseTranslate->setSingleStep(0.01);
-
-
-  QDoubleSpinBox* spotLightConstant {nullptr};
-  QDoubleSpinBox* spotLightLinear   {nullptr};
-  QDoubleSpinBox* spotLightQuadratic{nullptr};
-
 
   l->addWidget(new QLabel("Spot light constant"));
   d->spotLightConstant = new QDoubleSpinBox();
@@ -190,6 +196,65 @@ EditLightDialog::EditLightDialog(QWidget* parent):
   d->spotLightQuadratic->setRange(0.01, 5.0);
   d->spotLightQuadratic->setDecimals(2);
   d->spotLightQuadratic->setSingleStep(0.01);
+
+
+  {
+    QHBoxLayout* ll{nullptr};
+
+    auto addRow = [&](auto title)
+    {
+      l->addWidget(new QLabel(title));
+      ll = new QHBoxLayout();
+      ll->setContentsMargins(0,0,0,0);
+      l->addLayout(ll);
+    };
+
+    auto make = [&]()
+    {
+      auto spin = new QDoubleSpinBox();
+      spin->setRange(0.0, 1.0);
+      spin->setDecimals(3);
+      spin->setSingleStep(0.001);
+      ll->addWidget(spin);
+      return spin;
+    };
+
+    addRow("Spot light UV");
+    d->spotLightUVX = make();
+    d->spotLightUVY = make();
+
+    addRow("Spot light WH");
+    d->spotLightWHX = make();
+    d->spotLightWHY = make();
+  }
+
+  l->addWidget(new QLabel("Near plane"));
+  d->near = new QDoubleSpinBox();
+  l->addWidget(d->near);
+  d->near->setRange(0.1, 1000.0);
+  d->near->setDecimals(1);
+  d->near->setSingleStep(0.1);
+
+  l->addWidget(new QLabel("Far plane"));
+  d->far = new QDoubleSpinBox();
+  l->addWidget(d->far);
+  d->far->setRange(0.1, 10000.0);
+  d->far->setDecimals(1);
+  d->far->setSingleStep(0.1);
+
+  l->addWidget(new QLabel("FOV"));
+  d->fov = new QDoubleSpinBox();
+  l->addWidget(d->fov);
+  d->fov->setRange(2.0, 140.0);
+  d->fov->setDecimals(1);
+  d->fov->setSingleStep(1.0);
+
+  l->addWidget(new QLabel("Ortho radius"));
+  d->orthoRadius = new QDoubleSpinBox();
+  l->addWidget(d->orthoRadius);
+  d->orthoRadius->setRange(0.1, 1000.0);
+  d->orthoRadius->setDecimals(1);
+  d->orthoRadius->setSingleStep(0.1);
 }
 
 //##################################################################################################
@@ -214,12 +279,28 @@ void EditLightDialog::setLight(const tp_maps::Light& light)
 
   d->updateColors();
 
-  d->diffuseScale    ->setValue(light.diffuseScale);
+  {
+    float scaled = light.diffuseScale*100.0f;
+    scaled*=float(d->diffuseScale->maximum());
+    scaled = std::sqrt(scaled);
+    d->diffuseScale    ->setValue(int(scaled));
+  }
   d->diffuseTranslate->setValue(light.diffuseTranslate);
 
   d->spotLightConstant ->setValue(light.constant);
   d->spotLightLinear   ->setValue(light.linear);
   d->spotLightQuadratic->setValue(light.quadratic);
+
+  d->spotLightUVX->setValue(light.spotLightUV.x);
+  d->spotLightUVY->setValue(light.spotLightUV.y);
+
+  d->spotLightWHX->setValue(light.spotLightWH.x);
+  d->spotLightWHY->setValue(light.spotLightWH.y);
+
+  d->near->setValue(light.near);
+  d->far->setValue(light.far);
+  d->fov->setValue(light.fov);
+  d->orthoRadius->setValue(light.orthoRadius);
 }
 
 //##################################################################################################
@@ -236,12 +317,30 @@ tp_maps::Light EditLightDialog::light() const
   d->light.direction.z = d->directionZ->value();
   d->light.direction = glm::normalize(d->light.direction);
 
-  d->light.diffuseScale     = d->diffuseScale    ->value();
+  {
+    float scaled = float(d->diffuseScale->value());
+    scaled*=scaled;
+    scaled/=float(d->diffuseScale->maximum());
+    scaled/=100.0f;
+    d->light.diffuseScale     = scaled;
+  }
+
   d->light.diffuseTranslate = d->diffuseTranslate->value();
 
   d->light.constant  = d->spotLightConstant ->value();
   d->light.linear    = d->spotLightLinear   ->value();
   d->light.quadratic = d->spotLightQuadratic->value();
+
+  d->light.spotLightUV.x = d->spotLightUVX->value();
+  d->light.spotLightUV.y = d->spotLightUVY->value();
+
+  d->light.spotLightWH.x = d->spotLightWHX->value();
+  d->light.spotLightWH.y = d->spotLightWHY->value();
+
+  d->light.near        = d->near->value();
+  d->light.far         = d->far->value();
+  d->light.fov         = d->fov->value();
+  d->light.orthoRadius = d->orthoRadius->value();
 
   return d->light;
 }

@@ -118,8 +118,8 @@ MapWidget::MapWidget(QWidget *parent):
   QOpenGLWidget(parent),
   d(new Private(this))
 {
-  //setFocusPolicy(Qt::StrongFocus);
-  setFocusPolicy(Qt::ClickFocus);
+  setFocusPolicy(Qt::StrongFocus);
+  //setFocusPolicy(Qt::ClickFocus);
 
   //Moved into staticInit()
   //  QSurfaceFormat format;
