@@ -1,4 +1,4 @@
-#include "tp_qt_maps_widget/EditLightDialog.h"
+#include "tp_qt_maps_widget/EditLightWidget.h"
 
 #include <QDialog>
 #include <QBoxLayout>
@@ -12,15 +12,18 @@
 #include <QColorDialog>
 #include <QImage>
 #include <QPixmap>
+#include <QLineEdit>
 #include <QPainter>
 
 namespace tp_qt_maps_widget
 {
 
 //##################################################################################################
-struct EditLightDialog::Private
+struct EditLightWidget::Private
 {
   tp_maps::Light light;
+
+  QLineEdit* nameEdit{nullptr};
 
   QComboBox* typeCombo{nullptr};
 
@@ -36,8 +39,8 @@ struct EditLightDialog::Private
   QPushButton* diffuseColorButton {nullptr};
   QPushButton* specularColorButton{nullptr};
 
-  QSlider*        diffuseScale    {nullptr};
-  QDoubleSpinBox* diffuseTranslate{nullptr};
+  QSlider* diffuseScale    {nullptr};
+  QSlider* diffuseTranslate{nullptr};
 
   QDoubleSpinBox* spotLightConstant {nullptr};
   QDoubleSpinBox* spotLightLinear   {nullptr};
@@ -78,18 +81,25 @@ struct EditLightDialog::Private
 };
 
 //##################################################################################################
-EditLightDialog::EditLightDialog(QWidget* parent):
+EditLightWidget::EditLightWidget(QWidget* parent):
   QWidget(parent),
   d(new Private())
 {
   auto l = new QVBoxLayout(this);
   l->setContentsMargins(0,0,0,0);
 
+  l->addWidget(new QLabel("Name"));
+  d->nameEdit = new QLineEdit();
+  l->addWidget(d->nameEdit);
+  connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditLightWidget::lightEdited);
+
+
   l->addWidget(new QLabel("Type"));
   d->typeCombo = new QComboBox();
   for(const auto& type : tp_maps::lightTypes())
     d->typeCombo->addItem(QString::fromStdString(type));
   l->addWidget(d->typeCombo);
+  connect(d->typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &EditLightWidget::lightEdited);
 
   {
     l->addWidget(new QLabel("Position"));
@@ -104,6 +114,7 @@ EditLightDialog::EditLightDialog(QWidget* parent):
       spin->setDecimals(3);
       spin->setSingleStep(0.001);
       ll->addWidget(spin);
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
       return spin;
     };
 
@@ -125,6 +136,7 @@ EditLightDialog::EditLightDialog(QWidget* parent):
       spin->setDecimals(3);
       spin->setSingleStep(0.001);
       ll->addWidget(spin);
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
       return spin;
     };
 
@@ -136,11 +148,15 @@ EditLightDialog::EditLightDialog(QWidget* parent):
   {
     l->addWidget(new QLabel("Colors"));
 
+    auto ll = new QHBoxLayout();
+    ll->setContentsMargins(0,0,0,0);
+    l->addLayout(ll);
+
     auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor)
     {
       auto button = new QPushButton(text);
       button->setStyleSheet("text-align:left; padding-left:2;");
-      l->addWidget(button);
+      ll->addWidget(button);
 
       connect(button, &QAbstractButton::clicked, [=]
       {
@@ -152,6 +168,7 @@ EditLightDialog::EditLightDialog(QWidget* parent):
           c.y = color.greenF();
           c.z = color.blueF();
           d->updateColors();
+          emit lightEdited();
         }
       });
 
@@ -163,39 +180,47 @@ EditLightDialog::EditLightDialog(QWidget* parent):
     d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->light.specular;});
   }
 
-  l->addWidget(new QLabel("Diffuse scale"));
-  d->diffuseScale = new QSlider(Qt::Horizontal);
-  l->addWidget(d->diffuseScale);
-  d->diffuseScale->setRange(1, 10000);
-  d->diffuseScale->setSingleStep(1);
+  {
+    l->addWidget(new QLabel("Diffuse scale and translate"));
+    d->diffuseScale = new QSlider(Qt::Horizontal);
+    l->addWidget(d->diffuseScale);
+    d->diffuseScale->setRange(1, 10000);
+    d->diffuseScale->setSingleStep(1);
+    connect(d->diffuseScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
 
-  l->addWidget(new QLabel("Diffuse translate"));
-  d->diffuseTranslate = new QDoubleSpinBox();
-  l->addWidget(d->diffuseTranslate);
-  d->diffuseTranslate->setRange(-1.0, 1.0);
-  d->diffuseTranslate->setDecimals(2);
-  d->diffuseTranslate->setSingleStep(0.01);
+    d->diffuseTranslate = new QSlider(Qt::Horizontal);
+    l->addWidget(d->diffuseTranslate);
+    d->diffuseTranslate->setRange(-100, 100);
+    d->diffuseTranslate->setSingleStep(1);
+    connect(d->diffuseTranslate, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
+  }
 
-  l->addWidget(new QLabel("Spot light constant"));
+  l->addWidget(new QLabel("Spot light constant, linear, and quadratic"));
+
+  auto ll = new QHBoxLayout();
+  ll->setContentsMargins(0,0,0,0);
+  l->addLayout(ll);
+
   d->spotLightConstant = new QDoubleSpinBox();
-  l->addWidget(d->spotLightConstant);
+  ll->addWidget(d->spotLightConstant);
   d->spotLightConstant->setRange(0.01, 5.0);
   d->spotLightConstant->setDecimals(2);
   d->spotLightConstant->setSingleStep(0.01);
+  connect(d->spotLightConstant, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
-  l->addWidget(new QLabel("Spot light linear"));
   d->spotLightLinear = new QDoubleSpinBox();
-  l->addWidget(d->spotLightLinear);
+  ll->addWidget(d->spotLightLinear);
   d->spotLightLinear->setRange(0.01, 5.0);
   d->spotLightLinear->setDecimals(2);
   d->spotLightLinear->setSingleStep(0.01);
+  connect(d->spotLightLinear, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
-  l->addWidget(new QLabel("Spot light quadratic"));
   d->spotLightQuadratic = new QDoubleSpinBox();
-  l->addWidget(d->spotLightQuadratic);
+  ll->addWidget(d->spotLightQuadratic);
   d->spotLightQuadratic->setRange(0.01, 5.0);
   d->spotLightQuadratic->setDecimals(2);
   d->spotLightQuadratic->setSingleStep(0.01);
+  connect(d->spotLightQuadratic, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
 
   {
@@ -216,6 +241,7 @@ EditLightDialog::EditLightDialog(QWidget* parent):
       spin->setDecimals(3);
       spin->setSingleStep(0.001);
       ll->addWidget(spin);
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
       return spin;
     };
 
@@ -228,45 +254,67 @@ EditLightDialog::EditLightDialog(QWidget* parent):
     d->spotLightWHY = make();
   }
 
-  l->addWidget(new QLabel("Near plane"));
-  d->near = new QDoubleSpinBox();
-  l->addWidget(d->near);
-  d->near->setRange(0.1, 1000.0);
-  d->near->setDecimals(1);
-  d->near->setSingleStep(0.1);
+  {
+    l->addWidget(new QLabel("Near and far plane"));
 
-  l->addWidget(new QLabel("Far plane"));
-  d->far = new QDoubleSpinBox();
-  l->addWidget(d->far);
-  d->far->setRange(0.1, 10000.0);
-  d->far->setDecimals(1);
-  d->far->setSingleStep(0.1);
+    auto ll = new QHBoxLayout();
+    ll->setContentsMargins(0,0,0,0);
+    l->addLayout(ll);
 
-  l->addWidget(new QLabel("FOV"));
-  d->fov = new QDoubleSpinBox();
-  l->addWidget(d->fov);
-  d->fov->setRange(2.0, 140.0);
-  d->fov->setDecimals(1);
-  d->fov->setSingleStep(1.0);
+    d->near = new QDoubleSpinBox();
+    ll->addWidget(d->near);
+    d->near->setRange(0.1, 1000.0);
+    d->near->setDecimals(1);
+    d->near->setSingleStep(0.1);
+    connect(d->near, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
-  l->addWidget(new QLabel("Ortho radius"));
-  d->orthoRadius = new QDoubleSpinBox();
-  l->addWidget(d->orthoRadius);
-  d->orthoRadius->setRange(0.1, 1000.0);
-  d->orthoRadius->setDecimals(1);
-  d->orthoRadius->setSingleStep(0.1);
+    d->far = new QDoubleSpinBox();
+    ll->addWidget(d->far);
+    d->far->setRange(0.1, 10000.0);
+    d->far->setDecimals(1);
+    d->far->setSingleStep(0.1);
+    connect(d->far, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
+  }
+
+  {
+    l->addWidget(new QLabel("FOV and ortho radius"));
+
+    auto ll = new QHBoxLayout();
+    ll->setContentsMargins(0,0,0,0);
+    l->addLayout(ll);
+
+    d->fov = new QDoubleSpinBox();
+    ll->addWidget(d->fov);
+    d->fov->setRange(2.0, 140.0);
+    d->fov->setDecimals(1);
+    d->fov->setSingleStep(1.0);
+    connect(d->fov, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
+
+    d->orthoRadius = new QDoubleSpinBox();
+    ll->addWidget(d->orthoRadius);
+    d->orthoRadius->setRange(0.1, 1000.0);
+    d->orthoRadius->setDecimals(1);
+    d->orthoRadius->setSingleStep(0.1);
+    connect(d->orthoRadius, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
+  }
 }
 
 //##################################################################################################
-EditLightDialog::~EditLightDialog()
+EditLightWidget::~EditLightWidget()
 {
   delete d;
 }
 
 //##################################################################################################
-void EditLightDialog::setLight(const tp_maps::Light& light)
+void EditLightWidget::setLight(const tp_maps::Light& light)
 {
+  blockSignals(true);
+  TP_CLEANUP([&]{blockSignals(false);});
+
   d->light = light;
+
+  d->nameEdit->setText(QString::fromStdString(light.name));
+
   d->typeCombo->setCurrentText(QString::fromStdString(tp_maps::lightTypeToString(light.type)));
 
   d->positionX->setValue(light.position.x);
@@ -285,7 +333,7 @@ void EditLightDialog::setLight(const tp_maps::Light& light)
     scaled = std::sqrt(scaled);
     d->diffuseScale    ->setValue(int(scaled));
   }
-  d->diffuseTranslate->setValue(light.diffuseTranslate);
+  d->diffuseTranslate->setValue(int(light.diffuseTranslate*100.0f));
 
   d->spotLightConstant ->setValue(light.constant);
   d->spotLightLinear   ->setValue(light.linear);
@@ -304,8 +352,10 @@ void EditLightDialog::setLight(const tp_maps::Light& light)
 }
 
 //##################################################################################################
-tp_maps::Light EditLightDialog::light() const
+tp_maps::Light EditLightWidget::light() const
 {
+  d->light.name = d->nameEdit->text().toStdString();
+
   d->light.type = tp_maps::lightTypeFromString(d->typeCombo->currentText().toStdString());
 
   d->light.position.x = d->positionX->value();
@@ -325,7 +375,7 @@ tp_maps::Light EditLightDialog::light() const
     d->light.diffuseScale     = scaled;
   }
 
-  d->light.diffuseTranslate = d->diffuseTranslate->value();
+  d->light.diffuseTranslate = float(d->diffuseTranslate->value())/100.0f;
 
   d->light.constant  = d->spotLightConstant ->value();
   d->light.linear    = d->spotLightLinear   ->value();
@@ -346,7 +396,7 @@ tp_maps::Light EditLightDialog::light() const
 }
 
 //##################################################################################################
-bool EditLightDialog::editLight(QWidget* parent, tp_maps::Light& light)
+bool EditLightWidget::editLightDialog(QWidget* parent, tp_maps::Light& light)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});
@@ -355,9 +405,9 @@ bool EditLightDialog::editLight(QWidget* parent, tp_maps::Light& light)
 
   auto l = new QVBoxLayout(dialog);
 
-  auto editLightDialog = new EditLightDialog();
-  l->addWidget(editLightDialog);
-  editLightDialog->setLight(light);
+  auto editLightWidget = new EditLightWidget();
+  l->addWidget(editLightWidget);
+  editLightWidget->setLight(light);
 
   auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   l->addWidget(buttons);
@@ -367,7 +417,7 @@ bool EditLightDialog::editLight(QWidget* parent, tp_maps::Light& light)
 
   if(dialog->exec() == QDialog::Accepted)
   {
-    light = editLightDialog->light();
+    light = editLightWidget->light();
     return true;
   }
 
