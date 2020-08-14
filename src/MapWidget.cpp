@@ -61,17 +61,19 @@ public:
   //################################################################################################
   void makeCurrent() final
   {
-    mapWidget->makeCurrent();
+    if(!inPaint)
+      mapWidget->makeCurrent();
   }
 
   //################################################################################################
   void update() final
   {
-    mapWidget->update();
+    if(!inPaint)
+      mapWidget->update();
   }
 
-private:
   MapWidget* mapWidget;
+  bool inPaint{false};
 };
 }
 
@@ -185,7 +187,10 @@ void MapWidget::resizeGL(int width, int height)
 //##################################################################################################
 void MapWidget::paintGL()
 {
+  d->map->makeCurrent();
+  d->map->inPaint=true;
   d->map->paintGL();
+  d->map->inPaint=false;
 }
 
 //##################################################################################################

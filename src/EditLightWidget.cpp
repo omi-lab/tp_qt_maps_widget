@@ -132,6 +132,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     auto make = [&]()
     {
       auto spin = new QDoubleSpinBox();
+      spin->setReadOnly(true);
       spin->setRange(-1.0, 1.0);
       spin->setDecimals(3);
       spin->setSingleStep(0.001);
@@ -317,13 +318,13 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
 
   d->typeCombo->setCurrentText(QString::fromStdString(tp_maps::lightTypeToString(light.type)));
 
-  d->positionX->setValue(light.position.x);
-  d->positionY->setValue(light.position.y);
-  d->positionZ->setValue(light.position.z);
+  d->positionX->setValue(light.position().x);
+  d->positionY->setValue(light.position().y);
+  d->positionZ->setValue(light.position().z);
 
-  d->directionX->setValue(light.direction.x);
-  d->directionY->setValue(light.direction.y);
-  d->directionZ->setValue(light.direction.z);
+  d->directionX->setValue(light.direction().x);
+  d->directionY->setValue(light.direction().y);
+  d->directionZ->setValue(light.direction().z);
 
   d->updateColors();
 
@@ -358,14 +359,12 @@ tp_maps::Light EditLightWidget::light() const
 
   d->light.type = tp_maps::lightTypeFromString(d->typeCombo->currentText().toStdString());
 
-  d->light.position.x = d->positionX->value();
-  d->light.position.y = d->positionY->value();
-  d->light.position.z = d->positionZ->value();
+  d->light.setPosition({d->positionX->value(), d->positionY->value(), d->positionZ->value()});
 
-  d->light.direction.x = d->directionX->value();
-  d->light.direction.y = d->directionY->value();
-  d->light.direction.z = d->directionZ->value();
-  d->light.direction = glm::normalize(d->light.direction);
+  //d->light.direction.x = d->directionX->value();
+  //d->light.direction.y = d->directionY->value();
+  //d->light.direction.z = d->directionZ->value();
+  //d->light.direction = glm::normalize(d->light.direction);
 
   {
     float scaled = float(d->diffuseScale->value());
