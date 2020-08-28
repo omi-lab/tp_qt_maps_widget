@@ -9,6 +9,9 @@ namespace tp_qt_maps_widget
 int staticInit()
 {
   QSurfaceFormat format;
+
+  //format.setOption(QSurfaceFormat::DebugContext);
+
 #ifdef TP_OSX
   format.setProfile(QSurfaceFormat::CoreProfile);
   format.setMajorVersion(4);
