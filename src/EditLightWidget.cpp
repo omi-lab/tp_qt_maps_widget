@@ -159,7 +159,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
       button->setStyleSheet("text-align:left; padding-left:2;");
       ll->addWidget(button);
 
-      connect(button, &QAbstractButton::clicked, [=]
+      connect(button, &QAbstractButton::clicked, this, [=]
       {
         glm::vec3& c = getColor();
         QColor color = QColorDialog::getColor(QColor::fromRgbF(c.x, c.y, c.z), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
@@ -314,7 +314,7 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
 
   d->light = light;
 
-  d->nameEdit->setText(QString::fromStdString(light.name));
+  d->nameEdit->setText(QString::fromStdString(light.name.keyString()));
 
   d->typeCombo->setCurrentText(QString::fromStdString(tp_maps::lightTypeToString(light.type)));
 
