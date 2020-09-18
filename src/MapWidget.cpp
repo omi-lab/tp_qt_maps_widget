@@ -107,9 +107,10 @@ struct MapWidget::Private
   {
     switch(button)
     {
-    case Qt::RightButton: return tp_maps::Button::RightButton;
-    case Qt::LeftButton:  return tp_maps::Button::LeftButton;
-    default:              return tp_maps::Button::NoButton;
+    case Qt::RightButton:  return tp_maps::Button::RightButton;
+    case Qt::LeftButton:   return tp_maps::Button::LeftButton;
+    case Qt::MiddleButton: return tp_maps::Button::MiddleButton;
+    default:               return tp_maps::Button::NoButton;
     }
   }
 };
