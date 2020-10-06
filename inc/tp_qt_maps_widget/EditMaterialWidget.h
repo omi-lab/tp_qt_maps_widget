@@ -29,7 +29,7 @@ public:
   //! Shows a dialog to edit the material and returns true if accepted.
   static bool editMaterialDialog(QWidget* parent, tp_maps::Material& material);
 
-signals:
+Q_SIGNALS:
   //################################################################################################
   //! Emitted when a material is edited by the user.
   void materialEdited();
