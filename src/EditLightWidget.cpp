@@ -40,7 +40,6 @@ struct EditLightWidget::Private
   QPushButton* specularColorButton{nullptr};
 
   QSlider* diffuseScale    {nullptr};
-  QSlider* diffuseTranslate{nullptr};
 
   QDoubleSpinBox* spotLightConstant {nullptr};
   QDoubleSpinBox* spotLightLinear   {nullptr};
@@ -182,18 +181,12 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   }
 
   {
-    l->addWidget(new QLabel("Diffuse scale and translate"));
+    l->addWidget(new QLabel("Diffuse scale"));
     d->diffuseScale = new QSlider(Qt::Horizontal);
     l->addWidget(d->diffuseScale);
     d->diffuseScale->setRange(1, 10000);
     d->diffuseScale->setSingleStep(1);
     connect(d->diffuseScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
-
-    d->diffuseTranslate = new QSlider(Qt::Horizontal);
-    l->addWidget(d->diffuseTranslate);
-    d->diffuseTranslate->setRange(-100, 100);
-    d->diffuseTranslate->setSingleStep(1);
-    connect(d->diffuseTranslate, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
   }
 
   l->addWidget(new QLabel("Spot light constant, linear, and quadratic"));
@@ -334,7 +327,6 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
     scaled = std::sqrt(scaled);
     d->diffuseScale    ->setValue(int(scaled));
   }
-  d->diffuseTranslate->setValue(int(light.diffuseTranslate*100.0f));
 
   d->spotLightConstant ->setValue(light.constant);
   d->spotLightLinear   ->setValue(light.linear);
@@ -373,8 +365,6 @@ tp_maps::Light EditLightWidget::light() const
     scaled/=100.0f;
     d->light.diffuseScale     = scaled;
   }
-
-  d->light.diffuseTranslate = float(d->diffuseTranslate->value())/100.0f;
 
   d->light.constant  = d->spotLightConstant ->value();
   d->light.linear    = d->spotLightLinear   ->value();
