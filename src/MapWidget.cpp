@@ -48,7 +48,6 @@ public:
   {
     mapWidget = mapWidget_;
     setOpenGLProfile(tp_qt_maps::getOpenGLProfile());
-    //tpWarning() << int(tp_qt_maps::getOpenGLProfile());
   }
 
   //################################################################################################
@@ -182,7 +181,7 @@ void MapWidget::initializeGL()
 //##################################################################################################
 void MapWidget::resizeGL(int width, int height)
 {
-  d->map->resizeGL(width, height);
+  d->map->resizeGL(width*devicePixelRatio(), height*devicePixelRatio());
 }
 
 //##################################################################################################
@@ -200,8 +199,8 @@ void MapWidget::mousePressEvent(QMouseEvent* event)
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
 
   e.button = Private::convertMouseButton(event->button());
-  e.pos.x = event->pos().x();
-  e.pos.y = event->pos().y();
+  e.pos.x = event->pos().x()*devicePixelRatio();
+  e.pos.y = event->pos().y()*devicePixelRatio();
 
   if(d->map->mouseEvent(e))
     event->accept();
@@ -213,8 +212,8 @@ void MapWidget::mouseMoveEvent(QMouseEvent* event)
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
 
   e.button = Private::convertMouseButton(event->button());
-  e.pos.x = event->pos().x();
-  e.pos.y = event->pos().y();
+  e.pos.x = event->pos().x()*devicePixelRatio();
+  e.pos.y = event->pos().y()*devicePixelRatio();
 
   if(d->map->mouseEvent(e))
     event->accept();
@@ -226,8 +225,8 @@ void MapWidget::mouseReleaseEvent(QMouseEvent* event)
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
 
   e.button = Private::convertMouseButton(event->button());
-  e.pos.x = event->pos().x();
-  e.pos.y = event->pos().y();
+  e.pos.x = event->pos().x()*devicePixelRatio();
+  e.pos.y = event->pos().y()*devicePixelRatio();
 
   if(d->map->mouseEvent(e))
     event->accept();
@@ -238,8 +237,8 @@ void MapWidget::wheelEvent(QWheelEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
 
-  e.pos.x = event->pos().x();
-  e.pos.y = event->pos().y();
+  e.pos.x = event->pos().x()*devicePixelRatio();
+  e.pos.y = event->pos().y()*devicePixelRatio();
 
   e.delta = event->delta();
 
@@ -253,8 +252,8 @@ void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
   tp_maps::MouseEvent e(tp_maps::MouseEventType::DoubleClick);
 
   e.button = Private::convertMouseButton(event->button());
-  e.pos.x = event->pos().x();
-  e.pos.y = event->pos().y();
+  e.pos.x = event->pos().x()*devicePixelRatio();
+  e.pos.y = event->pos().y()*devicePixelRatio();
 
   if(d->map->mouseEvent(e))
     event->accept();
