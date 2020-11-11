@@ -1,5 +1,7 @@
 #include "tp_qt_maps_widget/EditMaterialWidget.h"
 
+#include "tp_utils/JSONUtils.h"
+
 #include <QDialog>
 #include <QBoxLayout>
 #include <QLabel>
@@ -13,6 +15,8 @@
 #include <QImage>
 #include <QPixmap>
 #include <QLineEdit>
+#include <QGuiApplication>
+#include <QClipboard>
 #include <QPainter>
 
 namespace tp_qt_maps_widget
@@ -28,6 +32,10 @@ struct EditMaterialWidget::Private
   QPushButton* ambientColorButton {nullptr};
   QPushButton* diffuseColorButton {nullptr};
   QPushButton* specularColorButton{nullptr};
+
+  QSlider* ambientScaleSlider{nullptr};
+  QSlider* diffuseScaleSlider{nullptr};
+  QSlider* specularScaleSlider{nullptr};
 
   QSlider* shininess{nullptr};
   QSlider* alpha    {nullptr};
@@ -80,11 +88,20 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     ll->setContentsMargins(0,0,0,0);
     l->addLayout(ll);
 
-    auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor)
+    auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor, QSlider*& slider)
     {
+      auto vLayout = new QVBoxLayout();
+      vLayout->setContentsMargins(0,0,0,0);
+      ll->addLayout(vLayout);
+
       auto button = new QPushButton(text);
       button->setStyleSheet("text-align:left; padding-left:2;");
-      ll->addWidget(button);
+      vLayout->addWidget(button);
+
+      slider = new QSlider(Qt::Horizontal);
+      slider->setRange(0, 1000);
+      vLayout->addWidget(slider);
+      connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
 
       connect(button, &QAbstractButton::clicked, this, [=]
       {
@@ -103,9 +120,9 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       return button;
     };
 
-    d->ambientColorButton  = make("Ambient" , [&]()->glm::vec3&{return d->material.ambient;});
-    d->diffuseColorButton  = make("Diffuse" , [&]()->glm::vec3&{return d->material.diffuse;});
-    d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->material.specular;});
+    d->ambientColorButton  = make("Ambient" , [&]()->glm::vec3&{return d->material.ambient;} , d->ambientScaleSlider );
+    d->diffuseColorButton  = make("Diffuse" , [&]()->glm::vec3&{return d->material.diffuse;} , d->diffuseScaleSlider );
+    d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->material.specular;}, d->specularScaleSlider);
   }
 
   {
@@ -137,6 +154,32 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
   d->specularTexture = addTextureEdit("Specular texture");
   d->alphaTexture    = addTextureEdit("Alpha texture");
   d->bumpTexture     = addTextureEdit("Bump texture");
+
+  {
+    auto hLayout = new QHBoxLayout();
+    hLayout->setContentsMargins(0,0,0,0);
+    hLayout->addStretch();
+    l->addLayout(hLayout);
+    {
+      auto button = new QPushButton("Copy");
+      hLayout->addWidget(button);
+      connect(button, &QPushButton::clicked, this, [=]
+      {
+        QGuiApplication::clipboard()->setText(QString::fromStdString(material().saveState().dump(2)));
+      });
+    }
+    {
+      auto button = new QPushButton("Paste");
+      hLayout->addWidget(button);
+      connect(button, &QPushButton::clicked, this, [=]
+      {
+        tp_maps::Material material;
+        material.loadState(tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString()));
+        setMaterial(material);
+        emit materialEdited();
+      });
+    }
+  }
 }
 
 //##################################################################################################
@@ -160,6 +203,17 @@ void EditMaterialWidget::setMaterial(const tp_maps::Material& material)
   d->shininess->setValue(int(material.shininess*100.0f));
   d->alpha    ->setValue(int(material.alpha    *255.0f));
 
+  auto calculateScale = [](float scale)
+  {
+    float scaleMax = 4.0f;
+    auto s = std::sqrt(scale/scaleMax);
+    return int(s*1000.0f);
+  };
+
+  d->ambientScaleSlider->setValue(calculateScale(material.ambientScale));
+  d->diffuseScaleSlider->setValue(calculateScale(material.diffuseScale));
+  d->specularScaleSlider->setValue(calculateScale(material.specularScale));
+
   d->ambientTexture ->setText(QString::fromStdString(d->material.ambientTexture .keyString()));
   d->diffuseTexture ->setText(QString::fromStdString(d->material.diffuseTexture .keyString()));
   d->specularTexture->setText(QString::fromStdString(d->material.specularTexture.keyString()));
@@ -174,6 +228,17 @@ tp_maps::Material EditMaterialWidget::material() const
 
   d->material.shininess = float(d->shininess->value()) / 100.0f;
   d->material.alpha     = float(d->alpha    ->value()) / 255.0f;
+
+  auto calculateScale = [](int scale)
+  {
+    float scaleMax = 4.0f;
+    auto s = float(scale) / 1000.0f;
+    return s*s*scaleMax;
+  };
+
+  d->material.ambientScale = calculateScale(d->ambientScaleSlider->value());
+  d->material.diffuseScale = calculateScale(d->diffuseScaleSlider->value());
+  d->material.specularScale = calculateScale(d->specularScaleSlider->value());
 
   d->material.ambientTexture  = d->ambientTexture ->text().toStdString();
   d->material.diffuseTexture  = d->diffuseTexture ->text().toStdString();
