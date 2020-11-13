@@ -39,7 +39,7 @@ struct EditLightWidget::Private
   QPushButton* diffuseColorButton {nullptr};
   QPushButton* specularColorButton{nullptr};
 
-  QSlider* diffuseScale    {nullptr};
+  QSlider* diffuseScale{nullptr};
 
   QDoubleSpinBox* spotLightConstant {nullptr};
   QDoubleSpinBox* spotLightLinear   {nullptr};
@@ -56,6 +56,8 @@ struct EditLightWidget::Private
   QDoubleSpinBox* far       {nullptr};
   QDoubleSpinBox* fov       {nullptr};
   QDoubleSpinBox* orthoRadius{nullptr};
+
+  QSlider* offsetScale{nullptr};
 
   //################################################################################################
   void updateColors()
@@ -291,6 +293,15 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->orthoRadius->setSingleStep(0.1);
     connect(d->orthoRadius, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
   }
+
+  {
+    l->addWidget(new QLabel("Offset scale"));
+    d->offsetScale = new QSlider(Qt::Horizontal);
+    l->addWidget(d->offsetScale);
+    d->offsetScale->setRange(1, 10000);
+    d->offsetScale->setSingleStep(1);
+    connect(d->offsetScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
+  }
 }
 
 //##################################################################################################
@@ -342,6 +353,11 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
   d->far->setValue(light.far);
   d->fov->setValue(light.fov);
   d->orthoRadius->setValue(light.orthoRadius);
+
+  {
+    float scaled = light.offsetScale.x*5000.0f;
+    d->offsetScale->setValue(int(scaled));
+  }
 }
 
 //##################################################################################################
@@ -380,6 +396,12 @@ tp_maps::Light EditLightWidget::light() const
   d->light.far         = d->far->value();
   d->light.fov         = d->fov->value();
   d->light.orthoRadius = d->orthoRadius->value();
+
+  {
+    float s = float(d->offsetScale->value());
+    s/=5000.0f;
+    d->light.offsetScale = {s,s,s};
+  }
 
   return d->light;
 }
