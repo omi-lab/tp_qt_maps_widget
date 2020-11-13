@@ -10,8 +10,6 @@ int staticInit()
 {
   QSurfaceFormat format;
 
-  //format.setOption(QSurfaceFormat::DebugContext);
-
 #ifdef TP_OSX
   format.setProfile(QSurfaceFormat::CoreProfile);
   format.setMajorVersion(4);
@@ -21,6 +19,8 @@ int staticInit()
   format.setMinorVersion(2);
   format.setSamples(4);
 #endif
+
+  format.setOption(QSurfaceFormat::DebugContext);
   QSurfaceFormat::setDefaultFormat(format);
 
   return 0;
