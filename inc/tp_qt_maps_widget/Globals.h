@@ -1,7 +1,7 @@
 #ifndef tp_qt_maps_widget_global_h
 #define tp_qt_maps_widget_global_h
 
-#include "tp_utils/StringID.h"
+#include "tp_maps/Globals.h"
 
 #if defined(TP_QT_MAPS_WIDGET_LIBRARY)
 #  define TP_QT_MAPS_WIDGET_SHARED_EXPORT TP_EXPORT
@@ -16,6 +16,9 @@ namespace tp_qt_maps_widget
 
 //##################################################################################################
 int staticInit();
+
+//##################################################################################################
+std::vector<tp_maps::Material> materialLibrary();
 
 }
 

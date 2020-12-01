@@ -1,9 +1,11 @@
 #include "tp_qt_maps_widget/EditMaterialWidget.h"
+#include "tp_qt_maps_widget/SelectMaterialWidget.h"
 
 #include "tp_utils/JSONUtils.h"
 
 #include <QDialog>
 #include <QBoxLayout>
+#include <QGridLayout>
 #include <QLabel>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -39,6 +41,16 @@ struct EditMaterialWidget::Private
 
   QSlider* shininess{nullptr};
   QSlider* alpha    {nullptr};
+
+  QSlider* roughness{nullptr};
+  QSlider* metalness{nullptr};
+
+  QSlider* useDiffuse    {nullptr};
+  QSlider* useNdotL      {nullptr};
+  QSlider* useAttenuation{nullptr};
+  QSlider* useShadow     {nullptr};
+  QSlider* useLightMask  {nullptr};
+  QSlider* useReflection {nullptr};
 
   QLineEdit* ambientTexture {nullptr}; //!< mtl: map_Ka
   QLineEdit* diffuseTexture {nullptr}; //!< mtl: map_Kd
@@ -140,6 +152,34 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     connect(d->alpha, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
   }
 
+  auto sliderLayout = new QGridLayout();
+  sliderLayout->setContentsMargins(0,0,0,0);
+  l->addLayout(sliderLayout);
+
+  auto addSlider = [&](const QString& name)
+  {
+    int row = sliderLayout->rowCount();
+    sliderLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
+    auto s = new QSlider(Qt::Horizontal);
+    sliderLayout->addWidget(s, row, 1);
+    s->setRange(0, 255000);
+    s->setSingleStep(1);
+    connect(s, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
+    return s;
+  };
+
+  d->roughness = addSlider("Roughness");
+  d->metalness = addSlider("Metalness");
+
+  sliderLayout->addWidget(new QLabel("Use..."), sliderLayout->rowCount(), 0, Qt::AlignLeft);
+
+  d->useDiffuse     = addSlider("Use diffuse");
+  d->useNdotL       = addSlider("Use N dot L");
+  d->useAttenuation = addSlider("Use attenuation");
+  d->useShadow      = addSlider("Use shadow");
+  d->useLightMask   = addSlider("Light mask");
+  d->useReflection  = addSlider("Use reflection");
+
   auto addTextureEdit = [&](const auto& name)
   {
     l->addWidget(new QLabel(name));
@@ -179,6 +219,19 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
         emit materialEdited();
       });
     }
+    {
+      auto button = new QPushButton("Library");
+      hLayout->addWidget(button);
+      connect(button, &QPushButton::clicked, this, [=]
+      {
+        tp_maps::Material mat = material();
+        if(SelectMaterialWidget::selectMaterialDialog(this, materialLibrary(), mat))
+        {
+          setMaterial(mat);
+          emit materialEdited();
+        }
+      });
+    }
   }
 }
 
@@ -202,6 +255,16 @@ void EditMaterialWidget::setMaterial(const tp_maps::Material& material)
 
   d->shininess->setValue(int(material.shininess*100.0f));
   d->alpha    ->setValue(int(material.alpha    *255.0f));
+
+  d->roughness     ->setValue(int(material.roughness      * 255000.0f));
+  d->metalness     ->setValue(int(material.metalness      * 255000.0f));
+
+  d->useDiffuse    ->setValue(int(material.useDiffuse     * 255000.0f));
+  d->useNdotL      ->setValue(int(material.useNdotL       * 255000.0f));
+  d->useAttenuation->setValue(int(material.useAttenuation * 255000.0f));
+  d->useShadow     ->setValue(int(material.useShadow      * 255000.0f));
+  d->useLightMask  ->setValue(int(material.useLightMask   * 255000.0f));
+  d->useReflection ->setValue(int(material.useReflection  * 255000.0f));
 
   auto calculateScale = [](float scale)
   {
@@ -228,6 +291,16 @@ tp_maps::Material EditMaterialWidget::material() const
 
   d->material.shininess = float(d->shininess->value()) / 100.0f;
   d->material.alpha     = float(d->alpha    ->value()) / 255.0f;
+
+  d->material.roughness = float(d->roughness->value()) / 255000.0f;
+  d->material.metalness = float(d->metalness->value()) / 255000.0f;
+
+  d->material.useDiffuse     = float(d->useDiffuse    ->value()) / 255000.0f;
+  d->material.useNdotL       = float(d->useNdotL      ->value()) / 255000.0f;
+  d->material.useAttenuation = float(d->useAttenuation->value()) / 255000.0f;
+  d->material.useShadow      = float(d->useShadow     ->value()) / 255000.0f;
+  d->material.useLightMask   = float(d->useLightMask  ->value()) / 255000.0f;
+  d->material.useReflection  = float(d->useReflection ->value()) / 255000.0f;
 
   auto calculateScale = [](int scale)
   {

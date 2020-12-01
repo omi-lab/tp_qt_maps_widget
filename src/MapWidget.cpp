@@ -176,6 +176,8 @@ void MapWidget::initializeGL()
     connect(t, &QTimer::timeout, [&, t](){update();delete t;});
     t->start(0);
   }
+
+  emit initialized();
 }
 
 //##################################################################################################

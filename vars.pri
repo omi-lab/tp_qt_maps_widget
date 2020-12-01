@@ -14,3 +14,6 @@ HEADERS += inc/tp_qt_maps_widget/EditLightWidget.h
 
 SOURCES += src/EditMaterialWidget.cpp
 HEADERS += inc/tp_qt_maps_widget/EditMaterialWidget.h
+
+SOURCES += src/SelectMaterialWidget.cpp
+HEADERS += inc/tp_qt_maps_widget/SelectMaterialWidget.h
