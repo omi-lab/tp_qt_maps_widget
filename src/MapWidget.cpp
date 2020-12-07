@@ -23,18 +23,18 @@ int32_t toScancode(int key)
 {
   switch(key)
   {
-  case Qt::Key_PageUp:	   return tp_maps::PAGE_UP_KEY;
-  case Qt::Key_PageDown:   return tp_maps::PAGE_DOWN_KEY;
-  case Qt::Key_Up:		     return tp_maps::UP_KEY;
-  case Qt::Key_Down:		   return tp_maps::DOWN_KEY;
-  case Qt::Key_Left:		   return tp_maps::LEFT_KEY;
-  case Qt::Key_Right:		   return tp_maps::RIGHT_KEY;
-  case Qt::Key_Space:		   return tp_maps::SPACE_KEY;
-  case Qt::Key_Shift:      return tp_maps::L_SHIFT_KEY;
-  case Qt::Key_Control:    return tp_maps::L_CTRL_KEY;
+  case Qt::Key_PageUp:	   return TP_PAGE_UP_KEY;
+  case Qt::Key_PageDown:   return TP_PAGE_DOWN_KEY;
+  case Qt::Key_Up:		     return TP_UP_KEY;
+  case Qt::Key_Down:		   return TP_DOWN_KEY;
+  case Qt::Key_Left:		   return TP_LEFT_KEY;
+  case Qt::Key_Right:		   return TP_RIGHT_KEY;
+  case Qt::Key_Space:		   return TP_SPACE_KEY;
+  case Qt::Key_Shift:      return TP_L_SHIFT_KEY;
+  case Qt::Key_Control:    return TP_L_CTRL_KEY;
   }
 
-  return int32_t(key - Qt::Key_A) + tp_maps::A_KEY;
+  return int32_t(key - Qt::Key_A) + TP_A_KEY;
 }
 
 class Map_lt : public tp_maps::Map
