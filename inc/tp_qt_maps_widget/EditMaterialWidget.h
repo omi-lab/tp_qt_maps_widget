@@ -9,6 +9,7 @@
 
 namespace tp_qt_maps_widget
 {
+
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialWidget : public QWidget
 {
   Q_OBJECT
@@ -26,8 +27,17 @@ public:
   tp_maps::Material material() const;
 
   //################################################################################################
+  void setGetExistingTextures(const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures);
+
+  //################################################################################################
+  void setLoadTexture(const std::function<tp_utils::StringID(const std::string&)>& loadTexture);
+
+  //################################################################################################
   //! Shows a dialog to edit the material and returns true if accepted.
-  static bool editMaterialDialog(QWidget* parent, tp_maps::Material& material);
+  static bool editMaterialDialog(QWidget* parent,
+                                 tp_maps::Material& material,
+                                 const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures = std::function<std::vector<tp_utils::StringID>()>(),
+                                 const std::function<tp_utils::StringID(const std::string&)>& loadTexture = std::function<std::string(const std::string&)>());
 
 Q_SIGNALS:
   //################################################################################################

@@ -1,6 +1,8 @@
 #include "tp_qt_maps_widget/EditMaterialWidget.h"
 #include "tp_qt_maps_widget/SelectMaterialWidget.h"
 
+#include "tp_qt_widgets/FileDialogLineEdit.h"
+
 #include "tp_utils/JSONUtils.h"
 
 #include <QDialog>
@@ -9,6 +11,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QDoubleSpinBox>
+#include <QRadioButton>
 #include <QSlider>
 #include <QPushButton>
 #include <QPointer>
@@ -24,27 +27,47 @@
 namespace tp_qt_maps_widget
 {
 
+namespace
+{
+
+//##################################################################################################
+int colorScaleToInt(float scale)
+{
+  float scaleMax = 4.0f;
+  auto s = std::sqrt(scale/scaleMax);
+  return int(s*1000.0f);
+}
+
+//##################################################################################################
+float colorScaleFromInt(int scale)
+{
+  float scaleMax = 4.0f;
+  auto s = float(scale) / 1000.0f;
+  return s*s*scaleMax;
+}
+}
+
 //##################################################################################################
 struct EditMaterialWidget::Private
 {
   tp_maps::Material material;
+  std::function<std::vector<tp_utils::StringID>()> getExistingTextures;
+  std::function<tp_utils::StringID(const std::string&)> loadTexture;
 
   QLineEdit* nameEdit{nullptr};
 
-  QPushButton* ambientColorButton {nullptr};
-  QPushButton* diffuseColorButton {nullptr};
+  QPushButton* albedoColorButton {nullptr};
   QPushButton* specularColorButton{nullptr};
 
-  QSlider* ambientScaleSlider{nullptr};
-  QSlider* diffuseScaleSlider{nullptr};
+  QSlider* albedoScaleSlider{nullptr};
   QSlider* specularScaleSlider{nullptr};
 
-  QSlider* shininess{nullptr};
   QSlider* alpha    {nullptr};
 
   QSlider* roughness{nullptr};
   QSlider* metalness{nullptr};
 
+  QSlider* useAmbient    {nullptr};
   QSlider* useDiffuse    {nullptr};
   QSlider* useNdotL      {nullptr};
   QSlider* useAttenuation{nullptr};
@@ -52,11 +75,13 @@ struct EditMaterialWidget::Private
   QSlider* useLightMask  {nullptr};
   QSlider* useReflection {nullptr};
 
-  QLineEdit* ambientTexture {nullptr}; //!< mtl: map_Ka
-  QLineEdit* diffuseTexture {nullptr}; //!< mtl: map_Kd
-  QLineEdit* specularTexture{nullptr}; //!< mtl: map_Ks
-  QLineEdit* alphaTexture   {nullptr}; //!< mtl: map_d
-  QLineEdit* bumpTexture    {nullptr}; //!< mtl: map_Bump
+  QLineEdit*    albedoTexture{nullptr};  //!< mtl: map_Kd or map_Ka
+  QLineEdit*  specularTexture{nullptr};  //!< mtl: map_Ks
+  QLineEdit*     alphaTexture{nullptr};  //!< mtl: map_d
+  QLineEdit*   normalsTexture{nullptr};  //!< mtl: map_Bump
+  QLineEdit* roughnessTexture{nullptr};  //!<
+  QLineEdit* metalnessTexture{nullptr};  //!<
+  QLineEdit*        aoTexture{nullptr};  //!<
 
   //################################################################################################
   void updateColors()
@@ -74,8 +99,7 @@ struct EditMaterialWidget::Private
       return QIcon(QPixmap::fromImage(image));
     };
 
-    ambientColorButton ->setIcon(makeIcon(material.ambient ));
-    diffuseColorButton ->setIcon(makeIcon(material.diffuse ));
+    albedoColorButton  ->setIcon(makeIcon(material.albedo  ));
     specularColorButton->setIcon(makeIcon(material.specular));
   }
 };
@@ -110,10 +134,30 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       button->setStyleSheet("text-align:left; padding-left:2;");
       vLayout->addWidget(button);
 
+      auto hLayout = new QHBoxLayout();
+      hLayout->setContentsMargins(0,0,0,0);
+      vLayout->addLayout(hLayout);
+
+      auto spin = new QDoubleSpinBox();
+      spin->setRange(0.0, 4.0);
+      spin->setDecimals(3);
+      hLayout->addWidget(spin);
+
       slider = new QSlider(Qt::Horizontal);
       slider->setRange(0, 1000);
-      vLayout->addWidget(slider);
+      hLayout->addWidget(slider);
       connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
+
+      connect(slider, &QSlider::valueChanged, this, [=]
+      {
+        spin->setValue(colorScaleFromInt(slider->value()));
+      });
+
+      connect(spin, &QDoubleSpinBox::editingFinished, this, [=]
+      {
+        slider->setValue(colorScaleToInt(spin->value()));
+      });
+
 
       connect(button, &QAbstractButton::clicked, this, [=]
       {
@@ -132,19 +176,12 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       return button;
     };
 
-    d->ambientColorButton  = make("Ambient" , [&]()->glm::vec3&{return d->material.ambient;} , d->ambientScaleSlider );
-    d->diffuseColorButton  = make("Diffuse" , [&]()->glm::vec3&{return d->material.diffuse;} , d->diffuseScaleSlider );
+    d->albedoColorButton   = make("Albedo"  , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  );
     d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->material.specular;}, d->specularScaleSlider);
   }
 
   {
-    l->addWidget(new QLabel("Shininess and alpha"));
-    d->shininess = new QSlider(Qt::Horizontal);
-    l->addWidget(d->shininess);
-    d->shininess->setRange(0, 12800);
-    d->shininess->setSingleStep(1);
-    connect(d->shininess, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
-
+    l->addWidget(new QLabel("Alpha"));
     d->alpha = new QSlider(Qt::Horizontal);
     l->addWidget(d->alpha);
     d->alpha->setRange(0, 255);
@@ -173,6 +210,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
 
   sliderLayout->addWidget(new QLabel("Use..."), sliderLayout->rowCount(), 0, Qt::AlignLeft);
 
+  d->useAmbient     = addSlider("Use ambient");
   d->useDiffuse     = addSlider("Use diffuse");
   d->useNdotL       = addSlider("Use N dot L");
   d->useAttenuation = addSlider("Use attenuation");
@@ -183,17 +221,83 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
   auto addTextureEdit = [&](const auto& name)
   {
     l->addWidget(new QLabel(name));
+
+    auto ll = new QHBoxLayout();
+    l->addLayout(ll);
+
     auto edit = new QLineEdit();
-    l->addWidget(edit);
+    ll->addWidget(edit);
     connect(edit, &QLineEdit::editingFinished, this, &EditMaterialWidget::materialEdited);
+
+    auto button = new QPushButton("Load");
+    ll->addWidget(button);
+    connect(button, &QPushButton::clicked, this, [=]
+    {
+      QPointer<QDialog> dialog = new QDialog(this);
+      TP_CLEANUP([&]{delete dialog;});
+
+      auto l = new QVBoxLayout(dialog);
+
+      auto existingRadio = new QRadioButton("Existing");
+      l->addWidget(existingRadio);
+      existingRadio->setChecked(true);
+      auto existing = new QComboBox();
+      l->addWidget(existing);
+
+      if(d->getExistingTextures)
+      {
+        for(const auto& name : d->getExistingTextures())
+          existing->addItem(QString::fromStdString(name.keyString()));
+      }
+
+      auto loadRadio = new QRadioButton("Load");
+      l->addWidget(loadRadio);
+      auto load = new tp_qt_widgets::FileDialogLineEdit();
+      load->setMode(tp_qt_widgets::FileDialogLineEdit::OpenFileMode);
+      load->setFilter("*.png *.jpg *.jpeg *.bmp");
+      l->addWidget(load);
+      load->setEnabled(false);
+
+      connect(loadRadio, &QRadioButton::toggled, this, [=]
+      {
+        existing->setEnabled(existingRadio->isChecked());
+        load->setEnabled(loadRadio->isChecked());
+      });
+
+      l->addStretch();
+      auto buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+      l->addWidget(buttonBox);
+      connect(buttonBox, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
+      connect(buttonBox, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+
+      if(dialog->exec() == QDialog::Accepted)
+      {
+        if(existingRadio->isChecked() && !existing->currentText().isEmpty())
+        {
+          edit->setText(existing->currentText());
+          emit materialEdited();
+        }
+        else if(loadRadio->isChecked() && d->loadTexture)
+        {
+          auto text = d->loadTexture(load->text().toStdString());
+          if(text.isValid())
+          {
+            edit->setText(QString::fromStdString(text.keyString()));
+            emit materialEdited();
+          }
+        }
+      }
+    });
     return edit;
   };
 
-  d->ambientTexture  = addTextureEdit("Ambient texture");
-  d->diffuseTexture  = addTextureEdit("Diffuse texture");
-  d->specularTexture = addTextureEdit("Specular texture");
-  d->alphaTexture    = addTextureEdit("Alpha texture");
-  d->bumpTexture     = addTextureEdit("Bump texture");
+  d->   albedoTexture  = addTextureEdit("Albedo texture"           );  //!< mtl: map_Kd or map_Ka
+  d-> specularTexture  = addTextureEdit("Specular texture"         );  //!< mtl: map_Ks
+  d->    alphaTexture  = addTextureEdit("Alpha texture"            );  //!< mtl: map_d
+  d->  normalsTexture  = addTextureEdit("Normals texture"          );  //!< mtl: map_Bump
+  d->roughnessTexture  = addTextureEdit("Roughness texture"        );  //!<
+  d->metalnessTexture  = addTextureEdit("Metalness texture"        );  //!<
+  d->       aoTexture  = addTextureEdit("Ambient occlusion texture");  //!<
 
   {
     auto hLayout = new QHBoxLayout();
@@ -253,12 +357,12 @@ void EditMaterialWidget::setMaterial(const tp_maps::Material& material)
 
   d->updateColors();
 
-  d->shininess->setValue(int(material.shininess*100.0f));
   d->alpha    ->setValue(int(material.alpha    *255.0f));
 
   d->roughness     ->setValue(int(material.roughness      * 255000.0f));
   d->metalness     ->setValue(int(material.metalness      * 255000.0f));
 
+  d->useAmbient    ->setValue(int(material.useAmbient     * 255000.0f));
   d->useDiffuse    ->setValue(int(material.useDiffuse     * 255000.0f));
   d->useNdotL      ->setValue(int(material.useNdotL       * 255000.0f));
   d->useAttenuation->setValue(int(material.useAttenuation * 255000.0f));
@@ -266,22 +370,16 @@ void EditMaterialWidget::setMaterial(const tp_maps::Material& material)
   d->useLightMask  ->setValue(int(material.useLightMask   * 255000.0f));
   d->useReflection ->setValue(int(material.useReflection  * 255000.0f));
 
-  auto calculateScale = [](float scale)
-  {
-    float scaleMax = 4.0f;
-    auto s = std::sqrt(scale/scaleMax);
-    return int(s*1000.0f);
-  };
+  d->albedoScaleSlider  ->setValue(colorScaleToInt(material.albedoScale  ));
+  d->specularScaleSlider->setValue(colorScaleToInt(material.specularScale));
 
-  d->ambientScaleSlider->setValue(calculateScale(material.ambientScale));
-  d->diffuseScaleSlider->setValue(calculateScale(material.diffuseScale));
-  d->specularScaleSlider->setValue(calculateScale(material.specularScale));
-
-  d->ambientTexture ->setText(QString::fromStdString(d->material.ambientTexture .keyString()));
-  d->diffuseTexture ->setText(QString::fromStdString(d->material.diffuseTexture .keyString()));
-  d->specularTexture->setText(QString::fromStdString(d->material.specularTexture.keyString()));
-  d->alphaTexture   ->setText(QString::fromStdString(d->material.alphaTexture   .keyString()));
-  d->bumpTexture    ->setText(QString::fromStdString(d->material.bumpTexture    .keyString()));
+  d->   albedoTexture ->setText(QString::fromStdString(d->material.   albedoTexture.keyString())); //!< mtl: map_Kd or map_Ka
+  d-> specularTexture ->setText(QString::fromStdString(d->material. specularTexture.keyString())); //!< mtl: map_Ks
+  d->    alphaTexture ->setText(QString::fromStdString(d->material.    alphaTexture.keyString())); //!< mtl: map_d
+  d->  normalsTexture ->setText(QString::fromStdString(d->material.  normalsTexture.keyString())); //!< mtl: map_Bump
+  d->roughnessTexture ->setText(QString::fromStdString(d->material.roughnessTexture.keyString())); //!<
+  d->metalnessTexture ->setText(QString::fromStdString(d->material.metalnessTexture.keyString())); //!<
+  d->       aoTexture ->setText(QString::fromStdString(d->material.       aoTexture.keyString())); //!<
 }
 
 //##################################################################################################
@@ -289,12 +387,12 @@ tp_maps::Material EditMaterialWidget::material() const
 {
   d->material.name = d->nameEdit->text().toStdString();
 
-  d->material.shininess = float(d->shininess->value()) / 100.0f;
   d->material.alpha     = float(d->alpha    ->value()) / 255.0f;
 
   d->material.roughness = float(d->roughness->value()) / 255000.0f;
   d->material.metalness = float(d->metalness->value()) / 255000.0f;
 
+  d->material.useAmbient     = float(d->useAmbient    ->value()) / 255000.0f;
   d->material.useDiffuse     = float(d->useDiffuse    ->value()) / 255000.0f;
   d->material.useNdotL       = float(d->useNdotL      ->value()) / 255000.0f;
   d->material.useAttenuation = float(d->useAttenuation->value()) / 255000.0f;
@@ -302,28 +400,37 @@ tp_maps::Material EditMaterialWidget::material() const
   d->material.useLightMask   = float(d->useLightMask  ->value()) / 255000.0f;
   d->material.useReflection  = float(d->useReflection ->value()) / 255000.0f;
 
-  auto calculateScale = [](int scale)
-  {
-    float scaleMax = 4.0f;
-    auto s = float(scale) / 1000.0f;
-    return s*s*scaleMax;
-  };
+  d->material.albedoScale   = colorScaleFromInt(d->albedoScaleSlider->value());
+  d->material.specularScale = colorScaleFromInt(d->specularScaleSlider->value());
 
-  d->material.ambientScale = calculateScale(d->ambientScaleSlider->value());
-  d->material.diffuseScale = calculateScale(d->diffuseScaleSlider->value());
-  d->material.specularScale = calculateScale(d->specularScaleSlider->value());
-
-  d->material.ambientTexture  = d->ambientTexture ->text().toStdString();
-  d->material.diffuseTexture  = d->diffuseTexture ->text().toStdString();
-  d->material.specularTexture = d->specularTexture->text().toStdString();
-  d->material.alphaTexture    = d->alphaTexture   ->text().toStdString();
-  d->material.bumpTexture     = d->bumpTexture    ->text().toStdString();
+  d->material.   albedoTexture = d->   albedoTexture->text().toStdString(); //!< mtl: map_Kd or map_Ka
+  d->material. specularTexture = d-> specularTexture->text().toStdString(); //!< mtl: map_Ks
+  d->material.    alphaTexture = d->    alphaTexture->text().toStdString(); //!< mtl: map_d
+  d->material.  normalsTexture = d->  normalsTexture->text().toStdString(); //!< mtl: map_Bump
+  d->material.roughnessTexture = d->roughnessTexture->text().toStdString(); //!<
+  d->material.metalnessTexture = d->metalnessTexture->text().toStdString(); //!<
+  d->material.       aoTexture = d->       aoTexture->text().toStdString(); //!<
 
   return d->material;
 }
 
 //##################################################################################################
-bool EditMaterialWidget::editMaterialDialog(QWidget* parent, tp_maps::Material& material)
+void EditMaterialWidget::setGetExistingTextures(const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures)
+{
+  d->getExistingTextures = getExistingTextures;
+}
+
+//##################################################################################################
+void EditMaterialWidget::setLoadTexture(const std::function<tp_utils::StringID(const std::string&)>& loadTexture)
+{
+  d->loadTexture = loadTexture;
+}
+
+//##################################################################################################
+bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
+                                            tp_maps::Material& material,
+                                            const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures,
+                                            const std::function<tp_utils::StringID(const std::string&)>& loadTexture)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});
@@ -335,6 +442,8 @@ bool EditMaterialWidget::editMaterialDialog(QWidget* parent, tp_maps::Material& 
   auto editMaterialWidget = new EditMaterialWidget();
   l->addWidget(editMaterialWidget);
   editMaterialWidget->setMaterial(material);
+  editMaterialWidget->setGetExistingTextures(getExistingTextures);
+  editMaterialWidget->setLoadTexture(loadTexture);
 
   auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   l->addWidget(buttons);

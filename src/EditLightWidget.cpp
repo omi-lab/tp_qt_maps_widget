@@ -333,7 +333,7 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
   d->updateColors();
 
   {
-    float scaled = light.diffuseScale*100.0f;
+    float scaled = light.diffuseScale*10.0f;
     scaled*=float(d->diffuseScale->maximum());
     scaled = std::sqrt(scaled);
     d->diffuseScale    ->setValue(int(scaled));
@@ -378,7 +378,7 @@ tp_maps::Light EditLightWidget::light() const
     float scaled = float(d->diffuseScale->value());
     scaled*=scaled;
     scaled/=float(d->diffuseScale->maximum());
-    scaled/=100.0f;
+    scaled/=10.0f;
     d->light.diffuseScale     = scaled;
   }
 
