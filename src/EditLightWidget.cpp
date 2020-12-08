@@ -68,7 +68,7 @@ struct EditLightWidget::Private
       image.fill(QColor(0,0,0,0));
       {
         QPainter p(&image);
-        p.setBrush(QColor::fromRgbF(c.x, c.y, c.z));
+        p.setBrush(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)));
         p.setPen(Qt::black);
         p.drawRoundedRect(2,2,20,20,2.0, 2.0);
       }
@@ -163,12 +163,12 @@ EditLightWidget::EditLightWidget(QWidget* parent):
       connect(button, &QAbstractButton::clicked, this, [=]
       {
         glm::vec3& c = getColor();
-        QColor color = QColorDialog::getColor(QColor::fromRgbF(c.x, c.y, c.z), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
+        QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
         if(color.isValid())
         {
-          c.x = color.redF();
-          c.y = color.greenF();
-          c.z = color.blueF();
+          c.x = float(color.redF());
+          c.y = float(color.greenF());
+          c.z = float(color.blueF());
           d->updateColors();
           emit lightEdited();
         }
@@ -316,19 +316,25 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
 
+  auto setValue=[](QDoubleSpinBox* s, float v)
+  {
+    if(std::fabs(float(s->value())-v)>0.0001f)
+      s->setValue(double(v));
+  };
+
   d->light = light;
 
   d->nameEdit->setText(QString::fromStdString(light.name.keyString()));
 
   d->typeCombo->setCurrentText(QString::fromStdString(tp_maps::lightTypeToString(light.type)));
 
-  d->positionX->setValue(light.position().x);
-  d->positionY->setValue(light.position().y);
-  d->positionZ->setValue(light.position().z);
+  setValue(d->positionX, light.position().x);
+  setValue(d->positionY, light.position().y);
+  setValue(d->positionZ, light.position().z);
 
-  d->directionX->setValue(light.direction().x);
-  d->directionY->setValue(light.direction().y);
-  d->directionZ->setValue(light.direction().z);
+  setValue(d->directionX, light.direction().x);
+  setValue(d->directionY, light.direction().y);
+  setValue(d->directionZ, light.direction().z);
 
   d->updateColors();
 
@@ -339,20 +345,20 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
     d->diffuseScale    ->setValue(int(scaled));
   }
 
-  d->spotLightConstant ->setValue(light.constant);
-  d->spotLightLinear   ->setValue(light.linear);
-  d->spotLightQuadratic->setValue(light.quadratic);
+  setValue(d->spotLightConstant , light.constant );
+  setValue(d->spotLightLinear   , light.linear   );
+  setValue(d->spotLightQuadratic, light.quadratic);
 
-  d->spotLightUVX->setValue(light.spotLightUV.x);
-  d->spotLightUVY->setValue(light.spotLightUV.y);
+  setValue(d->spotLightUVX, light.spotLightUV.x);
+  setValue(d->spotLightUVY, light.spotLightUV.y);
 
-  d->spotLightWHX->setValue(light.spotLightWH.x);
-  d->spotLightWHY->setValue(light.spotLightWH.y);
+  setValue(d->spotLightWHX, light.spotLightWH.x);
+  setValue(d->spotLightWHY, light.spotLightWH.y);
 
-  d->near->setValue(light.near);
-  d->far->setValue(light.far);
-  d->fov->setValue(light.fov);
-  d->orthoRadius->setValue(light.orthoRadius);
+  setValue(d->near       , light.near       );
+  setValue(d->far        , light.far        );
+  setValue(d->fov        , light.fov        );
+  setValue(d->orthoRadius, light.orthoRadius);
 
   {
     float scaled = light.offsetScale.x*5000.0f;
@@ -382,20 +388,20 @@ tp_maps::Light EditLightWidget::light() const
     d->light.diffuseScale     = scaled;
   }
 
-  d->light.constant  = d->spotLightConstant ->value();
-  d->light.linear    = d->spotLightLinear   ->value();
-  d->light.quadratic = d->spotLightQuadratic->value();
+  d->light.constant  = float(d->spotLightConstant ->value());
+  d->light.linear    = float(d->spotLightLinear   ->value());
+  d->light.quadratic = float(d->spotLightQuadratic->value());
 
-  d->light.spotLightUV.x = d->spotLightUVX->value();
-  d->light.spotLightUV.y = d->spotLightUVY->value();
+  d->light.spotLightUV.x = float(d->spotLightUVX->value());
+  d->light.spotLightUV.y = float(d->spotLightUVY->value());
 
-  d->light.spotLightWH.x = d->spotLightWHX->value();
-  d->light.spotLightWH.y = d->spotLightWHY->value();
+  d->light.spotLightWH.x = float(d->spotLightWHX->value());
+  d->light.spotLightWH.y = float(d->spotLightWHY->value());
 
-  d->light.near        = d->near->value();
-  d->light.far         = d->far->value();
-  d->light.fov         = d->fov->value();
-  d->light.orthoRadius = d->orthoRadius->value();
+  d->light.near        = float(d->near->value());
+  d->light.far         = float(d->far->value());
+  d->light.fov         = float(d->fov->value());
+  d->light.orthoRadius = float(d->orthoRadius->value());
 
   {
     float s = float(d->offsetScale->value());
