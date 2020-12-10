@@ -35,14 +35,14 @@ int colorScaleToInt(float scale)
 {
   float scaleMax = 4.0f;
   auto s = std::sqrt(scale/scaleMax);
-  return int(s*1000.0f);
+  return int(s*100000.0f);
 }
 
 //##################################################################################################
 float colorScaleFromInt(int scale)
 {
   float scaleMax = 4.0f;
-  auto s = float(scale) / 1000.0f;
+  auto s = float(scale) / 100000.0f;
   return s*s*scaleMax;
 }
 }
@@ -144,16 +144,18 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       hLayout->addWidget(spin);
 
       slider = new QSlider(Qt::Horizontal);
-      slider->setRange(0, 1000);
+      slider->setRange(0, 100000);
       hLayout->addWidget(slider);
       connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
 
       connect(slider, &QSlider::valueChanged, this, [=]
       {
-        spin->setValue(colorScaleFromInt(slider->value()));
+        double v = colorScaleFromInt(slider->value());
+        if(std::fabs(v-spin->value()) > 0.0001)
+          spin->setValue(v);
       });
 
-      connect(spin, &QDoubleSpinBox::editingFinished, this, [=]
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=]
       {
         slider->setValue(colorScaleToInt(spin->value()));
       });
@@ -180,35 +182,34 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->material.specular;}, d->specularScaleSlider);
   }
 
+  auto gridLayout = new QGridLayout();
+  gridLayout->setContentsMargins(0,0,0,0);
+  l->addLayout(gridLayout);
+
   {
-    l->addWidget(new QLabel("Alpha"));
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel("Alpha"), row, 0, Qt::AlignLeft);
     d->alpha = new QSlider(Qt::Horizontal);
-    l->addWidget(d->alpha);
+    gridLayout->addWidget(d->alpha, row, 1);
     d->alpha->setRange(0, 255);
     d->alpha->setSingleStep(1);
     connect(d->alpha, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
   }
 
-  auto sliderLayout = new QGridLayout();
-  sliderLayout->setContentsMargins(0,0,0,0);
-  l->addLayout(sliderLayout);
-
   auto addSlider = [&](const QString& name)
   {
-    int row = sliderLayout->rowCount();
-    sliderLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
     auto s = new QSlider(Qt::Horizontal);
-    sliderLayout->addWidget(s, row, 1);
+    gridLayout->addWidget(s, row, 1);
     s->setRange(0, 255000);
     s->setSingleStep(1);
     connect(s, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
     return s;
   };
 
-  d->roughness = addSlider("Roughness");
-  d->metalness = addSlider("Metalness");
-
-  sliderLayout->addWidget(new QLabel("Use..."), sliderLayout->rowCount(), 0, Qt::AlignLeft);
+  d->roughness      = addSlider("Roughness");
+  d->metalness      = addSlider("Metalness");
 
   d->useAmbient     = addSlider("Use ambient");
   d->useDiffuse     = addSlider("Use diffuse");
@@ -220,10 +221,11 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
 
   auto addTextureEdit = [&](const auto& name)
   {
-    l->addWidget(new QLabel(name));
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
 
     auto ll = new QHBoxLayout();
-    l->addLayout(ll);
+    gridLayout->addLayout(ll, row, 1);
 
     auto edit = new QLineEdit();
     ll->addWidget(edit);
@@ -291,13 +293,13 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     return edit;
   };
 
-  d->   albedoTexture  = addTextureEdit("Albedo texture"           );  //!< mtl: map_Kd or map_Ka
-  d-> specularTexture  = addTextureEdit("Specular texture"         );  //!< mtl: map_Ks
-  d->    alphaTexture  = addTextureEdit("Alpha texture"            );  //!< mtl: map_d
-  d->  normalsTexture  = addTextureEdit("Normals texture"          );  //!< mtl: map_Bump
-  d->roughnessTexture  = addTextureEdit("Roughness texture"        );  //!<
-  d->metalnessTexture  = addTextureEdit("Metalness texture"        );  //!<
-  d->       aoTexture  = addTextureEdit("Ambient occlusion texture");  //!<
+  d->   albedoTexture  = addTextureEdit("Albedo map"   ); //!< mtl: map_Kd or map_Ka
+  d-> specularTexture  = addTextureEdit("Specular map" ); //!< mtl: map_Ks
+  d->    alphaTexture  = addTextureEdit("Alpha map"    ); //!< mtl: map_d
+  d->  normalsTexture  = addTextureEdit("Normals map"  ); //!< mtl: map_Bump
+  d->roughnessTexture  = addTextureEdit("Roughness map"); //!<
+  d->metalnessTexture  = addTextureEdit("Metalness map"); //!<
+  d->       aoTexture  = addTextureEdit("AO map"       ); //!<
 
   {
     auto hLayout = new QHBoxLayout();
