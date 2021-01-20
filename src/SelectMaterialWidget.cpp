@@ -25,7 +25,7 @@ namespace tp_qt_maps_widget
 struct SelectMaterialWidget::Private
 {
   SelectMaterialWidget* q;
-  std::vector<tp_maps::Material> materials;
+  std::vector<tp_math_utils::Material> materials;
 
   QSize iconSize{64, 64};
 
@@ -33,7 +33,7 @@ struct SelectMaterialWidget::Private
   QListWidget* thumbnails{nullptr};
 
   tp_maps::Geometry3DLayer* geometryLayer{nullptr};
-  tp_maps::Geometry3D geometry;
+  tp_math_utils::Geometry3D geometry;
 
   //################################################################################################
   Private(SelectMaterialWidget* q_):
@@ -43,7 +43,7 @@ struct SelectMaterialWidget::Private
   }
 
   //################################################################################################
-  void addItem(const tp_maps::Material& material)
+  void addItem(const tp_math_utils::Material& material)
   {
     QIcon thumbnail;
     tp_image_utils::ColorMap image;
@@ -62,7 +62,7 @@ struct SelectMaterialWidget::Private
   }
 
   //################################################################################################
-  void setPreviewMaterial(const tp_maps::Material& material)
+  void setPreviewMaterial(const tp_math_utils::Material& material)
   {
     geometry.material = material;
     geometryLayer->setGeometry({geometry});
@@ -71,7 +71,7 @@ struct SelectMaterialWidget::Private
   //################################################################################################
   void regenerateItems()
   {
-    std::vector<tp_maps::Material> m;
+    std::vector<tp_math_utils::Material> m;
     m.swap(materials);
     q->setMaterials(m);
   }
@@ -101,7 +101,7 @@ SelectMaterialWidget::SelectMaterialWidget(QWidget* parent):
   d->geometryLayer = new tp_maps::Geometry3DLayer();
   d->preview->map()->addLayer(d->geometryLayer);
 
-  d->geometry.geometry = tp_math_utils::Sphere::octahedralClass1(1.0f, 6, GL_TRIANGLE_FAN, GL_TRIANGLE_STRIP, GL_TRIANGLES);
+  d->geometry = tp_math_utils::Sphere::octahedralClass1(1.0f, 6, GL_TRIANGLE_FAN, GL_TRIANGLE_STRIP, GL_TRIANGLES);
   d->geometryLayer->setGeometry({d->geometry});
 
   connect(d->preview, &MapWidget::initialized, this, [&]{d->regenerateItems();});
@@ -121,7 +121,7 @@ void SelectMaterialWidget::setIconSize(const QSize& iconSize)
 }
 
 //##################################################################################################
-void SelectMaterialWidget::setMaterials(const std::vector<tp_maps::Material>& materials)
+void SelectMaterialWidget::setMaterials(const std::vector<tp_math_utils::Material>& materials)
 {
   d->materials.clear();
   d->thumbnails->clear();
@@ -134,7 +134,7 @@ void SelectMaterialWidget::setMaterials(const std::vector<tp_maps::Material>& ma
 }
 
 //##################################################################################################
-void SelectMaterialWidget::setMaterial(const tp_maps::Material& material)
+void SelectMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 {
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
@@ -156,18 +156,18 @@ void SelectMaterialWidget::setMaterial(const tp_maps::Material& material)
 }
 
 //##################################################################################################
-tp_maps::Material SelectMaterialWidget::material() const
+tp_math_utils::Material SelectMaterialWidget::material() const
 {
   size_t i = d->thumbnails->currentRow();
 
   if(i<d->materials.size())
     return d->materials.at(i);
 
-  return tp_maps::Material();
+  return tp_math_utils::Material();
 }
 
 //##################################################################################################
-bool SelectMaterialWidget::selectMaterialDialog(QWidget* parent, const std::vector<tp_maps::Material>& materials, tp_maps::Material& material)
+bool SelectMaterialWidget::selectMaterialDialog(QWidget* parent, const std::vector<tp_math_utils::Material>& materials, tp_math_utils::Material& material)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});

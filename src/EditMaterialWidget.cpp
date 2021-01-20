@@ -50,7 +50,7 @@ float colorScaleFromInt(int scale)
 //##################################################################################################
 struct EditMaterialWidget::Private
 {
-  tp_maps::Material material;
+  tp_math_utils::Material material;
   std::function<std::vector<tp_utils::StringID>()> getExistingTextures;
   std::function<tp_utils::StringID(const std::string&)> loadTexture;
 
@@ -319,7 +319,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       hLayout->addWidget(button);
       connect(button, &QPushButton::clicked, this, [=]
       {
-        tp_maps::Material material;
+        tp_math_utils::Material material;
         material.loadState(tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString()));
         setMaterial(material);
         emit materialEdited();
@@ -330,7 +330,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       hLayout->addWidget(button);
       connect(button, &QPushButton::clicked, this, [=]
       {
-        tp_maps::Material mat = material();
+        tp_math_utils::Material mat = material();
         if(SelectMaterialWidget::selectMaterialDialog(this, materialLibrary(), mat))
         {
           setMaterial(mat);
@@ -348,7 +348,7 @@ EditMaterialWidget::~EditMaterialWidget()
 }
 
 //##################################################################################################
-void EditMaterialWidget::setMaterial(const tp_maps::Material& material)
+void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 {
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
@@ -385,7 +385,7 @@ void EditMaterialWidget::setMaterial(const tp_maps::Material& material)
 }
 
 //##################################################################################################
-tp_maps::Material EditMaterialWidget::material() const
+tp_math_utils::Material EditMaterialWidget::material() const
 {
   d->material.name = d->nameEdit->text().toStdString();
 
@@ -430,7 +430,7 @@ void EditMaterialWidget::setLoadTexture(const std::function<tp_utils::StringID(c
 
 //##################################################################################################
 bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
-                                            tp_maps::Material& material,
+                                            tp_math_utils::Material& material,
                                             const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures,
                                             const std::function<tp_utils::StringID(const std::string&)>& loadTexture)
 {

@@ -20,14 +20,14 @@ public:
   ~EditLightWidget() override;
 
   //################################################################################################
-  void setLight(const tp_maps::Light& light);
+  void setLight(const tp_math_utils::Light& light);
 
   //################################################################################################
-  tp_maps::Light light() const;
+  tp_math_utils::Light light() const;
 
   //################################################################################################
   //! Shows a dialog to edit the light and returns true if accepted.
-  static bool editLightDialog(QWidget* parent, tp_maps::Light& light);
+  static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light);
 
 signals:
   //################################################################################################

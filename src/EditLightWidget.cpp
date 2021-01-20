@@ -21,7 +21,7 @@ namespace tp_qt_maps_widget
 //##################################################################################################
 struct EditLightWidget::Private
 {
-  tp_maps::Light light;
+  tp_math_utils::Light light;
 
   QLineEdit* nameEdit{nullptr};
 
@@ -97,7 +97,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
 
   l->addWidget(new QLabel("Type"));
   d->typeCombo = new QComboBox();
-  for(const auto& type : tp_maps::lightTypes())
+  for(const auto& type : tp_math_utils::lightTypes())
     d->typeCombo->addItem(QString::fromStdString(type));
   l->addWidget(d->typeCombo);
   connect(d->typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &EditLightWidget::lightEdited);
@@ -311,7 +311,7 @@ EditLightWidget::~EditLightWidget()
 }
 
 //##################################################################################################
-void EditLightWidget::setLight(const tp_maps::Light& light)
+void EditLightWidget::setLight(const tp_math_utils::Light& light)
 {
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
@@ -326,7 +326,7 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
 
   d->nameEdit->setText(QString::fromStdString(light.name.keyString()));
 
-  d->typeCombo->setCurrentText(QString::fromStdString(tp_maps::lightTypeToString(light.type)));
+  d->typeCombo->setCurrentText(QString::fromStdString(tp_math_utils::lightTypeToString(light.type)));
 
   setValue(d->positionX, light.position().x);
   setValue(d->positionY, light.position().y);
@@ -367,11 +367,11 @@ void EditLightWidget::setLight(const tp_maps::Light& light)
 }
 
 //##################################################################################################
-tp_maps::Light EditLightWidget::light() const
+tp_math_utils::Light EditLightWidget::light() const
 {
   d->light.name = d->nameEdit->text().toStdString();
 
-  d->light.type = tp_maps::lightTypeFromString(d->typeCombo->currentText().toStdString());
+  d->light.type = tp_math_utils::lightTypeFromString(d->typeCombo->currentText().toStdString());
 
   d->light.setPosition({d->positionX->value(), d->positionY->value(), d->positionZ->value()});
 
@@ -413,7 +413,7 @@ tp_maps::Light EditLightWidget::light() const
 }
 
 //##################################################################################################
-bool EditLightWidget::editLightDialog(QWidget* parent, tp_maps::Light& light)
+bool EditLightWidget::editLightDialog(QWidget* parent, tp_math_utils::Light& light)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});

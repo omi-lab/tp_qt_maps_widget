@@ -23,17 +23,17 @@ public:
   void setIconSize(const QSize& iconSize);
 
   //################################################################################################
-  void setMaterials(const std::vector<tp_maps::Material>& materials);
+  void setMaterials(const std::vector<tp_math_utils::Material>& materials);
 
   //################################################################################################
-  void setMaterial(const tp_maps::Material& material);
+  void setMaterial(const tp_math_utils::Material& material);
 
   //################################################################################################
-  tp_maps::Material material() const;
+  tp_math_utils::Material material() const;
 
   //################################################################################################
   //! Shows a dialog to select a material and returns true if accepted.
-  static bool selectMaterialDialog(QWidget* parent, const std::vector<tp_maps::Material>& materials, tp_maps::Material& material);
+  static bool selectMaterialDialog(QWidget* parent, const std::vector<tp_math_utils::Material>& materials, tp_math_utils::Material& material);
 
 Q_SIGNALS:
   //################################################################################################

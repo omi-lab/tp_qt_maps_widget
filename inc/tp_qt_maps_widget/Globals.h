@@ -18,7 +18,7 @@ namespace tp_qt_maps_widget
 int staticInit();
 
 //##################################################################################################
-std::vector<tp_maps::Material> materialLibrary();
+std::vector<tp_math_utils::Material> materialLibrary();
 
 }
 

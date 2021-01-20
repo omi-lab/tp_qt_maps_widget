@@ -27,9 +27,9 @@ int staticInit()
 }
 
 //##################################################################################################
-std::vector<tp_maps::Material> materialLibrary()
+std::vector<tp_math_utils::Material> materialLibrary()
 {
-  std::vector<tp_maps::Material> materials;
+  std::vector<tp_math_utils::Material> materials;
 
   auto toF = [](int r, int g, int b)
   {

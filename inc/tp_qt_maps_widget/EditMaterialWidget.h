@@ -21,10 +21,10 @@ public:
   ~EditMaterialWidget() override;
 
   //################################################################################################
-  void setMaterial(const tp_maps::Material& material);
+  void setMaterial(const tp_math_utils::Material& material);
 
   //################################################################################################
-  tp_maps::Material material() const;
+  tp_math_utils::Material material() const;
 
   //################################################################################################
   void setGetExistingTextures(const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures);
@@ -35,7 +35,7 @@ public:
   //################################################################################################
   //! Shows a dialog to edit the material and returns true if accepted.
   static bool editMaterialDialog(QWidget* parent,
-                                 tp_maps::Material& material,
+                                 tp_math_utils::Material& material,
                                  const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures = std::function<std::vector<tp_utils::StringID>()>(),
                                  const std::function<tp_utils::StringID(const std::string&)>& loadTexture = std::function<std::string(const std::string&)>());
 
