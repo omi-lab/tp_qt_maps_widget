@@ -62,10 +62,11 @@ struct EditMaterialWidget::Private
   QSlider* albedoScaleSlider{nullptr};
   QSlider* specularScaleSlider{nullptr};
 
-  QSlider* alpha    {nullptr};
-
-  QSlider* roughness{nullptr};
-  QSlider* metalness{nullptr};
+  QSlider* alpha       {nullptr};
+  QSlider* roughness   {nullptr};
+  QSlider* metalness   {nullptr};
+  QSlider* transmission{nullptr};
+  QSlider* ior         {nullptr};
 
   QSlider* useAmbient    {nullptr};
   QSlider* useDiffuse    {nullptr};
@@ -210,6 +211,8 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
 
   d->roughness      = addSlider("Roughness");
   d->metalness      = addSlider("Metalness");
+  d->transmission   = addSlider("Transmission");
+  d->ior            = addSlider("IOR");
 
   d->useAmbient     = addSlider("Use ambient");
   d->useDiffuse     = addSlider("Use diffuse");
@@ -363,6 +366,8 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->roughness     ->setValue(int(material.roughness      * 255000.0f));
   d->metalness     ->setValue(int(material.metalness      * 255000.0f));
+  d->transmission  ->setValue(int(material.transmission   * 255000.0f));
+  d->ior           ->setValue(int(material.ior            * 127000.0f));
 
   d->useAmbient    ->setValue(int(material.useAmbient     * 255000.0f));
   d->useDiffuse    ->setValue(int(material.useDiffuse     * 255000.0f));
@@ -389,10 +394,12 @@ tp_math_utils::Material EditMaterialWidget::material() const
 {
   d->material.name = d->nameEdit->text().toStdString();
 
-  d->material.alpha     = float(d->alpha    ->value()) / 255.0f;
+  d->material.alpha        = float(d->alpha       ->value()) / 255.0f;
 
-  d->material.roughness = float(d->roughness->value()) / 255000.0f;
-  d->material.metalness = float(d->metalness->value()) / 255000.0f;
+  d->material.roughness    = float(d->roughness   ->value()) / 255000.0f;
+  d->material.metalness    = float(d->metalness   ->value()) / 255000.0f;
+  d->material.transmission = float(d->transmission->value()) / 255000.0f;
+  d->material.ior          = float(d->ior         ->value()) / 127000.0f;
 
   d->material.useAmbient     = float(d->useAmbient    ->value()) / 255000.0f;
   d->material.useDiffuse     = float(d->useDiffuse    ->value()) / 255000.0f;
