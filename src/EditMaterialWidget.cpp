@@ -31,17 +31,15 @@ namespace
 {
 
 //##################################################################################################
-int colorScaleToInt(float scale)
+int colorScaleToInt(float scale, float scaleMax)
 {
-  float scaleMax = 4.0f;
   auto s = std::sqrt(scale/scaleMax);
   return int(s*100000.0f);
 }
 
 //##################################################################################################
-float colorScaleFromInt(int scale)
+float colorScaleFromInt(int scale, float scaleMax)
 {
-  float scaleMax = 4.0f;
   auto s = float(scale) / 100000.0f;
   return s*s*scaleMax;
 }
@@ -56,17 +54,25 @@ struct EditMaterialWidget::Private
 
   QLineEdit* nameEdit{nullptr};
 
-  QPushButton* albedoColorButton {nullptr};
+  QPushButton* albedoColorButton  {nullptr};
   QPushButton* specularColorButton{nullptr};
+  QPushButton* sssColorButton     {nullptr};
+  QPushButton* emissionColorButton{nullptr};
 
-  QSlider* albedoScaleSlider{nullptr};
+  QSlider* albedoScaleSlider  {nullptr};
   QSlider* specularScaleSlider{nullptr};
+  QSlider* sssSlider          {nullptr};
+  QSlider* emissionSlider     {nullptr};
 
   QSlider* alpha       {nullptr};
   QSlider* roughness   {nullptr};
   QSlider* metalness   {nullptr};
   QSlider* transmission{nullptr};
   QSlider* ior         {nullptr};
+
+  QDoubleSpinBox* sssRadiusR{nullptr};
+  QDoubleSpinBox* sssRadiusG{nullptr};
+  QDoubleSpinBox* sssRadiusB{nullptr};
 
   QSlider* useAmbient    {nullptr};
   QSlider* useDiffuse    {nullptr};
@@ -102,6 +108,8 @@ struct EditMaterialWidget::Private
 
     albedoColorButton  ->setIcon(makeIcon(material.albedo  ));
     specularColorButton->setIcon(makeIcon(material.specular));
+    sssColorButton     ->setIcon(makeIcon(material.sss     ));
+    emissionColorButton->setIcon(makeIcon(material.emission));
   }
 };
 
@@ -113,19 +121,22 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
   auto l = new QVBoxLayout(this);
   l->setContentsMargins(0,0,0,0);
 
-  l->addWidget(new QLabel("Name"));
-  d->nameEdit = new QLineEdit();
-  l->addWidget(d->nameEdit);
-  connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditMaterialWidget::materialEdited);
+  {
+    auto ll = new QHBoxLayout();
+    l->addLayout(ll);
+    ll->setContentsMargins(0,0,0,0);
+    ll->addWidget(new QLabel("Name"));
+    d->nameEdit = new QLineEdit();
+    ll->addWidget(d->nameEdit);
+    connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditMaterialWidget::materialEdited);
+  }
 
   {
-    l->addWidget(new QLabel("Colors"));
-
     auto ll = new QHBoxLayout();
     ll->setContentsMargins(0,0,0,0);
     l->addLayout(ll);
 
-    auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor, QSlider*& slider)
+    auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor, QSlider*& slider, float scaleMax)
     {
       auto vLayout = new QVBoxLayout();
       vLayout->setContentsMargins(0,0,0,0);
@@ -151,16 +162,15 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
 
       connect(slider, &QSlider::valueChanged, this, [=]
       {
-        double v = colorScaleFromInt(slider->value());
+        double v = colorScaleFromInt(slider->value(), scaleMax);
         if(std::fabs(v-spin->value()) > 0.0001)
           spin->setValue(v);
       });
 
       connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=]
       {
-        slider->setValue(colorScaleToInt(spin->value()));
+        slider->setValue(colorScaleToInt(spin->value(), scaleMax));
       });
-
 
       connect(button, &QAbstractButton::clicked, this, [=]
       {
@@ -179,8 +189,10 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       return button;
     };
 
-    d->albedoColorButton   = make("Albedo"  , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  );
-    d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->material.specular;}, d->specularScaleSlider);
+    d->albedoColorButton   = make("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f);
+    d->specularColorButton = make("Specular"  , [&]()->glm::vec3&{return d->material.specular;}, d->specularScaleSlider,   4.0f);
+    d->sssColorButton      = make("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,   1.0f);
+    d->emissionColorButton = make("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 100.0f);
   }
 
   auto gridLayout = new QGridLayout();
@@ -213,6 +225,27 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
   d->metalness      = addSlider("Metalness");
   d->transmission   = addSlider("Transmission");
   d->ior            = addSlider("IOR");
+
+  {
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel("Subsurface radius"), row, 0, Qt::AlignLeft);
+
+    auto ll = new QHBoxLayout();
+    gridLayout->addLayout(ll, row, 1);
+
+    auto make = [&]
+    {
+      auto spin = new QDoubleSpinBox();
+      ll->addWidget(spin);
+      spin->setRange(0.0, 100.0);
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditMaterialWidget::materialEdited);
+      return spin;
+    };
+
+    d->sssRadiusR = make();
+    d->sssRadiusG = make();
+    d->sssRadiusB = make();
+  }
 
   d->useAmbient     = addSlider("Use ambient");
   d->useDiffuse     = addSlider("Use diffuse");
@@ -369,6 +402,10 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->transmission  ->setValue(int(material.transmission   * 255000.0f));
   d->ior           ->setValue(int(material.ior            * 127000.0f));
 
+  d->sssRadiusR->setValue(material.sssRadius.x);
+  d->sssRadiusG->setValue(material.sssRadius.y);
+  d->sssRadiusB->setValue(material.sssRadius.z);
+
   d->useAmbient    ->setValue(int(material.useAmbient     * 255000.0f));
   d->useDiffuse    ->setValue(int(material.useDiffuse     * 255000.0f));
   d->useNdotL      ->setValue(int(material.useNdotL       * 255000.0f));
@@ -377,8 +414,10 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->useLightMask  ->setValue(int(material.useLightMask   * 255000.0f));
   d->useReflection ->setValue(int(material.useReflection  * 255000.0f));
 
-  d->albedoScaleSlider  ->setValue(colorScaleToInt(material.albedoScale  ));
-  d->specularScaleSlider->setValue(colorScaleToInt(material.specularScale));
+  d->albedoScaleSlider  ->setValue(colorScaleToInt(material.albedoScale  ,   4.0f));
+  d->specularScaleSlider->setValue(colorScaleToInt(material.specularScale,   4.0f));
+  d->sssSlider          ->setValue(colorScaleToInt(material.sssScale     ,   1.0f));
+  d->emissionSlider     ->setValue(colorScaleToInt(material.emissionScale, 100.0f));
 
   d->   albedoTexture ->setText(QString::fromStdString(d->material.   albedoTexture.keyString())); //!< mtl: map_Kd or map_Ka
   d-> specularTexture ->setText(QString::fromStdString(d->material. specularTexture.keyString())); //!< mtl: map_Ks
@@ -401,6 +440,10 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.transmission = float(d->transmission->value()) / 255000.0f;
   d->material.ior          = float(d->ior         ->value()) / 127000.0f;
 
+  d->material.sssRadius.x = d->sssRadiusR->value();
+  d->material.sssRadius.y = d->sssRadiusG->value();
+  d->material.sssRadius.z = d->sssRadiusB->value();
+
   d->material.useAmbient     = float(d->useAmbient    ->value()) / 255000.0f;
   d->material.useDiffuse     = float(d->useDiffuse    ->value()) / 255000.0f;
   d->material.useNdotL       = float(d->useNdotL      ->value()) / 255000.0f;
@@ -409,8 +452,10 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.useLightMask   = float(d->useLightMask  ->value()) / 255000.0f;
   d->material.useReflection  = float(d->useReflection ->value()) / 255000.0f;
 
-  d->material.albedoScale   = colorScaleFromInt(d->albedoScaleSlider->value());
-  d->material.specularScale = colorScaleFromInt(d->specularScaleSlider->value());
+  d->material.albedoScale   = colorScaleFromInt(d->albedoScaleSlider  ->value(),   4.0f);
+  d->material.specularScale = colorScaleFromInt(d->specularScaleSlider->value(),   4.0f);
+  d->material.sssScale      = colorScaleFromInt(d->sssSlider          ->value(),   1.0f);
+  d->material.emissionScale = colorScaleFromInt(d->emissionSlider     ->value(), 100.0f);
 
   d->material.   albedoTexture = d->   albedoTexture->text().toStdString(); //!< mtl: map_Kd or map_Ka
   d->material. specularTexture = d-> specularTexture->text().toStdString(); //!< mtl: map_Ks
