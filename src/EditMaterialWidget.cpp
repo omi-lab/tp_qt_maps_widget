@@ -361,19 +361,19 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
         emit materialEdited();
       });
     }
-    {
-      auto button = new QPushButton("Library");
-      hLayout->addWidget(button);
-      connect(button, &QPushButton::clicked, this, [=]
-      {
-        tp_math_utils::Material mat = material();
-        if(SelectMaterialWidget::selectMaterialDialog(this, materialLibrary(), mat))
-        {
-          setMaterial(mat);
-          emit materialEdited();
-        }
-      });
-    }
+    // {
+    //   auto button = new QPushButton("Library");
+    //   hLayout->addWidget(button);
+    //   connect(button, &QPushButton::clicked, this, [=]
+    //   {
+    //     tp_math_utils::Material mat = material();
+    //     if(SelectMaterialWidget::selectMaterialDialog(this, materialLibrary(), mat))
+    //     {
+    //       setMaterial(mat);
+    //       emit materialEdited();
+    //     }
+    //   });
+    // }
   }
 }
 
