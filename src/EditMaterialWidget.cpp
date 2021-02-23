@@ -3,6 +3,8 @@
 
 #include "tp_qt_widgets/FileDialogLineEdit.h"
 
+#include "tp_image_utils/LoadImages.h"
+
 #include "tp_utils/JSONUtils.h"
 
 #include <QDialog>
@@ -68,7 +70,8 @@ struct EditMaterialWidget::Private
   QSlider* roughness   {nullptr};
   QSlider* metalness   {nullptr};
   QSlider* transmission{nullptr};
-  QSlider* ior         {nullptr};
+
+  QDoubleSpinBox* ior{nullptr};
 
   QDoubleSpinBox* sssRadiusR{nullptr};
   QDoubleSpinBox* sssRadiusG{nullptr};
@@ -221,10 +224,22 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     return s;
   };
 
+  auto addSpin = [&](const QString& name, double min, double max)
+  {
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
+    auto s = new QDoubleSpinBox();
+    gridLayout->addWidget(s, row, 1);
+    s->setRange(min, max);
+    s->setSingleStep(0.01);
+    connect(s, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditMaterialWidget::materialEdited);
+    return s;
+  };
+
   d->roughness      = addSlider("Roughness");
   d->metalness      = addSlider("Metalness");
   d->transmission   = addSlider("Transmission");
-  d->ior            = addSlider("IOR");
+  d->ior            = addSpin("IOR", 0.0, 2.0);
 
   {
     int row = gridLayout->rowCount();
@@ -292,7 +307,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       l->addWidget(loadRadio);
       auto load = new tp_qt_widgets::FileDialogLineEdit();
       load->setMode(tp_qt_widgets::FileDialogLineEdit::OpenFileMode);
-      load->setFilter("*.png *.jpg *.jpeg *.bmp");
+      load->setFilter(QString::fromStdString(tp_image_utils::imageTypesFilter()));
       l->addWidget(load);
       load->setEnabled(false);
 
@@ -400,7 +415,7 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->roughness     ->setValue(int(material.roughness      * 255000.0f));
   d->metalness     ->setValue(int(material.metalness      * 255000.0f));
   d->transmission  ->setValue(int(material.transmission   * 255000.0f));
-  d->ior           ->setValue(int(material.ior            * 127000.0f));
+  d->ior           ->setValue(double(material.ior));
 
   d->sssRadiusR->setValue(material.sssRadius.x);
   d->sssRadiusG->setValue(material.sssRadius.y);
@@ -438,7 +453,7 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.roughness    = float(d->roughness   ->value()) / 255000.0f;
   d->material.metalness    = float(d->metalness   ->value()) / 255000.0f;
   d->material.transmission = float(d->transmission->value()) / 255000.0f;
-  d->material.ior          = float(d->ior         ->value()) / 127000.0f;
+  d->material.ior          = float(d->ior         ->value());
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
