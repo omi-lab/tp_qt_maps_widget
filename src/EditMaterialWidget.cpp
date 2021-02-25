@@ -419,7 +419,7 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->roughness     ->setValue(int(material.roughness      * 255000.0f));
   d->metalness     ->setValue(int(material.metalness      * 255000.0f));
   d->transmission  ->setValue(int(material.transmission   * 255000.0f));
-  d->heightScale   ->setValue(int(material.heightScale    *   2550.0f));
+  d->heightScale   ->setValue(int(material.heightScale    * 255000.0f));
   d->heightMidlevel->setValue(int(material.heightMidlevel * 255000.0f));
 
   d->ior           ->setValue(double(material.ior));
@@ -460,7 +460,7 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.roughness      = float(d->roughness     ->value()) / 255000.0f;
   d->material.metalness      = float(d->metalness     ->value()) / 255000.0f;
   d->material.transmission   = float(d->transmission  ->value()) / 255000.0f;
-  d->material.heightScale    = float(d->heightScale   ->value()) /   2550.0f;
+  d->material.heightScale    = float(d->heightScale   ->value()) / 255000.0f;
   d->material.heightMidlevel = float(d->heightMidlevel->value()) / 255000.0f;
 
   d->material.ior            = float(d->ior           ->value());
