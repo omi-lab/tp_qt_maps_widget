@@ -57,19 +57,19 @@ struct EditMaterialWidget::Private
   QLineEdit* nameEdit{nullptr};
 
   QPushButton* albedoColorButton  {nullptr};
-  QPushButton* specularColorButton{nullptr};
   QPushButton* sssColorButton     {nullptr};
   QPushButton* emissionColorButton{nullptr};
 
-  QSlider* albedoScaleSlider  {nullptr};
-  QSlider* specularScaleSlider{nullptr};
-  QSlider* sssSlider          {nullptr};
-  QSlider* emissionSlider     {nullptr};
+  QSlider* albedoScaleSlider   {nullptr};
+  QSlider* sssSlider           {nullptr};
+  QSlider* emissionSlider      {nullptr};
 
-  QSlider* alpha       {nullptr};
-  QSlider* roughness   {nullptr};
-  QSlider* metalness   {nullptr};
-  QSlider* transmission{nullptr};
+  QSlider* alpha         {nullptr};
+  QSlider* roughness     {nullptr};
+  QSlider* metalness     {nullptr};
+  QSlider* transmission  {nullptr};
+  QSlider* heightScale   {nullptr};
+  QSlider* heightMidlevel{nullptr};
 
   QDoubleSpinBox* ior{nullptr};
 
@@ -86,12 +86,13 @@ struct EditMaterialWidget::Private
   QSlider* useReflection {nullptr};
 
   QLineEdit*    albedoTexture{nullptr};  //!< mtl: map_Kd or map_Ka
-  QLineEdit*  specularTexture{nullptr};  //!< mtl: map_Ks
   QLineEdit*     alphaTexture{nullptr};  //!< mtl: map_d
   QLineEdit*   normalsTexture{nullptr};  //!< mtl: map_Bump
   QLineEdit* roughnessTexture{nullptr};  //!<
   QLineEdit* metalnessTexture{nullptr};  //!<
-  QLineEdit*        aoTexture{nullptr};  //!<
+  QLineEdit*  emissionTexture{nullptr};  //!<
+  QLineEdit*       sssTexture{nullptr};  //!<
+  QLineEdit*    heightTexture{nullptr};  //!<
 
   //################################################################################################
   void updateColors()
@@ -110,7 +111,6 @@ struct EditMaterialWidget::Private
     };
 
     albedoColorButton  ->setIcon(makeIcon(material.albedo  ));
-    specularColorButton->setIcon(makeIcon(material.specular));
     sssColorButton     ->setIcon(makeIcon(material.sss     ));
     emissionColorButton->setIcon(makeIcon(material.emission));
   }
@@ -154,7 +154,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       vLayout->addLayout(hLayout);
 
       auto spin = new QDoubleSpinBox();
-      spin->setRange(0.0, 4.0);
+      spin->setRange(0.0, double(scaleMax));
       spin->setDecimals(3);
       hLayout->addWidget(spin);
 
@@ -193,7 +193,6 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     };
 
     d->albedoColorButton   = make("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f);
-    d->specularColorButton = make("Specular"  , [&]()->glm::vec3&{return d->material.specular;}, d->specularScaleSlider,   4.0f);
     d->sssColorButton      = make("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,   1.0f);
     d->emissionColorButton = make("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 100.0f);
   }
@@ -239,7 +238,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
   d->roughness      = addSlider("Roughness");
   d->metalness      = addSlider("Metalness");
   d->transmission   = addSlider("Transmission");
-  d->ior            = addSpin("IOR", 0.0, 2.0);
+  d->ior            = addSpin("IOR", 0.0, 6.0);
 
   {
     int row = gridLayout->rowCount();
@@ -261,6 +260,9 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     d->sssRadiusG = make();
     d->sssRadiusB = make();
   }
+
+  d->heightScale    = addSlider("Height scale");
+  d->heightMidlevel = addSlider("Height midlevel");
 
   d->useAmbient     = addSlider("Use ambient");
   d->useDiffuse     = addSlider("Use diffuse");
@@ -293,9 +295,9 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
 
       auto existingRadio = new QRadioButton("Existing");
       l->addWidget(existingRadio);
-      existingRadio->setChecked(true);
       auto existing = new QComboBox();
       l->addWidget(existing);
+      existing->setEnabled(false);
 
       if(d->getExistingTextures)
       {
@@ -304,12 +306,13 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
       }
 
       auto loadRadio = new QRadioButton("Load");
+      loadRadio->setChecked(true);
       l->addWidget(loadRadio);
       auto load = new tp_qt_widgets::FileDialogLineEdit();
+      load->setQSettingsPath("EditMaterialWidget");
       load->setMode(tp_qt_widgets::FileDialogLineEdit::OpenFileMode);
       load->setFilter(QString::fromStdString(tp_image_utils::imageTypesFilter()));
       l->addWidget(load);
-      load->setEnabled(false);
 
       connect(loadRadio, &QRadioButton::toggled, this, [=]
       {
@@ -344,13 +347,14 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     return edit;
   };
 
-  d->   albedoTexture  = addTextureEdit("Albedo map"   ); //!< mtl: map_Kd or map_Ka
-  d-> specularTexture  = addTextureEdit("Specular map" ); //!< mtl: map_Ks
-  d->    alphaTexture  = addTextureEdit("Alpha map"    ); //!< mtl: map_d
-  d->  normalsTexture  = addTextureEdit("Normals map"  ); //!< mtl: map_Bump
-  d->roughnessTexture  = addTextureEdit("Roughness map"); //!<
-  d->metalnessTexture  = addTextureEdit("Metalness map"); //!<
-  d->       aoTexture  = addTextureEdit("AO map"       ); //!<
+  d->   albedoTexture = addTextureEdit("Albedo map"   ); //!< mtl: map_Kd or map_Ka
+  d->    alphaTexture = addTextureEdit("Alpha map"    ); //!< mtl: map_d
+  d->  normalsTexture = addTextureEdit("Normals map"  ); //!< mtl: map_Bump
+  d->roughnessTexture = addTextureEdit("Roughness map"); //!<
+  d->metalnessTexture = addTextureEdit("Metalness map"); //!<
+  d-> emissionTexture = addTextureEdit("Emission map" ); //!<
+  d->      sssTexture = addTextureEdit("SSS map"      ); //!<
+  d->   heightTexture = addTextureEdit("Height map"   ); //!<
 
   {
     auto hLayout = new QHBoxLayout();
@@ -415,6 +419,9 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->roughness     ->setValue(int(material.roughness      * 255000.0f));
   d->metalness     ->setValue(int(material.metalness      * 255000.0f));
   d->transmission  ->setValue(int(material.transmission   * 255000.0f));
+  d->heightScale   ->setValue(int(material.heightScale    *   2550.0f));
+  d->heightMidlevel->setValue(int(material.heightMidlevel * 255000.0f));
+
   d->ior           ->setValue(double(material.ior));
 
   d->sssRadiusR->setValue(material.sssRadius.x);
@@ -429,18 +436,18 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->useLightMask  ->setValue(int(material.useLightMask   * 255000.0f));
   d->useReflection ->setValue(int(material.useReflection  * 255000.0f));
 
-  d->albedoScaleSlider  ->setValue(colorScaleToInt(material.albedoScale  ,   4.0f));
-  d->specularScaleSlider->setValue(colorScaleToInt(material.specularScale,   4.0f));
-  d->sssSlider          ->setValue(colorScaleToInt(material.sssScale     ,   1.0f));
-  d->emissionSlider     ->setValue(colorScaleToInt(material.emissionScale, 100.0f));
+  d->albedoScaleSlider   ->setValue(colorScaleToInt(material.albedoScale   ,   4.0f));
+  d->sssSlider           ->setValue(colorScaleToInt(material.sssScale      ,   1.0f));
+  d->emissionSlider      ->setValue(colorScaleToInt(material.emissionScale , 100.0f));
 
-  d->   albedoTexture ->setText(QString::fromStdString(d->material.   albedoTexture.keyString())); //!< mtl: map_Kd or map_Ka
-  d-> specularTexture ->setText(QString::fromStdString(d->material. specularTexture.keyString())); //!< mtl: map_Ks
-  d->    alphaTexture ->setText(QString::fromStdString(d->material.    alphaTexture.keyString())); //!< mtl: map_d
-  d->  normalsTexture ->setText(QString::fromStdString(d->material.  normalsTexture.keyString())); //!< mtl: map_Bump
-  d->roughnessTexture ->setText(QString::fromStdString(d->material.roughnessTexture.keyString())); //!<
-  d->metalnessTexture ->setText(QString::fromStdString(d->material.metalnessTexture.keyString())); //!<
-  d->       aoTexture ->setText(QString::fromStdString(d->material.       aoTexture.keyString())); //!<
+  d->   albedoTexture->setText(QString::fromStdString(d->material.   albedoTexture.keyString())); //!< mtl: map_Kd or map_Ka
+  d->    alphaTexture->setText(QString::fromStdString(d->material.    alphaTexture.keyString())); //!< mtl: map_d
+  d->  normalsTexture->setText(QString::fromStdString(d->material.  normalsTexture.keyString())); //!< mtl: map_Bump
+  d->roughnessTexture->setText(QString::fromStdString(d->material.roughnessTexture.keyString())); //!<
+  d->metalnessTexture->setText(QString::fromStdString(d->material.metalnessTexture.keyString())); //!<
+  d-> emissionTexture->setText(QString::fromStdString(d->material. emissionTexture.keyString())); //!<
+  d->      sssTexture->setText(QString::fromStdString(d->material.      sssTexture.keyString())); //!<
+  d->   heightTexture->setText(QString::fromStdString(d->material.   heightTexture.keyString())); //!<
 }
 
 //##################################################################################################
@@ -450,10 +457,13 @@ tp_math_utils::Material EditMaterialWidget::material() const
 
   d->material.alpha        = float(d->alpha       ->value()) / 255.0f;
 
-  d->material.roughness    = float(d->roughness   ->value()) / 255000.0f;
-  d->material.metalness    = float(d->metalness   ->value()) / 255000.0f;
-  d->material.transmission = float(d->transmission->value()) / 255000.0f;
-  d->material.ior          = float(d->ior         ->value());
+  d->material.roughness      = float(d->roughness     ->value()) / 255000.0f;
+  d->material.metalness      = float(d->metalness     ->value()) / 255000.0f;
+  d->material.transmission   = float(d->transmission  ->value()) / 255000.0f;
+  d->material.heightScale    = float(d->heightScale   ->value()) /   2550.0f;
+  d->material.heightMidlevel = float(d->heightMidlevel->value()) / 255000.0f;
+
+  d->material.ior            = float(d->ior           ->value());
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
@@ -467,18 +477,18 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.useLightMask   = float(d->useLightMask  ->value()) / 255000.0f;
   d->material.useReflection  = float(d->useReflection ->value()) / 255000.0f;
 
-  d->material.albedoScale   = colorScaleFromInt(d->albedoScaleSlider  ->value(),   4.0f);
-  d->material.specularScale = colorScaleFromInt(d->specularScaleSlider->value(),   4.0f);
-  d->material.sssScale      = colorScaleFromInt(d->sssSlider          ->value(),   1.0f);
-  d->material.emissionScale = colorScaleFromInt(d->emissionSlider     ->value(), 100.0f);
+  d->material.albedoScale    = colorScaleFromInt(d->albedoScaleSlider   ->value(),   4.0f);
+  d->material.sssScale       = colorScaleFromInt(d->sssSlider           ->value(),   1.0f);
+  d->material.emissionScale  = colorScaleFromInt(d->emissionSlider      ->value(), 100.0f);
 
   d->material.   albedoTexture = d->   albedoTexture->text().toStdString(); //!< mtl: map_Kd or map_Ka
-  d->material. specularTexture = d-> specularTexture->text().toStdString(); //!< mtl: map_Ks
   d->material.    alphaTexture = d->    alphaTexture->text().toStdString(); //!< mtl: map_d
   d->material.  normalsTexture = d->  normalsTexture->text().toStdString(); //!< mtl: map_Bump
   d->material.roughnessTexture = d->roughnessTexture->text().toStdString(); //!<
   d->material.metalnessTexture = d->metalnessTexture->text().toStdString(); //!<
-  d->material.       aoTexture = d->       aoTexture->text().toStdString(); //!<
+  d->material. emissionTexture = d-> emissionTexture->text().toStdString(); //!<
+  d->material.      sssTexture = d->      sssTexture->text().toStdString(); //!<
+  d->material.   heightTexture = d->   heightTexture->text().toStdString(); //!<
 
   return d->material;
 }

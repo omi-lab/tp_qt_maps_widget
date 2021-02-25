@@ -40,108 +40,90 @@ std::vector<tp_math_utils::Material> materialLibrary()
     auto& material = materials.emplace_back();
     material.name          = "Silver polished";
     material.albedo        = toF(252, 250, 249);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.1f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Silver satin";
     material.albedo        = toF(252, 250, 249);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.4f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Silver matte";
     material.albedo        = toF(252, 250, 249);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.7f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Gold polished";
     material.albedo        = toF(243, 201, 104);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.1f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Gold satin";
     material.albedo        = toF(243, 201, 104);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.4f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Gold matte";
     material.albedo        = toF(243, 201, 104);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.7f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Copper polished";
     material.albedo        = toF(238, 158, 137);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.1f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Copper satin";
     material.albedo        = toF(238, 158, 137);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.4f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   {
     auto& material = materials.emplace_back();
     material.name          = "Copper matte";
     material.albedo        = toF(238, 158, 137);
-    material.specular      = toF(255, 255, 255);
     material.roughness     = 0.7f;
     material.metalness     = 1.0f;
     material.alpha         = 1.0f;
     material.albedoScale   = 1.0f;
-    material.specularScale = 1.0f;
   }
 
   return materials;
