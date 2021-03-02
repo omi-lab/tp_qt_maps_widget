@@ -11,7 +11,6 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
 {
   Q_OBJECT
-
 public:
   //################################################################################################
   MapWidget(QWidget* parent = nullptr);

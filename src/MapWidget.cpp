@@ -8,7 +8,7 @@
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
 
-#include <QGLFormat>
+//#include <QGLFormat>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimer>
@@ -37,7 +37,7 @@ int32_t toScancode(int key)
   return int32_t(key - Qt::Key_A) + TP_A_KEY;
 }
 
-class Map_lt : public tp_maps::Map
+class Map_lt final : public tp_maps::Map
 {
 public:
   TP_NONCOPYABLE(Map_lt);
@@ -239,10 +239,15 @@ void MapWidget::wheelEvent(QWheelEvent* event)
 {
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
 
+#if QT_VERSION < 0x060000
   e.pos.x = event->pos().x()*devicePixelRatio();
   e.pos.y = event->pos().y()*devicePixelRatio();
-
   e.delta = event->delta();
+#else
+  e.pos.x = event->position().x()*devicePixelRatio();
+  e.pos.y = event->position().y()*devicePixelRatio();
+  e.delta = event->angleDelta().y();
+#endif
 
   if(d->map->mouseEvent(e))
     event->accept();
