@@ -44,6 +44,10 @@ Q_SIGNALS:
   //! Emitted when a material is edited by the user.
   void materialEdited();
 
+protected:
+  //################################################################################################
+  bool eventFilter(QObject* watched, QEvent* event) override;
+
 private:
   struct Private;
   Private* d;

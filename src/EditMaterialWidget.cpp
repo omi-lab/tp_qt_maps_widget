@@ -6,6 +6,7 @@
 #include "tp_image_utils/LoadImages.h"
 
 #include "tp_utils/JSONUtils.h"
+#include "tp_utils/DebugUtils.h"
 
 #include <QDialog>
 #include <QBoxLayout>
@@ -25,6 +26,9 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QPainter>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
 
 namespace tp_qt_maps_widget
 {
@@ -344,6 +348,9 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
         }
       }
     });
+
+    edit->installEventFilter(this);
+
     return edit;
   };
 
@@ -537,6 +544,48 @@ bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
   }
 
   return false;
+}
+
+//##################################################################################################
+bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
+{
+  if(event->type() == QEvent::DragEnter)
+  {
+    QDragEnterEvent* e = static_cast<QDragEnterEvent*>(event);
+    auto urls = e->mimeData()->urls();
+    if(urls.size() == 1 && urls.front().isLocalFile())
+    {
+      e->acceptProposedAction();
+      return true;
+    }
+  }
+
+  else if(event->type() == QEvent::Drop)
+  {
+    QDropEvent* e = static_cast<QDropEvent*>(event);
+    auto urls = e->mimeData()->urls();
+    if(urls.size() == 1 && urls.front().isLocalFile())
+    {
+      std::string path = urls.front().path().toStdString();
+      auto text = d->loadTexture(path);
+      if(text.isValid())
+      {
+        if(watched == d->   albedoTexture) d->   albedoTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->    alphaTexture) d->    alphaTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->  normalsTexture) d->  normalsTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->roughnessTexture) d->roughnessTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->metalnessTexture) d->metalnessTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d-> emissionTexture) d-> emissionTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->      sssTexture) d->      sssTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->   heightTexture) d->   heightTexture->setText(QString::fromStdString(text.keyString()));
+        emit materialEdited();
+      }
+    }
+
+    return true;
+  }
+
+  return QWidget::eventFilter(watched, event);
 }
 
 }
