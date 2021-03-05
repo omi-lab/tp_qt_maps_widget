@@ -566,18 +566,20 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
     auto urls = e->mimeData()->urls();
     if(urls.size() == 1 && urls.front().isLocalFile())
     {
-      std::string path = urls.front().path().toStdString();
+      tpDebug() << urls.front().toString().toStdString();
+      std::string path = urls.front().toLocalFile().toStdString();
+      tpDebug() << path;
       auto text = d->loadTexture(path);
       if(text.isValid())
       {
-        if(watched == d->   albedoTexture) d->   albedoTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->    alphaTexture) d->    alphaTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->  normalsTexture) d->  normalsTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->roughnessTexture) d->roughnessTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->metalnessTexture) d->metalnessTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d-> emissionTexture) d-> emissionTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->      sssTexture) d->      sssTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->   heightTexture) d->   heightTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->   albedoTexture)d->   albedoTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->    alphaTexture)d->    alphaTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->  normalsTexture)d->  normalsTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->roughnessTexture)d->roughnessTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->metalnessTexture)d->metalnessTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d-> emissionTexture)d-> emissionTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->      sssTexture)d->      sssTexture->setText(QString::fromStdString(text.keyString()));
+        if(watched == d->   heightTexture)d->   heightTexture->setText(QString::fromStdString(text.keyString()));
         emit materialEdited();
       }
     }
