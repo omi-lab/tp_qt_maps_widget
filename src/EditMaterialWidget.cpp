@@ -566,9 +566,7 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
     auto urls = e->mimeData()->urls();
     if(urls.size() == 1 && urls.front().isLocalFile())
     {
-      tpDebug() << urls.front().toString().toStdString();
       std::string path = urls.front().toLocalFile().toStdString();
-      tpDebug() << path;
       auto text = d->loadTexture(path);
       if(text.isValid())
       {
