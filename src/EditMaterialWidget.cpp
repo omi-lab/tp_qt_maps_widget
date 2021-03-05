@@ -89,14 +89,7 @@ struct EditMaterialWidget::Private
   QSlider* useLightMask  {nullptr};
   QSlider* useReflection {nullptr};
 
-  QLineEdit*    albedoTexture{nullptr};  //!< mtl: map_Kd or map_Ka
-  QLineEdit*     alphaTexture{nullptr};  //!< mtl: map_d
-  QLineEdit*   normalsTexture{nullptr};  //!< mtl: map_Bump
-  QLineEdit* roughnessTexture{nullptr};  //!<
-  QLineEdit* metalnessTexture{nullptr};  //!<
-  QLineEdit*  emissionTexture{nullptr};  //!<
-  QLineEdit*       sssTexture{nullptr};  //!<
-  QLineEdit*    heightTexture{nullptr};  //!<
+  std::map<std::string, QLineEdit*> textureLineEdits;
 
   //################################################################################################
   void updateColors()
@@ -354,14 +347,10 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     return edit;
   };
 
-  d->   albedoTexture = addTextureEdit("Albedo map"   ); //!< mtl: map_Kd or map_Ka
-  d->    alphaTexture = addTextureEdit("Alpha map"    ); //!< mtl: map_d
-  d->  normalsTexture = addTextureEdit("Normals map"  ); //!< mtl: map_Bump
-  d->roughnessTexture = addTextureEdit("Roughness map"); //!<
-  d->metalnessTexture = addTextureEdit("Metalness map"); //!<
-  d-> emissionTexture = addTextureEdit("Emission map" ); //!<
-  d->      sssTexture = addTextureEdit("SSS map"      ); //!<
-  d->   heightTexture = addTextureEdit("Height map"   ); //!<
+  d->material.viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
+  {
+    d->textureLineEdits[type] = addTextureEdit(pretty);
+  });
 
   {
     auto hLayout = new QHBoxLayout();
@@ -387,19 +376,6 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
         emit materialEdited();
       });
     }
-    // {
-    //   auto button = new QPushButton("Library");
-    //   hLayout->addWidget(button);
-    //   connect(button, &QPushButton::clicked, this, [=]
-    //   {
-    //     tp_math_utils::Material mat = material();
-    //     if(SelectMaterialWidget::selectMaterialDialog(this, materialLibrary(), mat))
-    //     {
-    //       setMaterial(mat);
-    //       emit materialEdited();
-    //     }
-    //   });
-    // }
   }
 }
 
@@ -447,14 +423,10 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->sssSlider           ->setValue(colorScaleToInt(material.sssScale      ,   1.0f));
   d->emissionSlider      ->setValue(colorScaleToInt(material.emissionScale , 100.0f));
 
-  d->   albedoTexture->setText(QString::fromStdString(d->material.   albedoTexture.keyString())); //!< mtl: map_Kd or map_Ka
-  d->    alphaTexture->setText(QString::fromStdString(d->material.    alphaTexture.keyString())); //!< mtl: map_d
-  d->  normalsTexture->setText(QString::fromStdString(d->material.  normalsTexture.keyString())); //!< mtl: map_Bump
-  d->roughnessTexture->setText(QString::fromStdString(d->material.roughnessTexture.keyString())); //!<
-  d->metalnessTexture->setText(QString::fromStdString(d->material.metalnessTexture.keyString())); //!<
-  d-> emissionTexture->setText(QString::fromStdString(d->material. emissionTexture.keyString())); //!<
-  d->      sssTexture->setText(QString::fromStdString(d->material.      sssTexture.keyString())); //!<
-  d->   heightTexture->setText(QString::fromStdString(d->material.   heightTexture.keyString())); //!<
+  d->material.viewTypedTextures([&](const auto& type, const auto& value, const auto&)
+  {
+    d->textureLineEdits[type]->setText(QString::fromStdString(value.keyString()));
+  });
 }
 
 //##################################################################################################
@@ -488,14 +460,10 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.sssScale       = colorScaleFromInt(d->sssSlider           ->value(),   1.0f);
   d->material.emissionScale  = colorScaleFromInt(d->emissionSlider      ->value(), 100.0f);
 
-  d->material.   albedoTexture = d->   albedoTexture->text().toStdString(); //!< mtl: map_Kd or map_Ka
-  d->material.    alphaTexture = d->    alphaTexture->text().toStdString(); //!< mtl: map_d
-  d->material.  normalsTexture = d->  normalsTexture->text().toStdString(); //!< mtl: map_Bump
-  d->material.roughnessTexture = d->roughnessTexture->text().toStdString(); //!<
-  d->material.metalnessTexture = d->metalnessTexture->text().toStdString(); //!<
-  d->material. emissionTexture = d-> emissionTexture->text().toStdString(); //!<
-  d->material.      sssTexture = d->      sssTexture->text().toStdString(); //!<
-  d->material.   heightTexture = d->   heightTexture->text().toStdString(); //!<
+  d->material.updateTypedTextures([&](const auto& type, auto& value, const auto&)
+  {
+    value = d->textureLineEdits[type]->text().toStdString();
+  });
 
   return d->material;
 }
@@ -570,14 +538,14 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
       auto text = d->loadTexture(path);
       if(text.isValid())
       {
-        if(watched == d->   albedoTexture)d->   albedoTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->    alphaTexture)d->    alphaTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->  normalsTexture)d->  normalsTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->roughnessTexture)d->roughnessTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->metalnessTexture)d->metalnessTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d-> emissionTexture)d-> emissionTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->      sssTexture)d->      sssTexture->setText(QString::fromStdString(text.keyString()));
-        if(watched == d->   heightTexture)d->   heightTexture->setText(QString::fromStdString(text.keyString()));
+        for(auto i: d->textureLineEdits)
+        {
+          if(watched == i.second)
+          {
+            i.second->setText(QString::fromStdString(text.keyString()));
+            break;
+          }
+        }
         emit materialEdited();
       }
     }
