@@ -198,6 +198,7 @@ void MapWidget::paintGL()
 //##################################################################################################
 void MapWidget::mousePressEvent(QMouseEvent* event)
 {
+  tpDebug() << "mousePressEvent";
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Press);
 
   e.button = Private::convertMouseButton(event->button());
@@ -206,11 +207,13 @@ void MapWidget::mousePressEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+  tpDebug() << "mousePressEvent accepted: " << event->isAccepted();
 }
 
 //##################################################################################################
 void MapWidget::mouseMoveEvent(QMouseEvent* event)
 {
+  tpDebug() << "mouseMoveEvent";
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Move);
 
   e.button = Private::convertMouseButton(event->button());
@@ -219,11 +222,13 @@ void MapWidget::mouseMoveEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+  tpDebug() << "mouseMoveEvent accepted: " << event->isAccepted();
 }
 
 //##################################################################################################
 void MapWidget::mouseReleaseEvent(QMouseEvent* event)
 {
+  tpDebug() << "mouseReleaseEvent";
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Release);
 
   e.button = Private::convertMouseButton(event->button());
@@ -232,11 +237,13 @@ void MapWidget::mouseReleaseEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+  tpDebug() << "mouseReleaseEvent accepted: " << event->isAccepted();
 }
 
 //##################################################################################################
 void MapWidget::wheelEvent(QWheelEvent* event)
 {
+  tpDebug() << "wheelEvent";
   tp_maps::MouseEvent e(tp_maps::MouseEventType::Wheel);
 
 #if QT_VERSION < 0x060000
@@ -251,11 +258,14 @@ void MapWidget::wheelEvent(QWheelEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+
+  tpDebug() << "wheelEvent accepted: " << event->isAccepted();
 }
 
 //##################################################################################################
 void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
+  tpDebug() << "mouseDoubleClickEvent";
   tp_maps::MouseEvent e(tp_maps::MouseEventType::DoubleClick);
 
   e.button = Private::convertMouseButton(event->button());
@@ -264,6 +274,7 @@ void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
 
   if(d->map->mouseEvent(e))
     event->accept();
+  tpDebug() << "mouseDoubleClickEvent accepted: " << event->isAccepted();
 }
 
 //##################################################################################################
@@ -271,7 +282,8 @@ void MapWidget::keyPressEvent(QKeyEvent *event)
 {
   tp_maps::KeyEvent e(tp_maps::KeyEventType::Press);
   e.scancode = toScancode(event->key());
-  d->map->keyEvent(e);
+  if(d->map->keyEvent(e))
+    event->accept();
 }
 
 //##################################################################################################
@@ -279,7 +291,8 @@ void MapWidget::keyReleaseEvent(QKeyEvent *event)
 {
   tp_maps::KeyEvent e(tp_maps::KeyEventType::Release);
   e.scancode = toScancode(event->key());
-  d->map->keyEvent(e);
+  if(d->map->keyEvent(e))
+    event->accept();
 }
 
 //##################################################################################################
