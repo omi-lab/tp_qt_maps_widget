@@ -196,7 +196,6 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
 
   auto gridLayout = new QGridLayout();
   gridLayout->setContentsMargins(0,0,0,0);
-  gridLayout->setSpacing(0);
   l->addLayout(gridLayout);
 
   {
