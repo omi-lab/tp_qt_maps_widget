@@ -29,7 +29,7 @@ public:
   //! Shows a dialog to edit the light and returns true if accepted.
   static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light);
 
-signals:
+Q_SIGNALS:
   //################################################################################################
   //! Emitted when a light is edited by the user.
   void lightEdited();

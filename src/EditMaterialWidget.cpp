@@ -29,6 +29,8 @@
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
+#include <QScrollArea>
+#include <QScrollBar>
 
 namespace tp_qt_maps_widget
 {
@@ -59,6 +61,9 @@ struct EditMaterialWidget::Private
   std::function<tp_utils::StringID(const std::string&)> loadTexture;
 
   QLineEdit* nameEdit{nullptr};
+
+  QScrollArea* scroll{nullptr};
+  QWidget* scrollContents{nullptr};
 
   QPushButton* albedoColorButton  {nullptr};
   QPushButton* sssColorButton     {nullptr};
@@ -118,18 +123,32 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
   QWidget(parent),
   d(new Private())
 {
-  auto l = new QVBoxLayout(this);
-  l->setContentsMargins(0,0,0,0);
+  auto mainLayout = new QVBoxLayout(this);
+  mainLayout->setContentsMargins(0,0,0,0);
 
   {
     auto ll = new QHBoxLayout();
-    l->addLayout(ll);
+    mainLayout->addLayout(ll);
     ll->setContentsMargins(0,0,0,0);
     ll->addWidget(new QLabel("Name"));
     d->nameEdit = new QLineEdit();
     ll->addWidget(d->nameEdit);
     connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditMaterialWidget::materialEdited);
   }
+
+  d->scroll = new QScrollArea();
+  d->scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  d->scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  d->scroll->setWidgetResizable(true);
+  mainLayout->addWidget(d->scroll);
+
+  d->scrollContents = new QWidget();
+  d->scroll->setWidget(d->scrollContents);
+  d->scrollContents->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+  d->scrollContents->installEventFilter(this);
+
+  auto l = new QVBoxLayout(d->scrollContents);
+  l->setContentsMargins(4,4,4,4);
 
   {
     auto ll = new QHBoxLayout();
@@ -356,7 +375,7 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     auto hLayout = new QHBoxLayout();
     hLayout->setContentsMargins(0,0,0,0);
     hLayout->addStretch();
-    l->addLayout(hLayout);
+    mainLayout->addLayout(hLayout);
     {
       auto button = new QPushButton("Copy");
       hLayout->addWidget(button);
@@ -538,7 +557,7 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
       auto text = d->loadTexture(path);
       if(text.isValid())
       {
-        for(auto i: d->textureLineEdits)
+        for(const auto& i: d->textureLineEdits)
         {
           if(watched == i.second)
           {
@@ -551,6 +570,11 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
     }
 
     return true;
+  }
+
+  else if(event->type() == QEvent::Resize && watched == d->scrollContents)
+  {
+    d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
   }
 
   return QWidget::eventFilter(watched, event);
