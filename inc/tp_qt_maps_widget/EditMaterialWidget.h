@@ -15,7 +15,7 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialWidget : public QWidget
   Q_OBJECT
 public:
   //################################################################################################
-  EditMaterialWidget(QWidget* parent = nullptr);
+  EditMaterialWidget(const std::function<void(QLayout*)>& addButtons=std::function<void(QLayout*)>(), QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditMaterialWidget() override;

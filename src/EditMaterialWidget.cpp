@@ -119,7 +119,7 @@ struct EditMaterialWidget::Private
 };
 
 //##################################################################################################
-EditMaterialWidget::EditMaterialWidget(QWidget* parent):
+EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addButtons, QWidget* parent):
   QWidget(parent),
   d(new Private())
 {
@@ -376,6 +376,10 @@ EditMaterialWidget::EditMaterialWidget(QWidget* parent):
     hLayout->setContentsMargins(0,0,0,0);
     hLayout->addStretch();
     mainLayout->addLayout(hLayout);
+
+    if(addButtons)
+      addButtons(hLayout);
+
     {
       auto button = new QPushButton("Copy");
       hLayout->addWidget(button);
@@ -475,9 +479,9 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.useLightMask   = float(d->useLightMask  ->value()) / 255000.0f;
   d->material.useReflection  = float(d->useReflection ->value()) / 255000.0f;
 
-  d->material.albedoScale    = colorScaleFromInt(d->albedoScaleSlider   ->value(),   4.0f);
-  d->material.sssScale       = colorScaleFromInt(d->sssSlider           ->value(),   1.0f);
-  d->material.emissionScale  = colorScaleFromInt(d->emissionSlider      ->value(), 100.0f);
+  d->material.albedoScale    = colorScaleFromInt(d->albedoScaleSlider->value(),   4.0f);
+  d->material.sssScale       = colorScaleFromInt(d->sssSlider        ->value(),   1.0f);
+  d->material.emissionScale  = colorScaleFromInt(d->emissionSlider   ->value(), 100.0f);
 
   d->material.updateTypedTextures([&](const auto& type, auto& value, const auto&)
   {
