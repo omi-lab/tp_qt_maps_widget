@@ -68,17 +68,24 @@ struct EditMaterialWidget::Private
   QPushButton* albedoColorButton  {nullptr};
   QPushButton* sssColorButton     {nullptr};
   QPushButton* emissionColorButton{nullptr};
+  QPushButton* velvetColorButton  {nullptr};
 
   QSlider* albedoScaleSlider   {nullptr};
   QSlider* sssSlider           {nullptr};
   QSlider* emissionSlider      {nullptr};
+  QSlider* velvetSlider        {nullptr};
 
-  QSlider* alpha         {nullptr};
-  QSlider* roughness     {nullptr};
-  QSlider* metalness     {nullptr};
-  QSlider* transmission  {nullptr};
-  QSlider* heightScale   {nullptr};
-  QSlider* heightMidlevel{nullptr};
+  QSlider* alpha                {nullptr};
+  QSlider* roughness            {nullptr};
+  QSlider* metalness            {nullptr};
+  QSlider* transmission         {nullptr};
+  QSlider* transmissionRoughness{nullptr};
+  QSlider* sheen                {nullptr};
+  QSlider* sheenTint            {nullptr};
+  QSlider* clearCoat            {nullptr};
+  QSlider* clearCoatRoughness   {nullptr};
+  QSlider* heightScale          {nullptr};
+  QSlider* heightMidlevel       {nullptr};
 
   QDoubleSpinBox* ior{nullptr};
 
@@ -115,6 +122,7 @@ struct EditMaterialWidget::Private
     albedoColorButton  ->setIcon(makeIcon(material.albedo  ));
     sssColorButton     ->setIcon(makeIcon(material.sss     ));
     emissionColorButton->setIcon(makeIcon(material.emission));
+    velvetColorButton  ->setIcon(makeIcon(material.velvet  ));
   }
 };
 
@@ -150,33 +158,31 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
   auto l = new QVBoxLayout(d->scrollContents);
   l->setContentsMargins(4,4,4,4);
 
-  {
-    auto ll = new QHBoxLayout();
-    ll->setContentsMargins(0,0,0,0);
-    l->addLayout(ll);
+  auto gridLayout = new QGridLayout();
+  gridLayout->setContentsMargins(0,0,0,0);
+  l->addLayout(gridLayout);
 
+  {
     auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor, QSlider*& slider, float scaleMax)
     {
-      auto vLayout = new QVBoxLayout();
-      vLayout->setContentsMargins(0,0,0,0);
-      ll->addLayout(vLayout);
+      int row = gridLayout->rowCount();
 
       auto button = new QPushButton(text);
       button->setStyleSheet("text-align:left; padding-left:2;");
-      vLayout->addWidget(button);
+      gridLayout->addWidget(button, row, 0);
 
       auto hLayout = new QHBoxLayout();
       hLayout->setContentsMargins(0,0,0,0);
-      vLayout->addLayout(hLayout);
+      gridLayout->addLayout(hLayout, row, 1);
 
       auto spin = new QDoubleSpinBox();
       spin->setRange(0.0, double(scaleMax));
       spin->setDecimals(3);
-      hLayout->addWidget(spin);
+      hLayout->addWidget(spin, 1);
 
       slider = new QSlider(Qt::Horizontal);
       slider->setRange(0, 100000);
-      hLayout->addWidget(slider);
+      hLayout->addWidget(slider, 3);
       connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
 
       connect(slider, &QSlider::valueChanged, this, [=]
@@ -211,11 +217,8 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
     d->albedoColorButton   = make("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f);
     d->sssColorButton      = make("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,   1.0f);
     d->emissionColorButton = make("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 100.0f);
+    d->velvetColorButton   = make("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,   1.0f);
   }
-
-  auto gridLayout = new QGridLayout();
-  gridLayout->setContentsMargins(0,0,0,0);
-  l->addLayout(gridLayout);
 
   {
     int row = gridLayout->rowCount();
@@ -251,10 +254,15 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
     return s;
   };
 
-  d->roughness      = addSlider("Roughness");
-  d->metalness      = addSlider("Metalness");
-  d->transmission   = addSlider("Transmission");
-  d->ior            = addSpin("IOR", 0.0, 6.0);
+  d->roughness             = addSlider("Roughness");
+  d->metalness             = addSlider("Metalness");
+  d->transmission          = addSlider("Transmission");
+  d->transmissionRoughness = addSlider("Transmission roughness");
+  d->ior                   = addSpin("IOR", 0.0, 6.0);
+  d->sheen                 = addSlider("Sheen");
+  d->sheenTint             = addSlider("Sheen tint");
+  d->clearCoat             = addSlider("Clear coat");
+  d->clearCoatRoughness    = addSlider("Clear coat roughness");
 
   {
     int row = gridLayout->rowCount();
@@ -279,14 +287,6 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
 
   d->heightScale    = addSlider("Height scale");
   d->heightMidlevel = addSlider("Height midlevel");
-
-  d->useAmbient     = addSlider("Use ambient");
-  d->useDiffuse     = addSlider("Use diffuse");
-  d->useNdotL       = addSlider("Use N dot L");
-  d->useAttenuation = addSlider("Use attenuation");
-  d->useShadow      = addSlider("Use shadow");
-  d->useLightMask   = addSlider("Light mask");
-  d->useReflection  = addSlider("Use reflection");
 
   auto addTextureEdit = [&](const auto& name)
   {
@@ -371,6 +371,14 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
     d->textureLineEdits[type] = addTextureEdit(pretty);
   });
 
+  d->useAmbient     = addSlider("Use ambient");
+  d->useDiffuse     = addSlider("Use diffuse");
+  d->useNdotL       = addSlider("Use N dot L");
+  d->useAttenuation = addSlider("Use attenuation");
+  d->useShadow      = addSlider("Use shadow");
+  d->useLightMask   = addSlider("Light mask");
+  d->useReflection  = addSlider("Use reflection");
+
   {
     auto hLayout = new QHBoxLayout();
     hLayout->setContentsMargins(0,0,0,0);
@@ -400,6 +408,8 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
       });
     }
   }
+
+  d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
 }
 
 //##################################################################################################
@@ -422,13 +432,19 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->alpha    ->setValue(int(material.alpha    *255.0f));
 
-  d->roughness     ->setValue(int(material.roughness      * 255000.0f));
-  d->metalness     ->setValue(int(material.metalness      * 255000.0f));
-  d->transmission  ->setValue(int(material.transmission   * 255000.0f));
-  d->heightScale   ->setValue(int(material.heightScale    * 255000.0f));
-  d->heightMidlevel->setValue(int(material.heightMidlevel * 255000.0f));
+  d->roughness            ->setValue(int(material.roughness             * 255000.0f));
+  d->metalness            ->setValue(int(material.metalness             * 255000.0f));
+  d->transmission         ->setValue(int(material.transmission          * 255000.0f));
+  d->transmissionRoughness->setValue(int(material.transmissionRoughness * 255000.0f));
+  d->heightScale          ->setValue(int(material.heightScale           * 255000.0f));
+  d->heightMidlevel       ->setValue(int(material.heightMidlevel        * 255000.0f));
 
-  d->ior           ->setValue(double(material.ior));
+  d->ior                  ->setValue(double(material.ior));
+
+  d->sheen                ->setValue(int(material.sheen              * 255000.0f));
+  d->sheenTint            ->setValue(int(material.sheenTint          * 255000.0f));
+  d->clearCoat            ->setValue(int(material.clearCoat          * 255000.0f));
+  d->clearCoatRoughness   ->setValue(int(material.clearCoatRoughness * 255000.0f));
 
   d->sssRadiusR->setValue(material.sssRadius.x);
   d->sssRadiusG->setValue(material.sssRadius.y);
@@ -445,6 +461,7 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->albedoScaleSlider   ->setValue(colorScaleToInt(material.albedoScale   ,   4.0f));
   d->sssSlider           ->setValue(colorScaleToInt(material.sssScale      ,   1.0f));
   d->emissionSlider      ->setValue(colorScaleToInt(material.emissionScale , 100.0f));
+  d->velvetSlider        ->setValue(colorScaleToInt(material.velvetScale   ,   1.0f));
 
   d->material.viewTypedTextures([&](const auto& type, const auto& value, const auto&)
   {
@@ -459,13 +476,20 @@ tp_math_utils::Material EditMaterialWidget::material() const
 
   d->material.alpha        = float(d->alpha       ->value()) / 255.0f;
 
-  d->material.roughness      = float(d->roughness     ->value()) / 255000.0f;
-  d->material.metalness      = float(d->metalness     ->value()) / 255000.0f;
-  d->material.transmission   = float(d->transmission  ->value()) / 255000.0f;
-  d->material.heightScale    = float(d->heightScale   ->value()) / 255000.0f;
-  d->material.heightMidlevel = float(d->heightMidlevel->value()) / 255000.0f;
+  d->material.roughness             = float(d->roughness            ->value()) / 255000.0f;
+  d->material.metalness             = float(d->metalness            ->value()) / 255000.0f;
+  d->material.transmission          = float(d->transmission         ->value()) / 255000.0f;
+  d->material.transmissionRoughness = float(d->transmissionRoughness->value()) / 255000.0f;
+  d->material.heightScale           = float(d->heightScale          ->value()) / 255000.0f;
+  d->material.heightMidlevel        = float(d->heightMidlevel       ->value()) / 255000.0f;
 
-  d->material.ior            = float(d->ior           ->value());
+  d->material.ior                   = float(d->ior                  ->value());
+
+  d->material.sheen                 = float(d->sheen                ->value()) / 255000.0f;
+  d->material.sheenTint             = float(d->sheenTint            ->value()) / 255000.0f;
+  d->material.clearCoat             = float(d->clearCoat            ->value()) / 255000.0f;
+  d->material.clearCoatRoughness    = float(d->clearCoatRoughness   ->value()) / 255000.0f;
+
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
@@ -482,6 +506,7 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.albedoScale    = colorScaleFromInt(d->albedoScaleSlider->value(),   4.0f);
   d->material.sssScale       = colorScaleFromInt(d->sssSlider        ->value(),   1.0f);
   d->material.emissionScale  = colorScaleFromInt(d->emissionSlider   ->value(), 100.0f);
+  d->material.velvetScale    = colorScaleFromInt(d->velvetSlider     ->value(),   1.0f);
 
   d->material.updateTypedTextures([&](const auto& type, auto& value, const auto&)
   {
