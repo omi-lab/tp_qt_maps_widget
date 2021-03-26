@@ -199,21 +199,21 @@ EditLightWidget::EditLightWidget(QWidget* parent):
 
   d->spotLightConstant = new QDoubleSpinBox();
   ll->addWidget(d->spotLightConstant);
-  d->spotLightConstant->setRange(0.01, 5.0);
+  d->spotLightConstant->setRange(0.0, 5.0);
   d->spotLightConstant->setDecimals(2);
   d->spotLightConstant->setSingleStep(0.01);
   connect(d->spotLightConstant, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
   d->spotLightLinear = new QDoubleSpinBox();
   ll->addWidget(d->spotLightLinear);
-  d->spotLightLinear->setRange(0.01, 5.0);
+  d->spotLightLinear->setRange(0.0, 5.0);
   d->spotLightLinear->setDecimals(2);
   d->spotLightLinear->setSingleStep(0.01);
   connect(d->spotLightLinear, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
   d->spotLightQuadratic = new QDoubleSpinBox();
   ll->addWidget(d->spotLightQuadratic);
-  d->spotLightQuadratic->setRange(0.01, 5.0);
+  d->spotLightQuadratic->setRange(0.0, 5.0);
   d->spotLightQuadratic->setDecimals(2);
   d->spotLightQuadratic->setSingleStep(0.01);
   connect(d->spotLightQuadratic, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
