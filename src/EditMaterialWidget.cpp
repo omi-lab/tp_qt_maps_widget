@@ -37,20 +37,12 @@ namespace tp_qt_maps_widget
 
 namespace
 {
-
 //##################################################################################################
-int colorScaleToInt(float scale, float scaleMax)
+struct FloatEditor
 {
-  auto s = std::sqrt(scale/scaleMax);
-  return int(s*100000.0f);
-}
-
-//##################################################################################################
-float colorScaleFromInt(int scale, float scaleMax)
-{
-  auto s = float(scale) / 100000.0f;
-  return s*s*scaleMax;
-}
+  std::function<float()> get;
+  std::function<void(float)> set;
+};
 }
 
 //##################################################################################################
@@ -70,36 +62,33 @@ struct EditMaterialWidget::Private
   QPushButton* emissionColorButton{nullptr};
   QPushButton* velvetColorButton  {nullptr};
 
-  QSlider* albedoScaleSlider   {nullptr};
-  QSlider* sssSlider           {nullptr};
-  QSlider* emissionSlider      {nullptr};
-  QSlider* velvetSlider        {nullptr};
+  FloatEditor albedoScaleSlider;
+  FloatEditor sssSlider;
+  FloatEditor emissionSlider;
+  FloatEditor velvetSlider;
 
-  QSlider* alpha                {nullptr};
-  QSlider* roughness            {nullptr};
-  QSlider* metalness            {nullptr};
-  QSlider* transmission         {nullptr};
-  QSlider* transmissionRoughness{nullptr};
-  QSlider* sheen                {nullptr};
-  QSlider* sheenTint            {nullptr};
-  QSlider* clearCoat            {nullptr};
-  QSlider* clearCoatRoughness   {nullptr};
-  QSlider* heightScale          {nullptr};
-  QSlider* heightMidlevel       {nullptr};
-
-  QDoubleSpinBox* ior{nullptr};
-
+  FloatEditor alpha;
+  FloatEditor roughness;
+  FloatEditor metalness;
+  FloatEditor transmission;
+  FloatEditor transmissionRoughness;
+  FloatEditor sheen;
+  FloatEditor sheenTint;
+  FloatEditor clearCoat;
+  FloatEditor clearCoatRoughness;
+  FloatEditor heightScale;
+  FloatEditor heightMidlevel;
+  FloatEditor ior;
   QDoubleSpinBox* sssRadiusR{nullptr};
   QDoubleSpinBox* sssRadiusG{nullptr};
   QDoubleSpinBox* sssRadiusB{nullptr};
-
-  QSlider* useAmbient    {nullptr};
-  QSlider* useDiffuse    {nullptr};
-  QSlider* useNdotL      {nullptr};
-  QSlider* useAttenuation{nullptr};
-  QSlider* useShadow     {nullptr};
-  QSlider* useLightMask  {nullptr};
-  QSlider* useReflection {nullptr};
+  FloatEditor useAmbient;
+  FloatEditor useDiffuse;
+  FloatEditor useNdotL;
+  FloatEditor useAttenuation;
+  FloatEditor useShadow;
+  FloatEditor useLightMask;
+  FloatEditor useReflection;
 
   std::map<std::string, QLineEdit*> textureLineEdits;
 
@@ -162,107 +151,100 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
   gridLayout->setContentsMargins(0,0,0,0);
   l->addLayout(gridLayout);
 
+  //------------------------------------------------------------------------------------------------
+  auto makeFloatEditor = [&](float scaleMax, int row, const bool linear)
   {
-    auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor, QSlider*& slider, float scaleMax)
+    FloatEditor floatEditor;
+
+    auto hLayout = new QHBoxLayout();
+    hLayout->setContentsMargins(0,0,0,0);
+    gridLayout->addLayout(hLayout, row, 1);
+
+    auto spin = new QDoubleSpinBox();
+    spin->setRange(0.0, double(scaleMax));
+    spin->setDecimals(3);
+    hLayout->addWidget(spin, 1);
+
+    auto slider = new QSlider(Qt::Horizontal);
+    slider->setRange(0, 100000);
+    hLayout->addWidget(slider, 3);
+    connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
+
+    connect(slider, &QSlider::valueChanged, this, [=]
     {
-      int row = gridLayout->rowCount();
-
-      auto button = new QPushButton(text);
-      button->setStyleSheet("text-align:left; padding-left:2;");
-      gridLayout->addWidget(button, row, 0);
-
-      auto hLayout = new QHBoxLayout();
-      hLayout->setContentsMargins(0,0,0,0);
-      gridLayout->addLayout(hLayout, row, 1);
-
-      auto spin = new QDoubleSpinBox();
-      spin->setRange(0.0, double(scaleMax));
-      spin->setDecimals(3);
-      hLayout->addWidget(spin, 1);
-
-      slider = new QSlider(Qt::Horizontal);
-      slider->setRange(0, 100000);
-      hLayout->addWidget(slider, 3);
-      connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
-
-      connect(slider, &QSlider::valueChanged, this, [=]
+      double v = float(slider->value()) / 100000.0f;
+      v = linear?(v*scaleMax):(v*v*scaleMax);
+      if(std::fabs(v-spin->value()) > 0.0001)
       {
-        double v = colorScaleFromInt(slider->value(), scaleMax);
-        if(std::fabs(v-spin->value()) > 0.0001)
-          spin->setValue(v);
-      });
+        spin->setValue(v);
+        emit materialEdited();
+      }
+    });
 
-      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=]
-      {
-        slider->setValue(colorScaleToInt(spin->value(), scaleMax));
-      });
+    connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=]
+    {
+      auto s = float(spin->value())/scaleMax;
+      slider->setValue(int( (linear?s:std::sqrt(s))*100000.0f));
+    });
 
-      connect(button, &QAbstractButton::clicked, this, [=]
-      {
-        glm::vec3& c = getColor();
-        QColor color = QColorDialog::getColor(QColor::fromRgbF(c.x, c.y, c.z), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
-        if(color.isValid())
-        {
-          c.x = color.redF();
-          c.y = color.greenF();
-          c.z = color.blueF();
-          d->updateColors();
-          emit materialEdited();
-        }
-      });
+    floatEditor.get = [=]{return spin->value();};
+    floatEditor.set = [=](float v){spin->setValue(double(v));};
 
-      return button;
-    };
+    return floatEditor;
+  };
 
-    d->albedoColorButton   = make("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f);
-    d->sssColorButton      = make("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,   1.0f);
-    d->emissionColorButton = make("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 100.0f);
-    d->velvetColorButton   = make("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,   1.0f);
-  }
-
+  //------------------------------------------------------------------------------------------------
+  auto makeColorEdit = [&](const QString& text, const std::function<glm::vec3&()>& getColor, FloatEditor& slider, float scaleMax, const bool linear)
   {
     int row = gridLayout->rowCount();
-    gridLayout->addWidget(new QLabel("Alpha"), row, 0, Qt::AlignLeft);
-    d->alpha = new QSlider(Qt::Horizontal);
-    gridLayout->addWidget(d->alpha, row, 1);
-    d->alpha->setRange(0, 255);
-    d->alpha->setSingleStep(1);
-    connect(d->alpha, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
-  }
 
-  auto addSlider = [&](const QString& name)
+    auto button = new QPushButton(text);
+    button->setStyleSheet("text-align:left; padding-left:2;");
+    gridLayout->addWidget(button, row, 0);
+
+    slider = makeFloatEditor(scaleMax, row, linear);
+
+    connect(button, &QAbstractButton::clicked, this, [=]
+    {
+      glm::vec3& c = getColor();
+      QColor color = QColorDialog::getColor(QColor::fromRgbF(c.x, c.y, c.z), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
+      if(color.isValid())
+      {
+        c.x = color.redF();
+        c.y = color.greenF();
+        c.z = color.blueF();
+        d->updateColors();
+        emit materialEdited();
+      }
+    });
+
+    return button;
+  };
+
+  //------------------------------------------------------------------------------------------------
+  auto makeFloatEditorRow = [&](const QString& name, float scaleMax, bool linear)
   {
     int row = gridLayout->rowCount();
     gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
-    auto s = new QSlider(Qt::Horizontal);
-    gridLayout->addWidget(s, row, 1);
-    s->setRange(0, 255000);
-    s->setSingleStep(1);
-    connect(s, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
-    return s;
+    return makeFloatEditor(scaleMax, row, linear);
   };
 
-  auto addSpin = [&](const QString& name, double min, double max)
-  {
-    int row = gridLayout->rowCount();
-    gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
-    auto s = new QDoubleSpinBox();
-    gridLayout->addWidget(s, row, 1);
-    s->setRange(min, max);
-    s->setSingleStep(0.01);
-    connect(s, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditMaterialWidget::materialEdited);
-    return s;
-  };
+  d->albedoColorButton   = makeColorEdit("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f, false);
+  d->sssColorButton      = makeColorEdit("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,   1.0f, false);
+  d->emissionColorButton = makeColorEdit("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 100.0f, false);
+  d->velvetColorButton   = makeColorEdit("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,   1.0f, false);
 
-  d->roughness             = addSlider("Roughness");
-  d->metalness             = addSlider("Metalness");
-  d->transmission          = addSlider("Transmission");
-  d->transmissionRoughness = addSlider("Transmission roughness");
-  d->ior                   = addSpin("IOR", 0.0, 6.0);
-  d->sheen                 = addSlider("Sheen");
-  d->sheenTint             = addSlider("Sheen tint");
-  d->clearCoat             = addSlider("Clear coat");
-  d->clearCoatRoughness    = addSlider("Clear coat roughness");
+
+  d->alpha                 = makeFloatEditorRow("Alpha"                 , 1.0f, true);
+  d->roughness             = makeFloatEditorRow("Roughness"             , 1.0f, true);
+  d->metalness             = makeFloatEditorRow("Metalness"             , 1.0f, true);
+  d->transmission          = makeFloatEditorRow("Transmission"          , 1.0f, true);
+  d->transmissionRoughness = makeFloatEditorRow("Transmission roughness", 1.0f, true);
+  d->ior                   = makeFloatEditorRow("IOR"                   , 6.0f, true);
+  d->sheen                 = makeFloatEditorRow("Sheen"                 , 1.0f, true);
+  d->sheenTint             = makeFloatEditorRow("Sheen tint"            , 1.0f, true);
+  d->clearCoat             = makeFloatEditorRow("Clear coat"            , 1.0f, true);
+  d->clearCoatRoughness    = makeFloatEditorRow("Clear coat roughness"  , 1.0f, true);
 
   {
     int row = gridLayout->rowCount();
@@ -285,8 +267,8 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
     d->sssRadiusB = make();
   }
 
-  d->heightScale    = addSlider("Height scale");
-  d->heightMidlevel = addSlider("Height midlevel");
+  d->heightScale    = makeFloatEditorRow("Height scale"   , 1.0f, true);
+  d->heightMidlevel = makeFloatEditorRow("Height midlevel", 1.0f, true);
 
   auto addTextureEdit = [&](const auto& name)
   {
@@ -371,13 +353,13 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
     d->textureLineEdits[type] = addTextureEdit(pretty);
   });
 
-  d->useAmbient     = addSlider("Use ambient");
-  d->useDiffuse     = addSlider("Use diffuse");
-  d->useNdotL       = addSlider("Use N dot L");
-  d->useAttenuation = addSlider("Use attenuation");
-  d->useShadow      = addSlider("Use shadow");
-  d->useLightMask   = addSlider("Light mask");
-  d->useReflection  = addSlider("Use reflection");
+  d->useAmbient     = makeFloatEditorRow("Use ambient"    , 1.0f, true);
+  d->useDiffuse     = makeFloatEditorRow("Use diffuse"    , 1.0f, true);
+  d->useNdotL       = makeFloatEditorRow("Use N dot L"    , 1.0f, true);
+  d->useAttenuation = makeFloatEditorRow("Use attenuation", 1.0f, true);
+  d->useShadow      = makeFloatEditorRow("Use shadow"     , 1.0f, true);
+  d->useLightMask   = makeFloatEditorRow("Light mask"     , 1.0f, true);
+  d->useReflection  = makeFloatEditorRow("Use reflection" , 1.0f, true);
 
   {
     auto hLayout = new QHBoxLayout();
@@ -430,38 +412,35 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->updateColors();
 
-  d->alpha    ->setValue(int(material.alpha    *255.0f));
-
-  d->roughness            ->setValue(int(material.roughness             * 255000.0f));
-  d->metalness            ->setValue(int(material.metalness             * 255000.0f));
-  d->transmission         ->setValue(int(material.transmission          * 255000.0f));
-  d->transmissionRoughness->setValue(int(material.transmissionRoughness * 255000.0f));
-  d->heightScale          ->setValue(int(material.heightScale           * 255000.0f));
-  d->heightMidlevel       ->setValue(int(material.heightMidlevel        * 255000.0f));
-
-  d->ior                  ->setValue(double(material.ior));
-
-  d->sheen                ->setValue(int(material.sheen              * 255000.0f));
-  d->sheenTint            ->setValue(int(material.sheenTint          * 255000.0f));
-  d->clearCoat            ->setValue(int(material.clearCoat          * 255000.0f));
-  d->clearCoatRoughness   ->setValue(int(material.clearCoatRoughness * 255000.0f));
+  d->alpha                .set(material.alpha                );
+  d->roughness            .set(material.roughness            );
+  d->metalness            .set(material.metalness            );
+  d->transmission         .set(material.transmission         );
+  d->transmissionRoughness.set(material.transmissionRoughness);
+  d->heightScale          .set(material.heightScale          );
+  d->heightMidlevel       .set(material.heightMidlevel       );
+  d->ior                  .set(material.ior                  );
+  d->sheen                .set(material.sheen                );
+  d->sheenTint            .set(material.sheenTint            );
+  d->clearCoat            .set(material.clearCoat            );
+  d->clearCoatRoughness   .set(material.clearCoatRoughness   );
 
   d->sssRadiusR->setValue(material.sssRadius.x);
   d->sssRadiusG->setValue(material.sssRadius.y);
   d->sssRadiusB->setValue(material.sssRadius.z);
 
-  d->useAmbient    ->setValue(int(material.useAmbient     * 255000.0f));
-  d->useDiffuse    ->setValue(int(material.useDiffuse     * 255000.0f));
-  d->useNdotL      ->setValue(int(material.useNdotL       * 255000.0f));
-  d->useAttenuation->setValue(int(material.useAttenuation * 255000.0f));
-  d->useShadow     ->setValue(int(material.useShadow      * 255000.0f));
-  d->useLightMask  ->setValue(int(material.useLightMask   * 255000.0f));
-  d->useReflection ->setValue(int(material.useReflection  * 255000.0f));
+  d->useAmbient           .set(material.useAmbient           );
+  d->useDiffuse           .set(material.useDiffuse           );
+  d->useNdotL             .set(material.useNdotL             );
+  d->useAttenuation       .set(material.useAttenuation       );
+  d->useShadow            .set(material.useShadow            );
+  d->useLightMask         .set(material.useLightMask         );
+  d->useReflection        .set(material.useReflection        );
 
-  d->albedoScaleSlider   ->setValue(colorScaleToInt(material.albedoScale   ,   4.0f));
-  d->sssSlider           ->setValue(colorScaleToInt(material.sssScale      ,   1.0f));
-  d->emissionSlider      ->setValue(colorScaleToInt(material.emissionScale , 100.0f));
-  d->velvetSlider        ->setValue(colorScaleToInt(material.velvetScale   ,   1.0f));
+  d->albedoScaleSlider    .set(material.albedoScale          );
+  d->sssSlider            .set(material.sssScale             );
+  d->emissionSlider       .set(material.emissionScale        );
+  d->velvetSlider         .set(material.velvetScale          );
 
   d->material.viewTypedTextures([&](const auto& type, const auto& value, const auto&)
   {
@@ -474,39 +453,35 @@ tp_math_utils::Material EditMaterialWidget::material() const
 {
   d->material.name = d->nameEdit->text().toStdString();
 
-  d->material.alpha        = float(d->alpha       ->value()) / 255.0f;
-
-  d->material.roughness             = float(d->roughness            ->value()) / 255000.0f;
-  d->material.metalness             = float(d->metalness            ->value()) / 255000.0f;
-  d->material.transmission          = float(d->transmission         ->value()) / 255000.0f;
-  d->material.transmissionRoughness = float(d->transmissionRoughness->value()) / 255000.0f;
-  d->material.heightScale           = float(d->heightScale          ->value()) / 255000.0f;
-  d->material.heightMidlevel        = float(d->heightMidlevel       ->value()) / 255000.0f;
-
-  d->material.ior                   = float(d->ior                  ->value());
-
-  d->material.sheen                 = float(d->sheen                ->value()) / 255000.0f;
-  d->material.sheenTint             = float(d->sheenTint            ->value()) / 255000.0f;
-  d->material.clearCoat             = float(d->clearCoat            ->value()) / 255000.0f;
-  d->material.clearCoatRoughness    = float(d->clearCoatRoughness   ->value()) / 255000.0f;
-
+  d->material.alpha                 = d->alpha                .get();
+  d->material.roughness             = d->roughness            .get();
+  d->material.metalness             = d->metalness            .get();
+  d->material.transmission          = d->transmission         .get();
+  d->material.transmissionRoughness = d->transmissionRoughness.get();
+  d->material.heightScale           = d->heightScale          .get();
+  d->material.heightMidlevel        = d->heightMidlevel       .get();
+  d->material.ior                   = d->ior                  .get();
+  d->material.sheen                 = d->sheen                .get();
+  d->material.sheenTint             = d->sheenTint            .get();
+  d->material.clearCoat             = d->clearCoat            .get();
+  d->material.clearCoatRoughness    = d->clearCoatRoughness   .get();
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
   d->material.sssRadius.z = d->sssRadiusB->value();
 
-  d->material.useAmbient     = float(d->useAmbient    ->value()) / 255000.0f;
-  d->material.useDiffuse     = float(d->useDiffuse    ->value()) / 255000.0f;
-  d->material.useNdotL       = float(d->useNdotL      ->value()) / 255000.0f;
-  d->material.useAttenuation = float(d->useAttenuation->value()) / 255000.0f;
-  d->material.useShadow      = float(d->useShadow     ->value()) / 255000.0f;
-  d->material.useLightMask   = float(d->useLightMask  ->value()) / 255000.0f;
-  d->material.useReflection  = float(d->useReflection ->value()) / 255000.0f;
+  d->material.useAmbient            = d->useAmbient       .get();
+  d->material.useDiffuse            = d->useDiffuse       .get();
+  d->material.useNdotL              = d->useNdotL         .get();
+  d->material.useAttenuation        = d->useAttenuation   .get();
+  d->material.useShadow             = d->useShadow        .get();
+  d->material.useLightMask          = d->useLightMask     .get();
+  d->material.useReflection         = d->useReflection    .get();
 
-  d->material.albedoScale    = colorScaleFromInt(d->albedoScaleSlider->value(),   4.0f);
-  d->material.sssScale       = colorScaleFromInt(d->sssSlider        ->value(),   1.0f);
-  d->material.emissionScale  = colorScaleFromInt(d->emissionSlider   ->value(), 100.0f);
-  d->material.velvetScale    = colorScaleFromInt(d->velvetSlider     ->value(),   1.0f);
+  d->material.albedoScale           = d->albedoScaleSlider.get();
+  d->material.sssScale              = d->sssSlider        .get();
+  d->material.emissionScale         = d->emissionSlider   .get();
+  d->material.velvetScale           = d->velvetSlider     .get();
 
   d->material.updateTypedTextures([&](const auto& type, auto& value, const auto&)
   {
