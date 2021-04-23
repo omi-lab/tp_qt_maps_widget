@@ -172,11 +172,11 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
 
     connect(slider, &QSlider::valueChanged, this, [=]
     {
-      double v = float(slider->value()) / 100000.0f;
+      float v = float(slider->value()) / 100000.0f;
       v = linear?(v*scaleMax):(v*v*scaleMax);
-      if(std::fabs(v-spin->value()) > 0.0001)
+      if(std::fabs(v-float(spin->value())) > 0.0001f)
       {
-        spin->setValue(v);
+        spin->setValue(double(v));
         emit materialEdited();
       }
     });
