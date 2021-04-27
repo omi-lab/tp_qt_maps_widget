@@ -76,6 +76,9 @@ struct EditMaterialWidget::Private
   FloatEditor sheenTint;
   FloatEditor clearCoat;
   FloatEditor clearCoatRoughness;
+  FloatEditor iridescentFactor;
+  FloatEditor iridescentOffset;
+  FloatEditor iridescentFrequency;
   FloatEditor heightScale;
   FloatEditor heightMidlevel;
   FloatEditor ior;
@@ -235,16 +238,19 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
   d->velvetColorButton   = makeColorEdit("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,   1.0f, false);
 
 
-  d->alpha                 = makeFloatEditorRow("Alpha"                 , 1.0f, true);
-  d->roughness             = makeFloatEditorRow("Roughness"             , 1.0f, true);
-  d->metalness             = makeFloatEditorRow("Metalness"             , 1.0f, true);
-  d->transmission          = makeFloatEditorRow("Transmission"          , 1.0f, true);
-  d->transmissionRoughness = makeFloatEditorRow("Transmission roughness", 1.0f, true);
-  d->ior                   = makeFloatEditorRow("IOR"                   , 6.0f, true);
-  d->sheen                 = makeFloatEditorRow("Sheen"                 , 1.0f, true);
-  d->sheenTint             = makeFloatEditorRow("Sheen tint"            , 1.0f, true);
-  d->clearCoat             = makeFloatEditorRow("Clear coat"            , 1.0f, true);
-  d->clearCoatRoughness    = makeFloatEditorRow("Clear coat roughness"  , 1.0f, true);
+  d->alpha                 = makeFloatEditorRow("Alpha"                 ,  1.0f, true);
+  d->roughness             = makeFloatEditorRow("Roughness"             ,  1.0f, true);
+  d->metalness             = makeFloatEditorRow("Metalness"             ,  1.0f, true);
+  d->transmission          = makeFloatEditorRow("Transmission"          ,  1.0f, true);
+  d->transmissionRoughness = makeFloatEditorRow("Transmission roughness",  1.0f, true);
+  d->ior                   = makeFloatEditorRow("IOR"                   ,  6.0f, true);
+  d->sheen                 = makeFloatEditorRow("Sheen"                 ,  1.0f, true);
+  d->sheenTint             = makeFloatEditorRow("Sheen tint"            ,  1.0f, true);
+  d->clearCoat             = makeFloatEditorRow("Clear coat"            ,  1.0f, true);
+  d->clearCoatRoughness    = makeFloatEditorRow("Clear coat roughness"  ,  1.0f, true);
+  d->iridescentFactor      = makeFloatEditorRow("Iridescent factor"     ,  1.0f, true);
+  d->iridescentOffset      = makeFloatEditorRow("Iridescent offset"     ,  1.0f, true);
+  d->iridescentFrequency   = makeFloatEditorRow("Iridescent frequency"  , 20.0f, false);
 
   {
     int row = gridLayout->rowCount();
@@ -424,6 +430,9 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->sheenTint            .set(material.sheenTint            );
   d->clearCoat            .set(material.clearCoat            );
   d->clearCoatRoughness   .set(material.clearCoatRoughness   );
+  d->iridescentFactor     .set(material.iridescentFactor     );
+  d->iridescentOffset     .set(material.iridescentOffset     );
+  d->iridescentFrequency  .set(material.iridescentFrequency  );
 
   d->sssRadiusR->setValue(material.sssRadius.x);
   d->sssRadiusG->setValue(material.sssRadius.y);
@@ -465,6 +474,9 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.sheenTint             = d->sheenTint            .get();
   d->material.clearCoat             = d->clearCoat            .get();
   d->material.clearCoatRoughness    = d->clearCoatRoughness   .get();
+  d->material.iridescentFactor      = d->iridescentFactor   .get();
+  d->material.iridescentOffset      = d->iridescentOffset   .get();
+  d->material.iridescentFrequency   = d->iridescentFrequency   .get();
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
