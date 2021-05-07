@@ -49,6 +49,7 @@ struct FloatEditor
 struct EditMaterialWidget::Private
 {
   tp_math_utils::Material material;
+  TextureSupported textureSupported;
   std::function<std::vector<tp_utils::StringID>()> getExistingTextures;
   std::function<tp_utils::StringID(const std::string&)> loadTexture;
 
@@ -119,10 +120,13 @@ struct EditMaterialWidget::Private
 };
 
 //##################################################################################################
-EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addButtons, QWidget* parent):
+EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
+                                       const std::function<void(QLayout*)>& addButtons, QWidget* parent):
   QWidget(parent),
   d(new Private())
 {
+  d->textureSupported = textureSupported;
+
   auto mainLayout = new QVBoxLayout(this);
   mainLayout->setContentsMargins(0,0,0,0);
 
@@ -356,7 +360,8 @@ EditMaterialWidget::EditMaterialWidget(const std::function<void(QLayout*)>& addB
 
   d->material.viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
   {
-    d->textureLineEdits[type] = addTextureEdit(pretty);
+    if(textureSupported == TextureSupported::Yes)
+      d->textureLineEdits[type] = addTextureEdit(pretty);
   });
 
   d->useAmbient     = makeFloatEditorRow("Use ambient"    , 1.0f, true);
@@ -453,7 +458,8 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->material.viewTypedTextures([&](const auto& type, const auto& value, const auto&)
   {
-    d->textureLineEdits[type]->setText(QString::fromStdString(value.keyString()));
+    if(d->textureSupported == TextureSupported::Yes)
+      d->textureLineEdits[type]->setText(QString::fromStdString(value.keyString()));
   });
 }
 
@@ -497,7 +503,8 @@ tp_math_utils::Material EditMaterialWidget::material() const
 
   d->material.updateTypedTextures([&](const auto& type, auto& value, const auto&)
   {
-    value = d->textureLineEdits[type]->text().toStdString();
+    if(d->textureSupported == TextureSupported::Yes)
+      value = d->textureLineEdits[type]->text().toStdString();
   });
 
   return d->material;
@@ -518,6 +525,7 @@ void EditMaterialWidget::setLoadTexture(const std::function<tp_utils::StringID(c
 //##################################################################################################
 bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
                                             tp_math_utils::Material& material,
+                                            TextureSupported textureSupported,
                                             const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures,
                                             const std::function<tp_utils::StringID(const std::string&)>& loadTexture)
 {
@@ -528,7 +536,7 @@ bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
 
   auto l = new QVBoxLayout(dialog);
 
-  auto editMaterialWidget = new EditMaterialWidget();
+  auto editMaterialWidget = new EditMaterialWidget(textureSupported);
   l->addWidget(editMaterialWidget);
   editMaterialWidget->setMaterial(material);
   editMaterialWidget->setGetExistingTextures(getExistingTextures);

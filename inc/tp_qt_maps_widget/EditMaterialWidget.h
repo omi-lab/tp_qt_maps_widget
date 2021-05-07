@@ -14,8 +14,18 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialWidget : public QWidget
 {
   Q_OBJECT
 public:
+  //##################################################################################################
+  //! Use to set whether the widgets to set material textures should be available or not.
+  enum class TextureSupported
+  {
+    Yes, //!< Textures are supported for the material.
+    No   //!< Textures are not supported for the material. Don't display the widgets related to texture handling.
+  };
+
   //################################################################################################
-  EditMaterialWidget(const std::function<void(QLayout*)>& addButtons=std::function<void(QLayout*)>(), QWidget* parent = nullptr);
+  EditMaterialWidget(TextureSupported TextureSupported = TextureSupported::Yes,
+                     const std::function<void(QLayout*)>& addButtons=std::function<void(QLayout*)>(),
+                     QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditMaterialWidget() override;
@@ -36,6 +46,7 @@ public:
   //! Shows a dialog to edit the material and returns true if accepted.
   static bool editMaterialDialog(QWidget* parent,
                                  tp_math_utils::Material& material,
+                                 TextureSupported textureSupported = TextureSupported::Yes,
                                  const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures = std::function<std::vector<tp_utils::StringID>()>(),
                                  const std::function<tp_utils::StringID(const std::string&)>& loadTexture = std::function<std::string(const std::string&)>());
 
