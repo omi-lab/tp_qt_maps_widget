@@ -68,6 +68,12 @@ protected:
   //################################################################################################
   void timerEvent(QTimerEvent *event) override;
 
+  //################################################################################################
+  void hideEvent(QHideEvent* event) override;
+
+  //################################################################################################
+  void showEvent(QShowEvent* event) override;
+
 private:
   struct Private;
   Private* d;

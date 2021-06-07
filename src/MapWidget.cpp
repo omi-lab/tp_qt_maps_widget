@@ -56,6 +56,9 @@ public:
     preDelete();
   }
 
+  //################################################################################################
+  using tp_maps::Map::setVisible;
+
   // GL functions
   //################################################################################################
   void makeCurrent() final
@@ -129,6 +132,8 @@ MapWidget::MapWidget(QWidget *parent):
   //  format.setMinorVersion(2);
   //  QSurfaceFormat::setDefaultFormat(format);
   //  setFormat(format);
+
+  d->map->setVisible(false);
 }
 
 //##################################################################################################
@@ -177,7 +182,7 @@ void MapWidget::initializeGL()
     t->start(0);
   }
 
-  emit initialized();
+  Q_EMIT initialized();
 }
 
 //##################################################################################################
@@ -290,4 +295,19 @@ void MapWidget::timerEvent(QTimerEvent* event)
   if(event->timerId() == d->animationTimerID)
     d->map->animate(double(tp_utils::currentTimeMS()));
 }
+
+//##################################################################################################
+void MapWidget::hideEvent(QHideEvent* event)
+{
+  d->map->setVisible(false);
+  event->accept();
+}
+
+//##################################################################################################
+void MapWidget::showEvent(QShowEvent* event)
+{
+  d->map->setVisible(true);
+  event->accept();
+}
+
 }
