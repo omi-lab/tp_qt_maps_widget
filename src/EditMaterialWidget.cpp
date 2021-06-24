@@ -71,6 +71,7 @@ struct EditMaterialWidget::Private
   FloatEditor alpha;
   FloatEditor roughness;
   FloatEditor metalness;
+  FloatEditor specular;
   FloatEditor transmission;
   FloatEditor transmissionRoughness;
   FloatEditor sheen;
@@ -245,6 +246,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->alpha                 = makeFloatEditorRow("Alpha"                 ,  1.0f, true);
   d->roughness             = makeFloatEditorRow("Roughness"             ,  1.0f, true);
   d->metalness             = makeFloatEditorRow("Metalness"             ,  1.0f, true);
+  d->specular              = makeFloatEditorRow("Specular"              ,  1.0f, true);
   d->transmission          = makeFloatEditorRow("Transmission"          ,  1.0f, true);
   d->transmissionRoughness = makeFloatEditorRow("Transmission roughness",  1.0f, true);
   d->ior                   = makeFloatEditorRow("IOR"                   ,  6.0f, true);
@@ -426,6 +428,7 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->alpha                .set(material.alpha                );
   d->roughness            .set(material.roughness            );
   d->metalness            .set(material.metalness            );
+  d->specular             .set(material.specular             );
   d->transmission         .set(material.transmission         );
   d->transmissionRoughness.set(material.transmissionRoughness);
   d->heightScale          .set(material.heightScale          );
@@ -471,6 +474,7 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.alpha                 = d->alpha                .get();
   d->material.roughness             = d->roughness            .get();
   d->material.metalness             = d->metalness            .get();
+  d->material.specular              = d->specular             .get();
   d->material.transmission          = d->transmission         .get();
   d->material.transmissionRoughness = d->transmissionRoughness.get();
   d->material.heightScale           = d->heightScale          .get();
@@ -480,9 +484,9 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.sheenTint             = d->sheenTint            .get();
   d->material.clearCoat             = d->clearCoat            .get();
   d->material.clearCoatRoughness    = d->clearCoatRoughness   .get();
-  d->material.iridescentFactor      = d->iridescentFactor   .get();
-  d->material.iridescentOffset      = d->iridescentOffset   .get();
-  d->material.iridescentFrequency   = d->iridescentFrequency   .get();
+  d->material.iridescentFactor      = d->iridescentFactor     .get();
+  d->material.iridescentOffset      = d->iridescentOffset     .get();
+  d->material.iridescentFrequency   = d->iridescentFrequency  .get();
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
