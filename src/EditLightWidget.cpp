@@ -170,7 +170,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
           c.y = float(color.greenF());
           c.z = float(color.blueF());
           d->updateColors();
-          emit lightEdited();
+          Q_EMIT lightEdited();
         }
       });
 

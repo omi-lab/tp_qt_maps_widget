@@ -96,7 +96,7 @@ SelectMaterialWidget::SelectMaterialWidget(QWidget* parent):
   d->thumbnails->setViewMode(QListWidget::IconMode);
   d->thumbnails->setIconSize(d->iconSize);
   d->thumbnails->setResizeMode(QListWidget::Adjust);
-  connect(d->thumbnails, &QListWidget::currentRowChanged, this, [&]{d->setPreviewMaterial(material()); emit selectionChanged();});
+  connect(d->thumbnails, &QListWidget::currentRowChanged, this, [&]{d->setPreviewMaterial(material()); Q_EMIT selectionChanged();});
 
   d->geometryLayer = new tp_maps::Geometry3DLayer();
   d->preview->map()->addLayer(d->geometryLayer);

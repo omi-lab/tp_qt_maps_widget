@@ -185,7 +185,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       if(std::fabs(v-float(spin->value())) > 0.0001f)
       {
         spin->setValue(double(v));
-        emit materialEdited();
+        Q_EMIT materialEdited();
       }
     });
 
@@ -222,7 +222,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
         c.y = color.greenF();
         c.z = color.blueF();
         d->updateColors();
-        emit materialEdited();
+        Q_EMIT materialEdited();
       }
     });
 
@@ -341,7 +341,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
         if(existingRadio->isChecked() && !existing->currentText().isEmpty())
         {
           edit->setText(existing->currentText());
-          emit materialEdited();
+          Q_EMIT materialEdited();
         }
         else if(loadRadio->isChecked() && d->loadTexture)
         {
@@ -349,7 +349,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
           if(text.isValid())
           {
             edit->setText(QString::fromStdString(text.keyString()));
-            emit materialEdited();
+            Q_EMIT materialEdited();
           }
         }
       }
@@ -399,7 +399,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
         tp_math_utils::Material material;
         material.loadState(tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString()));
         setMaterial(material);
-        emit materialEdited();
+        Q_EMIT materialEdited();
       });
     }
   }
@@ -593,7 +593,7 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
             break;
           }
         }
-        emit materialEdited();
+        Q_EMIT materialEdited();
       }
     }
 
