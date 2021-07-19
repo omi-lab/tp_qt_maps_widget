@@ -87,6 +87,15 @@ struct EditMaterialWidget::Private
   QDoubleSpinBox* sssRadiusR{nullptr};
   QDoubleSpinBox* sssRadiusG{nullptr};
   QDoubleSpinBox* sssRadiusB{nullptr};
+
+  FloatEditor albedoBrightness;
+  FloatEditor albedoContrast;
+  FloatEditor albedoGamma;
+  FloatEditor albedoHue;
+  FloatEditor albedoSaturation;
+  FloatEditor albedoValue;
+  FloatEditor albedoFactor;
+
   FloatEditor useAmbient;
   FloatEditor useDiffuse;
   FloatEditor useNdotL;
@@ -106,7 +115,7 @@ struct EditMaterialWidget::Private
       image.fill(QColor(0,0,0,0));
       {
         QPainter p(&image);
-        p.setBrush(QColor::fromRgbF(c.x, c.y, c.z));
+        p.setBrush(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)));
         p.setPen(Qt::black);
         p.drawRoundedRect(2,2,20,20,2.0, 2.0);
       }
@@ -160,8 +169,10 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   l->addLayout(gridLayout);
 
   //------------------------------------------------------------------------------------------------
-  auto makeFloatEditor = [&](float scaleMax, int row, const bool linear)
+  auto makeFloatEditor = [&](float min, float scaleMax, int row, const bool linear)
   {
+    float scale = scaleMax - min;
+
     FloatEditor floatEditor;
 
     auto hLayout = new QHBoxLayout();
@@ -169,8 +180,9 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     gridLayout->addLayout(hLayout, row, 1);
 
     auto spin = new QDoubleSpinBox();
-    spin->setRange(0.0, double(scaleMax));
+    spin->setRange(double(min), double(scaleMax));
     spin->setDecimals(3);
+    spin->setSingleStep(0.01);
     hLayout->addWidget(spin, 1);
 
     auto slider = new QSlider(Qt::Horizontal);
@@ -181,22 +193,39 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     connect(slider, &QSlider::valueChanged, this, [=]
     {
       float v = float(slider->value()) / 100000.0f;
-      v = linear?(v*scaleMax):(v*v*scaleMax);
-      if(std::fabs(v-float(spin->value())) > 0.0001f)
+      v = linear?((v*scale) + min):(v*v*scale);
+      if(std::fabs(v-float(spin->value())) > 0.000001f)
       {
+        spin->blockSignals(true);
         spin->setValue(double(v));
+        spin->blockSignals(false);
         Q_EMIT materialEdited();
       }
     });
 
-    connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [=]
+    auto spinValueChanged = [=]
     {
-      auto s = float(spin->value())/scaleMax;
-      slider->setValue(int( (linear?s:std::sqrt(s))*100000.0f));
-    });
+      if(slider->isSliderDown())
+        return;
+
+      auto s = (float(spin->value())-min)/scale;
+      int newSliderValue = int((linear?s:std::sqrt(s))*100000.0f);
+      if(newSliderValue != slider->value())
+      {
+        slider->blockSignals(true);
+        slider->setValue(newSliderValue);
+        slider->blockSignals(false);
+      }
+    };
+
+    connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
 
     floatEditor.get = [=]{return spin->value();};
-    floatEditor.set = [=](float v){spin->setValue(double(v));};
+    floatEditor.set = [=](float v)
+    {
+      spin->setValue(double(v));
+      spinValueChanged();
+    };
 
     return floatEditor;
   };
@@ -210,12 +239,12 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     button->setStyleSheet("text-align:left; padding-left:2;");
     gridLayout->addWidget(button, row, 0);
 
-    slider = makeFloatEditor(scaleMax, row, linear);
+    slider = makeFloatEditor(0.0f, scaleMax, row, linear);
 
     connect(button, &QAbstractButton::clicked, this, [=]
     {
       glm::vec3& c = getColor();
-      QColor color = QColorDialog::getColor(QColor::fromRgbF(c.x, c.y, c.z), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
+      QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
       if(color.isValid())
       {
         c.x = color.redF();
@@ -230,11 +259,11 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   };
 
   //------------------------------------------------------------------------------------------------
-  auto makeFloatEditorRow = [&](const QString& name, float scaleMax, bool linear)
+  auto makeFloatEditorRow = [&](const QString& name, float min, float scaleMax, bool linear)
   {
     int row = gridLayout->rowCount();
     gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
-    return makeFloatEditor(scaleMax, row, linear);
+    return makeFloatEditor(min, scaleMax, row, linear);
   };
 
   d->albedoColorButton   = makeColorEdit("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f, false);
@@ -243,20 +272,20 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->velvetColorButton   = makeColorEdit("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,   1.0f, false);
 
 
-  d->alpha                 = makeFloatEditorRow("Alpha"                 ,  1.0f, true);
-  d->roughness             = makeFloatEditorRow("Roughness"             ,  1.0f, true);
-  d->metalness             = makeFloatEditorRow("Metalness"             ,  1.0f, true);
-  d->specular              = makeFloatEditorRow("Specular"              ,  1.0f, true);
-  d->transmission          = makeFloatEditorRow("Transmission"          ,  1.0f, true);
-  d->transmissionRoughness = makeFloatEditorRow("Transmission roughness",  1.0f, true);
-  d->ior                   = makeFloatEditorRow("IOR"                   ,  6.0f, true);
-  d->sheen                 = makeFloatEditorRow("Sheen"                 ,  1.0f, true);
-  d->sheenTint             = makeFloatEditorRow("Sheen tint"            ,  1.0f, true);
-  d->clearCoat             = makeFloatEditorRow("Clear coat"            ,  1.0f, true);
-  d->clearCoatRoughness    = makeFloatEditorRow("Clear coat roughness"  ,  1.0f, true);
-  d->iridescentFactor      = makeFloatEditorRow("Iridescent factor"     ,  1.0f, true);
-  d->iridescentOffset      = makeFloatEditorRow("Iridescent offset"     ,  1.0f, true);
-  d->iridescentFrequency   = makeFloatEditorRow("Iridescent frequency"  , 20.0f, false);
+  d->alpha                 = makeFloatEditorRow("Alpha"                 , 0.0f,  1.0f, true);
+  d->roughness             = makeFloatEditorRow("Roughness"             , 0.0f,  1.0f, true);
+  d->metalness             = makeFloatEditorRow("Metalness"             , 0.0f,  1.0f, true);
+  d->specular              = makeFloatEditorRow("Specular"              , 0.0f,  1.0f, true);
+  d->transmission          = makeFloatEditorRow("Transmission"          , 0.0f,  1.0f, true);
+  d->transmissionRoughness = makeFloatEditorRow("Transmission roughness", 0.0f,  1.0f, true);
+  d->ior                   = makeFloatEditorRow("IOR"                   , 0.0f,  6.0f, true);
+  d->sheen                 = makeFloatEditorRow("Sheen"                 , 0.0f,  1.0f, true);
+  d->sheenTint             = makeFloatEditorRow("Sheen tint"            , 0.0f,  1.0f, true);
+  d->clearCoat             = makeFloatEditorRow("Clear coat"            , 0.0f,  1.0f, true);
+  d->clearCoatRoughness    = makeFloatEditorRow("Clear coat roughness"  , 0.0f,  1.0f, true);
+  d->iridescentFactor      = makeFloatEditorRow("Iridescent factor"     , 0.0f,  1.0f, true);
+  d->iridescentOffset      = makeFloatEditorRow("Iridescent offset"     , 0.0f,  1.0f, true);
+  d->iridescentFrequency   = makeFloatEditorRow("Iridescent frequency"  , 0.0f, 20.0f, false);
 
   {
     int row = gridLayout->rowCount();
@@ -279,8 +308,16 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     d->sssRadiusB = make();
   }
 
-  d->heightScale    = makeFloatEditorRow("Height scale"   , 1.0f, true);
-  d->heightMidlevel = makeFloatEditorRow("Height midlevel", 1.0f, true);
+  d->albedoBrightness  = makeFloatEditorRow("Albedo brightness", -1.0f, 1.0f, true);
+  d->albedoContrast    = makeFloatEditorRow("Albedo contrast"  , -1.0f, 1.0f, true);
+  d->albedoGamma       = makeFloatEditorRow("Albedo gamma"     ,  0.0f, 2.0f, true);
+  d->albedoHue         = makeFloatEditorRow("Albedo hue"       ,  0.0f, 1.0f, true);
+  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation",  0.0f, 2.0f, true);
+  d->albedoValue       = makeFloatEditorRow("Albedo value"     ,  0.0f, 2.0f, true);
+  d->albedoFactor      = makeFloatEditorRow("Albedo factor"    ,  0.0f, 1.0f, true);
+
+  d->heightScale    = makeFloatEditorRow("Height scale"   , 0.0f, 1.0f, true);
+  d->heightMidlevel = makeFloatEditorRow("Height midlevel", 0.0f, 1.0f, true);
 
   auto addTextureEdit = [&](const auto& name)
   {
@@ -366,13 +403,13 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       d->textureLineEdits[type] = addTextureEdit(pretty);
   });
 
-  d->useAmbient     = makeFloatEditorRow("Use ambient"    , 1.0f, true);
-  d->useDiffuse     = makeFloatEditorRow("Use diffuse"    , 1.0f, true);
-  d->useNdotL       = makeFloatEditorRow("Use N dot L"    , 1.0f, true);
-  d->useAttenuation = makeFloatEditorRow("Use attenuation", 1.0f, true);
-  d->useShadow      = makeFloatEditorRow("Use shadow"     , 1.0f, true);
-  d->useLightMask   = makeFloatEditorRow("Light mask"     , 1.0f, true);
-  d->useReflection  = makeFloatEditorRow("Use reflection" , 1.0f, true);
+  d->useAmbient     = makeFloatEditorRow("Use ambient"    , 0.0f, 1.0f, true);
+  d->useDiffuse     = makeFloatEditorRow("Use diffuse"    , 0.0f, 1.0f, true);
+  d->useNdotL       = makeFloatEditorRow("Use N dot L"    , 0.0f, 1.0f, true);
+  d->useAttenuation = makeFloatEditorRow("Use attenuation", 0.0f, 1.0f, true);
+  d->useShadow      = makeFloatEditorRow("Use shadow"     , 0.0f, 1.0f, true);
+  d->useLightMask   = makeFloatEditorRow("Light mask"     , 0.0f, 1.0f, true);
+  d->useReflection  = makeFloatEditorRow("Use reflection" , 0.0f, 1.0f, true);
 
   {
     auto hLayout = new QHBoxLayout();
@@ -442,9 +479,17 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->iridescentOffset     .set(material.iridescentOffset     );
   d->iridescentFrequency  .set(material.iridescentFrequency  );
 
-  d->sssRadiusR->setValue(material.sssRadius.x);
-  d->sssRadiusG->setValue(material.sssRadius.y);
-  d->sssRadiusB->setValue(material.sssRadius.z);
+  d->sssRadiusR->setValue(double(material.sssRadius.x));
+  d->sssRadiusG->setValue(double(material.sssRadius.y));
+  d->sssRadiusB->setValue(double(material.sssRadius.z));
+
+  d->albedoBrightness     .set(material.albedoBrightness     );
+  d->albedoContrast       .set(material.albedoContrast       );
+  d->albedoGamma          .set(material.albedoGamma          );
+  d->albedoHue            .set(material.albedoHue            );
+  d->albedoSaturation     .set(material.albedoSaturation     );
+  d->albedoValue          .set(material.albedoValue          );
+  d->albedoFactor         .set(material.albedoFactor         );
 
   d->useAmbient           .set(material.useAmbient           );
   d->useDiffuse           .set(material.useDiffuse           );
@@ -491,6 +536,14 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
   d->material.sssRadius.z = d->sssRadiusB->value();
+
+  d->material.albedoBrightness = d->albedoBrightness.get();
+  d->material.albedoContrast   = d->albedoContrast  .get();
+  d->material.albedoGamma      = d->albedoGamma     .get();
+  d->material.albedoHue        = d->albedoHue       .get();
+  d->material.albedoSaturation = d->albedoSaturation.get();
+  d->material.albedoValue      = d->albedoValue     .get();
+  d->material.albedoFactor     = d->albedoFactor    .get();
 
   d->material.useAmbient            = d->useAmbient       .get();
   d->material.useDiffuse            = d->useDiffuse       .get();
