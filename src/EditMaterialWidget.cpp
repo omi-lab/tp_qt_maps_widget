@@ -215,6 +215,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
         slider->blockSignals(true);
         slider->setValue(newSliderValue);
         slider->blockSignals(false);
+        Q_EMIT materialEdited();
       }
     };
 
