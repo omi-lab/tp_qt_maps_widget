@@ -45,12 +45,7 @@ struct EditLightWidget::Private
   QDoubleSpinBox* spotLightLinear   {nullptr};
   QDoubleSpinBox* spotLightQuadratic{nullptr};
 
-
-  QDoubleSpinBox* spotLightUVX{nullptr};
-  QDoubleSpinBox* spotLightUVY{nullptr};
-
-  QDoubleSpinBox* spotLightWHX{nullptr};
-  QDoubleSpinBox* spotLightWHY{nullptr};
+  QDoubleSpinBox* spotLightBlend{nullptr};
 
   QDoubleSpinBox* near      {nullptr};
   QDoubleSpinBox* far       {nullptr};
@@ -241,13 +236,8 @@ EditLightWidget::EditLightWidget(QWidget* parent):
       return spin;
     };
 
-    addRow("Spot light UV");
-    d->spotLightUVX = make();
-    d->spotLightUVY = make();
-
-    addRow("Spot light WH");
-    d->spotLightWHX = make();
-    d->spotLightWHY = make();
+    addRow("Spot light blend");
+    d->spotLightBlend = make();
   }
 
   {
@@ -349,11 +339,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
   setValue(d->spotLightLinear   , light.linear   );
   setValue(d->spotLightQuadratic, light.quadratic);
 
-  setValue(d->spotLightUVX, light.spotLightUV.x);
-  setValue(d->spotLightUVY, light.spotLightUV.y);
-
-  setValue(d->spotLightWHX, light.spotLightWH.x);
-  setValue(d->spotLightWHY, light.spotLightWH.y);
+  setValue(d->spotLightBlend, light.spotLightBlend);
 
   setValue(d->near       , light.near       );
   setValue(d->far        , light.far        );
@@ -392,11 +378,7 @@ tp_math_utils::Light EditLightWidget::light() const
   d->light.linear    = float(d->spotLightLinear   ->value());
   d->light.quadratic = float(d->spotLightQuadratic->value());
 
-  d->light.spotLightUV.x = float(d->spotLightUVX->value());
-  d->light.spotLightUV.y = float(d->spotLightUVY->value());
-
-  d->light.spotLightWH.x = float(d->spotLightWHX->value());
-  d->light.spotLightWH.y = float(d->spotLightWHY->value());
+  d->light.spotLightBlend = float(d->spotLightBlend->value());
 
   d->light.near        = float(d->near->value());
   d->light.far         = float(d->far->value());
