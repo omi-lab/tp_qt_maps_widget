@@ -96,6 +96,17 @@ struct EditMaterialWidget::Private
   FloatEditor albedoValue;
   FloatEditor albedoFactor;
 
+  FloatEditor skewU;
+  FloatEditor skewV;
+
+  FloatEditor scaleU;
+  FloatEditor scaleV;
+
+  FloatEditor translateU;
+  FloatEditor translateV;
+
+  FloatEditor rotateUV;
+
   FloatEditor useAmbient;
   FloatEditor useDiffuse;
   FloatEditor useNdotL;
@@ -267,12 +278,22 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     return makeFloatEditor(min, scaleMax, row, linear);
   };
 
+  //------------------------------------------------------------------------------------------------
+  auto addTitle = [&](const QString& name)
+  {
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(name)), row, 0, 1, 2, Qt::AlignLeft);
+  };
+
+
+  addTitle("Colors");
   d->albedoColorButton   = makeColorEdit("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,   4.0f, false);
   d->sssColorButton      = makeColorEdit("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,   1.0f, false);
   d->emissionColorButton = makeColorEdit("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 100.0f, false);
   d->velvetColorButton   = makeColorEdit("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,   1.0f, false);
 
 
+  addTitle("Material Properties");
   d->alpha                 = makeFloatEditorRow("Alpha"                 , 0.0f,  1.0f, true);
   d->roughness             = makeFloatEditorRow("Roughness"             , 0.0f,  1.0f, true);
   d->metalness             = makeFloatEditorRow("Metalness"             , 0.0f,  1.0f, true);
@@ -309,6 +330,8 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     d->sssRadiusB = make();
   }
 
+
+  addTitle("Albedo Color Modification");
   d->albedoBrightness  = makeFloatEditorRow("Albedo brightness", -1.0f, 1.0f, true);
   d->albedoContrast    = makeFloatEditorRow("Albedo contrast"  , -1.0f, 1.0f, true);
   d->albedoGamma       = makeFloatEditorRow("Albedo gamma"     ,  0.0f, 2.0f, true);
@@ -317,9 +340,26 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->albedoValue       = makeFloatEditorRow("Albedo value"     ,  0.0f, 2.0f, true);
   d->albedoFactor      = makeFloatEditorRow("Albedo factor"    ,  0.0f, 1.0f, true);
 
+
+  addTitle("Displacement");
   d->heightScale    = makeFloatEditorRow("Height scale"   , 0.0f, 1.0f, true);
   d->heightMidlevel = makeFloatEditorRow("Height midlevel", 0.0f, 1.0f, true);
 
+
+  addTitle("Texture Transformation");
+  d->skewU      = makeFloatEditorRow("Skew U"     ,  -70.00f,  70.0f, true );
+  d->skewV      = makeFloatEditorRow("Skew V"     ,  -70.00f,  70.0f, true );
+
+  d->scaleU     = makeFloatEditorRow("Scale U"    ,    0.01f,  10.0f, false);
+  d->scaleV     = makeFloatEditorRow("Scale V"    ,    0.01f,  10.0f, false);
+
+  d->translateU = makeFloatEditorRow("Translate U",    0.00f,   5.0f, true );
+  d->translateV = makeFloatEditorRow("Translate V",    0.00f,   5.0f, true );
+
+  d->rotateUV   = makeFloatEditorRow("Rotate UV"  , -180.00f, 180.0f, true );
+
+
+  addTitle("Texture Maps");
   auto addTextureEdit = [&](const auto& name)
   {
     int row = gridLayout->rowCount();
@@ -404,6 +444,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       d->textureLineEdits[type] = addTextureEdit(pretty);
   });
 
+  addTitle("OpenGL Shading Calculation");
   d->useAmbient     = makeFloatEditorRow("Use ambient"    , 0.0f, 1.0f, true);
   d->useDiffuse     = makeFloatEditorRow("Use diffuse"    , 0.0f, 1.0f, true);
   d->useNdotL       = makeFloatEditorRow("Use N dot L"    , 0.0f, 1.0f, true);
@@ -492,6 +533,17 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->albedoValue          .set(material.albedoValue          );
   d->albedoFactor         .set(material.albedoFactor         );
 
+  d->skewU                .set(material.skewUV.x             );
+  d->skewV                .set(material.skewUV.y             );
+
+  d->scaleU               .set(material.scaleUV.x            );
+  d->scaleV               .set(material.scaleUV.y            );
+
+  d->translateU           .set(material.translateUV.x        );
+  d->translateV           .set(material.translateUV.y        );
+
+  d->rotateUV             .set(material.rotateUV             );
+
   d->useAmbient           .set(material.useAmbient           );
   d->useDiffuse           .set(material.useDiffuse           );
   d->useNdotL             .set(material.useNdotL             );
@@ -545,6 +597,17 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.albedoSaturation = d->albedoSaturation.get();
   d->material.albedoValue      = d->albedoValue     .get();
   d->material.albedoFactor     = d->albedoFactor    .get();
+
+  d->material.skewUV.x         = d->skewU           .get();
+  d->material.skewUV.y         = d->skewV           .get();
+
+  d->material.scaleUV.x        = d->scaleU          .get();
+  d->material.scaleUV.y        = d->scaleV          .get();
+
+  d->material.translateUV.x    = d->translateU      .get();
+  d->material.translateUV.y    = d->translateV      .get();
+
+  d->material.rotateUV         = d->rotateUV        .get();
 
   d->material.useAmbient            = d->useAmbient       .get();
   d->material.useDiffuse            = d->useDiffuse       .get();
