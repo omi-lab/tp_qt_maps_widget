@@ -1,4 +1,5 @@
 #include "tp_qt_maps_widget/MapWidget.h"
+#include "tp_qt_maps_widget/ConnectContext.h"
 
 #include "tp_qt_maps/Globals.h"
 
@@ -9,7 +10,6 @@
 #include "tp_utils/TimeUtils.h"
 #include "tp_utils/StackTrace.h"
 
-#include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimer>
@@ -202,7 +202,7 @@ void MapWidget::initializeGL()
   if(d->aboutToBeDestroyedConnection)
     disconnect(d->aboutToBeDestroyedConnection);
 
-  d->aboutToBeDestroyedConnection = connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, [&]
+  d->aboutToBeDestroyedConnection = connectContext(context(), this, [&]
   {
     d->map->invalidateBuffers();
   });
