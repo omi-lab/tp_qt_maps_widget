@@ -7,8 +7,9 @@
 
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
+#include "tp_utils/StackTrace.h"
 
-//#include <QGLFormat>
+#include <QOpenGLContext>
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QTimer>
@@ -59,23 +60,33 @@ public:
   //################################################################################################
   using tp_maps::Map::setVisible;
 
+  //################################################################################################
+  using tp_maps::Map::invalidateBuffers;
+
   // GL functions
   //################################################################################################
   void makeCurrent() final
   {
-    if(!inPaint)
+    if(inPaint() == nullptr)
+    {
+      assert(mapWidget->isValid());
       mapWidget->makeCurrent();
+    }
+    else if(inPaint() != this)
+    {
+      tpWarning() << "Nested makeCurrent() call for a different context.";
+      tp_utils::printStackTrace();
+    }
   }
 
   //################################################################################################
   void update() final
   {
-    if(!inPaint)
+    if(!inPaint())
       mapWidget->update();
   }
 
   MapWidget* mapWidget;
-  bool inPaint{false};
 };
 }
 
@@ -89,6 +100,8 @@ struct MapWidget::Private
   Map_lt* map;
 
   int animationTimerID{-1};
+
+  QMetaObject::Connection aboutToBeDestroyedConnection;
 
   //################################################################################################
   Private(MapWidget* q_):
@@ -115,6 +128,7 @@ struct MapWidget::Private
     default:               return tp_maps::Button::NoButton;
     }
   }
+
 };
 
 
@@ -139,6 +153,7 @@ MapWidget::MapWidget(QWidget *parent):
 //##################################################################################################
 MapWidget::~MapWidget()
 {
+  disconnect(d->aboutToBeDestroyedConnection);
   delete d;
 }
 
@@ -183,6 +198,14 @@ void MapWidget::initializeGL()
   }
 
   Q_EMIT initialized();
+
+  if(d->aboutToBeDestroyedConnection)
+    disconnect(d->aboutToBeDestroyedConnection);
+
+  d->aboutToBeDestroyedConnection = connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, [&]
+  {
+    d->map->invalidateBuffers();
+  });
 }
 
 //##################################################################################################
@@ -195,9 +218,7 @@ void MapWidget::resizeGL(int width, int height)
 void MapWidget::paintGL()
 {
   d->map->makeCurrent();
-  d->map->inPaint=true;
   d->map->paintGL();
-  d->map->inPaint=false;
 }
 
 //##################################################################################################
