@@ -217,7 +217,7 @@ void MapWidget::resizeGL(int width, int height)
 //##################################################################################################
 void MapWidget::paintGL()
 {
-  d->map->makeCurrent();
+  //d->map->makeCurrent();
   d->map->paintGL();
 }
 
