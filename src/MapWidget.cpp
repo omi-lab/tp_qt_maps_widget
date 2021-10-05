@@ -80,8 +80,10 @@ public:
   }
 
   //################################################################################################
-  void update() final
+  void update(tp_maps::RenderFromStage renderFromStage=tp_maps::RenderFromStage::Stage0) final
   {
+    tp_maps::Map::update(renderFromStage);
+
     if(!inPaint())
       mapWidget->update();
   }
