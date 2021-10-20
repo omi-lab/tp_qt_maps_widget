@@ -13,6 +13,7 @@
 #include <QGridLayout>
 #include <QLabel>
 #include <QComboBox>
+#include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QRadioButton>
 #include <QSlider>
@@ -42,6 +43,13 @@ struct FloatEditor
 {
   std::function<float()> get;
   std::function<void(float)> set;
+};
+
+//##################################################################################################
+struct BoolEditor
+{
+  std::function<bool()> get;
+  std::function<void(bool)> set;
 };
 }
 
@@ -114,6 +122,13 @@ struct EditMaterialWidget::Private
   FloatEditor useShadow;
   FloatEditor useLightMask;
   FloatEditor useReflection;
+
+  BoolEditor rayVisibilitityCamera      ;
+  BoolEditor rayVisibilitityDiffuse     ;
+  BoolEditor rayVisibilitityGlossy      ;
+  BoolEditor rayVisibilitityTransmission;
+  BoolEditor rayVisibilitityScatter     ;
+  BoolEditor rayVisibilitityShadow      ;
 
   std::map<std::string, QLineEdit*> textureLineEdits;
 
@@ -276,6 +291,24 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     int row = gridLayout->rowCount();
     gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
     return makeFloatEditor(min, scaleMax, row, linear);
+  };
+
+  //------------------------------------------------------------------------------------------------
+  auto makeBoolEditorRow = [&](const QString& name)
+  {
+    BoolEditor boolEditor;
+
+    int row = gridLayout->rowCount();
+
+    auto check = new QCheckBox(name);
+    gridLayout->addWidget(check, row, 1);
+
+    connect(check, &QCheckBox::toggled, this, &EditMaterialWidget::materialEdited);
+
+    boolEditor.get = [=]{return check->isChecked();};
+    boolEditor.set = [=](bool v){check->setChecked(v);};
+
+    return boolEditor;
   };
 
   //------------------------------------------------------------------------------------------------
@@ -453,6 +486,14 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->useLightMask   = makeFloatEditorRow("Light mask"     , 0.0f, 1.0f, true);
   d->useReflection  = makeFloatEditorRow("Use reflection" , 0.0f, 1.0f, true);
 
+  addTitle("Ray Visibility");
+  d->rayVisibilitityCamera       = makeBoolEditorRow("Camera"        );
+  d->rayVisibilitityDiffuse      = makeBoolEditorRow("Diffuse"       );
+  d->rayVisibilitityGlossy       = makeBoolEditorRow("Glossy"        );
+  d->rayVisibilitityTransmission = makeBoolEditorRow("Transmission"  );
+  d->rayVisibilitityScatter      = makeBoolEditorRow("Volume scatter");
+  d->rayVisibilitityShadow       = makeBoolEditorRow("Shadow"        );
+
   {
     auto hLayout = new QHBoxLayout();
     hLayout->setContentsMargins(0,0,0,0);
@@ -552,6 +593,13 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->useLightMask         .set(material.useLightMask         );
   d->useReflection        .set(material.useReflection        );
 
+  d->rayVisibilitityCamera      .set(material.rayVisibilitityCamera      );
+  d->rayVisibilitityDiffuse     .set(material.rayVisibilitityDiffuse     );
+  d->rayVisibilitityGlossy      .set(material.rayVisibilitityGlossy      );
+  d->rayVisibilitityTransmission.set(material.rayVisibilitityTransmission);
+  d->rayVisibilitityScatter     .set(material.rayVisibilitityScatter     );
+  d->rayVisibilitityShadow      .set(material.rayVisibilitityShadow      );
+
   d->albedoScaleSlider    .set(material.albedoScale          );
   d->sssSlider            .set(material.sssScale             );
   d->emissionSlider       .set(material.emissionScale        );
@@ -616,6 +664,13 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.useShadow             = d->useShadow        .get();
   d->material.useLightMask          = d->useLightMask     .get();
   d->material.useReflection         = d->useReflection    .get();
+
+  d->material.rayVisibilitityCamera       = d->rayVisibilitityCamera      .get();
+  d->material.rayVisibilitityDiffuse      = d->rayVisibilitityDiffuse     .get();
+  d->material.rayVisibilitityGlossy       = d->rayVisibilitityGlossy      .get();
+  d->material.rayVisibilitityTransmission = d->rayVisibilitityTransmission.get();
+  d->material.rayVisibilitityScatter      = d->rayVisibilitityScatter     .get();
+  d->material.rayVisibilitityShadow       = d->rayVisibilitityShadow      .get();
 
   d->material.albedoScale           = d->albedoScaleSlider.get();
   d->material.sssScale              = d->sssSlider        .get();
