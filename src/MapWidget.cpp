@@ -20,6 +20,16 @@ namespace
 {
 
 //##################################################################################################
+tp_maps::KeyboardModifier convertKeyboardModifiers(Qt::KeyboardModifiers modifiers)
+{
+  tp_maps::KeyboardModifier m{tp_maps::KeyboardModifier::None};
+  if(modifiers & Qt::ShiftModifier  ) m = m | tp_maps::KeyboardModifier::Shift;
+  if(modifiers & Qt::ControlModifier) m = m | tp_maps::KeyboardModifier::Control;
+  if(modifiers & Qt::AltModifier    ) m = m | tp_maps::KeyboardModifier::Alt;
+  return m;
+}
+
+//##################################################################################################
 int32_t toScancode(int key)
 {
   switch(key)
@@ -232,6 +242,8 @@ void MapWidget::mousePressEvent(QMouseEvent* event)
   e.pos.x = event->pos().x()*devicePixelRatio();
   e.pos.y = event->pos().y()*devicePixelRatio();
 
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
+
   if(d->map->mouseEvent(e))
     event->accept();
 }
@@ -245,6 +257,8 @@ void MapWidget::mouseMoveEvent(QMouseEvent* event)
   e.pos.x = event->pos().x()*devicePixelRatio();
   e.pos.y = event->pos().y()*devicePixelRatio();
 
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
+
   if(d->map->mouseEvent(e))
     event->accept();
 }
@@ -257,6 +271,8 @@ void MapWidget::mouseReleaseEvent(QMouseEvent* event)
   e.button = Private::convertMouseButton(event->button());
   e.pos.x = event->pos().x()*devicePixelRatio();
   e.pos.y = event->pos().y()*devicePixelRatio();
+
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
 
   if(d->map->mouseEvent(e))
     event->accept();
@@ -277,6 +293,8 @@ void MapWidget::wheelEvent(QWheelEvent* event)
   e.delta = event->angleDelta().y();
 #endif
 
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
+
   if(d->map->mouseEvent(e))
     event->accept();
 }
@@ -290,6 +308,8 @@ void MapWidget::mouseDoubleClickEvent(QMouseEvent* event)
   e.pos.x = event->pos().x()*devicePixelRatio();
   e.pos.y = event->pos().y()*devicePixelRatio();
 
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
+
   if(d->map->mouseEvent(e))
     event->accept();
 }
@@ -299,6 +319,7 @@ void MapWidget::keyPressEvent(QKeyEvent *event)
 {
   tp_maps::KeyEvent e(tp_maps::KeyEventType::Press);
   e.scancode = toScancode(event->key());
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
   if(d->map->keyEvent(e))
     event->accept();
 }
@@ -308,6 +329,7 @@ void MapWidget::keyReleaseEvent(QKeyEvent *event)
 {
   tp_maps::KeyEvent e(tp_maps::KeyEventType::Release);
   e.scancode = toScancode(event->key());
+  e.modifiers = convertKeyboardModifiers(event->modifiers());
   if(d->map->keyEvent(e))
     event->accept();
 }
