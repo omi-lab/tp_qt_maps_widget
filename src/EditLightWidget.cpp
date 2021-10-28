@@ -186,7 +186,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     connect(d->diffuseScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
   }
 
-  l->addWidget(new QLabel("Spot light constant, linear, and quadratic"));
+  l->addWidget(new QLabel("Spot light constant, linear and quadratic attenuation coefficients"));
 
   auto ll = new QHBoxLayout();
   ll->setContentsMargins(0,0,0,0);
