@@ -213,6 +213,13 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   d->spotLightQuadratic->setSingleStep(0.01);
   connect(d->spotLightQuadratic, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
 
+  // A fixed formula is used for light attenuation model.
+  d->spotLightConstant->setDisabled(true);
+  d->spotLightConstant->setToolTip("A fixed formula is used");
+  d->spotLightLinear->setDisabled(true);
+  d->spotLightLinear->setToolTip("A fixed formula is used");
+  d->spotLightQuadratic->setDisabled(true);
+  d->spotLightQuadratic->setToolTip("A fixed formula is used");
 
   {
     QHBoxLayout* ll{nullptr};
