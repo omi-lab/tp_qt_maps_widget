@@ -90,7 +90,7 @@ public:
   }
 
   //################################################################################################
-  void update(tp_maps::RenderFromStage renderFromStage=tp_maps::RenderFromStage::Stage0) final
+  void update(tp_maps::RenderFromStage renderFromStage=tp_maps::RenderFromStage::Full) final
   {
     tp_maps::Map::update(renderFromStage);
 
