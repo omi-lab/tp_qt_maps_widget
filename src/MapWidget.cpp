@@ -62,7 +62,7 @@ public:
   }
 
   //################################################################################################
-  ~Map_lt() final
+  ~Map_lt() override
   {
     preDelete();
   }
@@ -75,7 +75,7 @@ public:
 
   // GL functions
   //################################################################################################
-  void makeCurrent() final
+  void makeCurrent() override
   {
     if(inPaint() == nullptr)
     {
@@ -90,7 +90,7 @@ public:
   }
 
   //################################################################################################
-  void update(tp_maps::RenderFromStage renderFromStage=tp_maps::RenderFromStage::Full) final
+  void update(tp_maps::RenderFromStage renderFromStage=tp_maps::RenderFromStage::Full) override
   {
     tp_maps::Map::update(renderFromStage);
 
