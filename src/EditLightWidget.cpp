@@ -321,7 +321,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
 
   d->light = light;
 
-  d->nameEdit->setText(QString::fromStdString(light.name.keyString()));
+  d->nameEdit->setText(QString::fromStdString(light.name.toString()));
 
   d->typeCombo->setCurrentText(QString::fromStdString(tp_math_utils::lightTypeToString(light.type)));
 

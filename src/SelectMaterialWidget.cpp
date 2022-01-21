@@ -56,7 +56,7 @@ struct SelectMaterialWidget::Private
     }
 
     thumbnail.addPixmap(QPixmap::fromImage(tp_qt_maps::convertTexture(image)));
-    thumbnails->addItem(new QListWidgetItem(thumbnail, QString::fromStdString(material.name.keyString())));
+    thumbnails->addItem(new QListWidgetItem(thumbnail, QString::fromStdString(material.name.toString())));
 
     materials.push_back(material);
   }

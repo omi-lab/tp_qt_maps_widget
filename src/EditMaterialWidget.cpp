@@ -123,12 +123,13 @@ struct EditMaterialWidget::Private
   FloatEditor useLightMask;
   FloatEditor useReflection;
 
-  BoolEditor rayVisibilitityCamera      ;
-  BoolEditor rayVisibilitityDiffuse     ;
-  BoolEditor rayVisibilitityGlossy      ;
-  BoolEditor rayVisibilitityTransmission;
-  BoolEditor rayVisibilitityScatter     ;
-  BoolEditor rayVisibilitityShadow      ;
+  BoolEditor rayVisibilitityCamera       ;
+  BoolEditor rayVisibilitityDiffuse      ;
+  BoolEditor rayVisibilitityGlossy       ;
+  BoolEditor rayVisibilitityTransmission ;
+  BoolEditor rayVisibilitityScatter      ;
+  BoolEditor rayVisibilitityShadow       ;
+  BoolEditor rayVisibilitityShadowCatcher;
 
   std::map<std::string, QLineEdit*> textureLineEdits;
 
@@ -423,7 +424,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       if(d->getExistingTextures)
       {
         for(const auto& name : d->getExistingTextures())
-          existing->addItem(QString::fromStdString(name.keyString()));
+          existing->addItem(QString::fromStdString(name.toString()));
       }
 
       auto loadRadio = new QRadioButton("Load");
@@ -459,7 +460,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
           auto text = d->loadTexture(load->text().toStdString());
           if(text.isValid())
           {
-            edit->setText(QString::fromStdString(text.keyString()));
+            edit->setText(QString::fromStdString(text.toString()));
             Q_EMIT materialEdited();
           }
         }
@@ -487,12 +488,13 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->useReflection  = makeFloatEditorRow("Use reflection" , 0.0f, 1.0f, true);
 
   addTitle("Ray Visibility");
-  d->rayVisibilitityCamera       = makeBoolEditorRow("Camera"        );
-  d->rayVisibilitityDiffuse      = makeBoolEditorRow("Diffuse"       );
-  d->rayVisibilitityGlossy       = makeBoolEditorRow("Glossy"        );
-  d->rayVisibilitityTransmission = makeBoolEditorRow("Transmission"  );
-  d->rayVisibilitityScatter      = makeBoolEditorRow("Volume scatter");
-  d->rayVisibilitityShadow       = makeBoolEditorRow("Shadow"        );
+  d->rayVisibilitityCamera        = makeBoolEditorRow("Camera"        );
+  d->rayVisibilitityDiffuse       = makeBoolEditorRow("Diffuse"       );
+  d->rayVisibilitityGlossy        = makeBoolEditorRow("Glossy"        );
+  d->rayVisibilitityTransmission  = makeBoolEditorRow("Transmission"  );
+  d->rayVisibilitityScatter       = makeBoolEditorRow("Volume scatter");
+  d->rayVisibilitityShadow        = makeBoolEditorRow("Shadow"        );
+  d->rayVisibilitityShadowCatcher = makeBoolEditorRow("Shadow catcher");
 
   {
     auto hLayout = new QHBoxLayout();
@@ -541,7 +543,7 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->material = material;
 
-  d->nameEdit->setText(QString::fromStdString(material.name.keyString()));
+  d->nameEdit->setText(QString::fromStdString(material.name.toString()));
 
   d->updateColors();
 
@@ -593,12 +595,13 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->useLightMask         .set(material.useLightMask         );
   d->useReflection        .set(material.useReflection        );
 
-  d->rayVisibilitityCamera      .set(material.rayVisibilitityCamera      );
-  d->rayVisibilitityDiffuse     .set(material.rayVisibilitityDiffuse     );
-  d->rayVisibilitityGlossy      .set(material.rayVisibilitityGlossy      );
-  d->rayVisibilitityTransmission.set(material.rayVisibilitityTransmission);
-  d->rayVisibilitityScatter     .set(material.rayVisibilitityScatter     );
-  d->rayVisibilitityShadow      .set(material.rayVisibilitityShadow      );
+  d->rayVisibilitityCamera       .set(material.rayVisibilitityCamera       );
+  d->rayVisibilitityDiffuse      .set(material.rayVisibilitityDiffuse      );
+  d->rayVisibilitityGlossy       .set(material.rayVisibilitityGlossy       );
+  d->rayVisibilitityTransmission .set(material.rayVisibilitityTransmission );
+  d->rayVisibilitityScatter      .set(material.rayVisibilitityScatter      );
+  d->rayVisibilitityShadow       .set(material.rayVisibilitityShadow       );
+  d->rayVisibilitityShadowCatcher.set(material.rayVisibilitityShadowCatcher);
 
   d->albedoScaleSlider    .set(material.albedoScale          );
   d->sssSlider            .set(material.sssScale             );
@@ -608,7 +611,7 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->material.viewTypedTextures([&](const auto& type, const auto& value, const auto&)
   {
     if(d->textureSupported == TextureSupported::Yes)
-      d->textureLineEdits[type]->setText(QString::fromStdString(value.keyString()));
+      d->textureLineEdits[type]->setText(QString::fromStdString(value.toString()));
   });
 }
 
@@ -665,12 +668,13 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.useLightMask          = d->useLightMask     .get();
   d->material.useReflection         = d->useReflection    .get();
 
-  d->material.rayVisibilitityCamera       = d->rayVisibilitityCamera      .get();
-  d->material.rayVisibilitityDiffuse      = d->rayVisibilitityDiffuse     .get();
-  d->material.rayVisibilitityGlossy       = d->rayVisibilitityGlossy      .get();
-  d->material.rayVisibilitityTransmission = d->rayVisibilitityTransmission.get();
-  d->material.rayVisibilitityScatter      = d->rayVisibilitityScatter     .get();
-  d->material.rayVisibilitityShadow       = d->rayVisibilitityShadow      .get();
+  d->material.rayVisibilitityCamera        = d->rayVisibilitityCamera       .get();
+  d->material.rayVisibilitityDiffuse       = d->rayVisibilitityDiffuse      .get();
+  d->material.rayVisibilitityGlossy        = d->rayVisibilitityGlossy       .get();
+  d->material.rayVisibilitityTransmission  = d->rayVisibilitityTransmission .get();
+  d->material.rayVisibilitityScatter       = d->rayVisibilitityScatter      .get();
+  d->material.rayVisibilitityShadow        = d->rayVisibilitityShadow       .get();
+  d->material.rayVisibilitityShadowCatcher = d->rayVisibilitityShadowCatcher.get();
 
   d->material.albedoScale           = d->albedoScaleSlider.get();
   d->material.sssScale              = d->sssSlider        .get();
@@ -761,7 +765,7 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
         {
           if(watched == i.second)
           {
-            i.second->setText(QString::fromStdString(text.keyString()));
+            i.second->setText(QString::fromStdString(text.toString()));
             break;
           }
         }
