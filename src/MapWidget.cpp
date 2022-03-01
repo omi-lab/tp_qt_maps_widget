@@ -205,7 +205,7 @@ void MapWidget::initializeGL()
   {
     auto t = new QTimer(this);
     t->setSingleShot(true);
-    connect(t, &QTimer::timeout, [&, t](){update();delete t;});
+    connect(t, &QTimer::timeout, this, [&, t](){update();delete t;});
     t->start(0);
   }
 
