@@ -10,11 +10,12 @@
 namespace tp_qt_maps_widget
 {
 
+//##################################################################################################
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialWidget : public QWidget
 {
   Q_OBJECT
 public:
-  //##################################################################################################
+  //################################################################################################
   //! Use to set whether the widgets to set material textures should be available or not.
   enum class TextureSupported
   {
