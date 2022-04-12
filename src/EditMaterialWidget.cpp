@@ -92,9 +92,12 @@ struct EditMaterialWidget::Private
   FloatEditor heightScale;
   FloatEditor heightMidlevel;
   FloatEditor ior;
+  FloatEditor normalStrength;
   QDoubleSpinBox* sssRadiusR{nullptr};
   QDoubleSpinBox* sssRadiusG{nullptr};
   QDoubleSpinBox* sssRadiusB{nullptr};
+
+  QComboBox* sssMethod;
 
   FloatEditor albedoBrightness;
   FloatEditor albedoContrast;
@@ -342,6 +345,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->iridescentFactor      = makeFloatEditorRow("Iridescent factor"     , 0.0f,  1.0f, true);
   d->iridescentOffset      = makeFloatEditorRow("Iridescent offset"     , 0.0f,  1.0f, true);
   d->iridescentFrequency   = makeFloatEditorRow("Iridescent frequency"  , 0.0f, 20.0f, false);
+  d->normalStrength        = makeFloatEditorRow("Normal strength"       , 0.1f, 10.0f, false);
 
   {
     int row = gridLayout->rowCount();
@@ -362,6 +366,15 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     d->sssRadiusR = make();
     d->sssRadiusG = make();
     d->sssRadiusB = make();
+  }
+
+  {
+    d->sssMethod = new QComboBox();
+    d->sssMethod->addItems({"ChristensenBurley", "RandomWalk"});
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel("Subsurface method"), row, 0, Qt::AlignLeft);
+    gridLayout->addWidget(d->sssMethod, row, 1);
+    connect(d->sssMethod, &QComboBox::currentTextChanged, this, [this]{emit materialEdited();});
   }
 
 
@@ -563,10 +576,13 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->iridescentFactor     .set(material.iridescentFactor     );
   d->iridescentOffset     .set(material.iridescentOffset     );
   d->iridescentFrequency  .set(material.iridescentFrequency  );
+  d->normalStrength       .set(material.normalStrength       );
 
   d->sssRadiusR->setValue(double(material.sssRadius.x));
   d->sssRadiusG->setValue(double(material.sssRadius.y));
   d->sssRadiusB->setValue(double(material.sssRadius.z));
+
+  d->sssMethod->setCurrentText(QString::fromStdString(tp_math_utils::sssMethodToString(material.sssMethod)));
 
   d->albedoBrightness     .set(material.albedoBrightness     );
   d->albedoContrast       .set(material.albedoContrast       );
@@ -636,10 +652,14 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.iridescentFactor      = d->iridescentFactor     .get();
   d->material.iridescentOffset      = d->iridescentOffset     .get();
   d->material.iridescentFrequency   = d->iridescentFrequency  .get();
+  d->material.normalStrength        = d->normalStrength       .get();
 
   d->material.sssRadius.x = d->sssRadiusR->value();
   d->material.sssRadius.y = d->sssRadiusG->value();
   d->material.sssRadius.z = d->sssRadiusB->value();
+
+  d->material.sssMethod = tp_math_utils::sssMethodFromString(d->sssMethod->currentText().toStdString());
+
 
   d->material.albedoBrightness = d->albedoBrightness.get();
   d->material.albedoContrast   = d->albedoContrast  .get();
