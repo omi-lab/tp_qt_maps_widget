@@ -63,6 +63,8 @@ struct EditMaterialWidget::Private
 
   QLineEdit* nameEdit{nullptr};
 
+  QComboBox* shaderType{nullptr};
+
   QScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
 
@@ -97,7 +99,7 @@ struct EditMaterialWidget::Private
   QDoubleSpinBox* sssRadiusG{nullptr};
   QDoubleSpinBox* sssRadiusB{nullptr};
 
-  QComboBox* sssMethod;
+  QComboBox* sssMethod{nullptr};
 
   FloatEditor albedoBrightness;
   FloatEditor albedoContrast;
@@ -321,6 +323,17 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     int row = gridLayout->rowCount();
     gridLayout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(name)), row, 0, 1, 2, Qt::AlignLeft);
   };
+
+
+  addTitle("Shader Type");
+  {
+    d->shaderType = new QComboBox();
+    d->shaderType->addItems({"Principled", "None"});
+    int row = gridLayout->rowCount();
+    gridLayout->addWidget(new QLabel("Shader type"), row, 0, Qt::AlignLeft);
+    gridLayout->addWidget(d->shaderType, row, 1);
+    connect(d->shaderType, &QComboBox::currentTextChanged, this, [this]{emit materialEdited();});
+  }
 
 
   addTitle("Colors");
@@ -558,6 +571,8 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->nameEdit->setText(QString::fromStdString(material.name.toString()));
 
+  d->shaderType->setCurrentText(QString::fromStdString(tp_math_utils::shaderTypeToString(material.shaderType)));
+
   d->updateColors();
 
   d->alpha                .set(material.alpha                );
@@ -635,6 +650,8 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 tp_math_utils::Material EditMaterialWidget::material() const
 {
   d->material.name = d->nameEdit->text().toStdString();
+
+  d->material.shaderType = tp_math_utils::shaderTypeFromString(d->shaderType->currentText().toStdString());
 
   d->material.alpha                 = d->alpha                .get();
   d->material.roughness             = d->roughness            .get();
