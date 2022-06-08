@@ -128,13 +128,13 @@ struct EditMaterialWidget::Private
   FloatEditor useLightMask;
   FloatEditor useReflection;
 
-  BoolEditor rayVisibilitityCamera       ;
-  BoolEditor rayVisibilitityDiffuse      ;
-  BoolEditor rayVisibilitityGlossy       ;
-  BoolEditor rayVisibilitityTransmission ;
-  BoolEditor rayVisibilitityScatter      ;
-  BoolEditor rayVisibilitityShadow       ;
-  BoolEditor rayVisibilitityShadowCatcher;
+  BoolEditor rayVisibilityCamera       ;
+  BoolEditor rayVisibilityDiffuse      ;
+  BoolEditor rayVisibilityGlossy       ;
+  BoolEditor rayVisibilityTransmission ;
+  BoolEditor rayVisibilityScatter      ;
+  BoolEditor rayVisibilityShadow       ;
+  BoolEditor rayVisibilityShadowCatcher;
 
   std::map<std::string, QLineEdit*> textureLineEdits;
 
@@ -514,13 +514,13 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->useReflection  = makeFloatEditorRow("Use reflection" , 0.0f, 1.0f, true);
 
   addTitle("Ray Visibility");
-  d->rayVisibilitityCamera        = makeBoolEditorRow("Camera"        );
-  d->rayVisibilitityDiffuse       = makeBoolEditorRow("Diffuse"       );
-  d->rayVisibilitityGlossy        = makeBoolEditorRow("Glossy"        );
-  d->rayVisibilitityTransmission  = makeBoolEditorRow("Transmission"  );
-  d->rayVisibilitityScatter       = makeBoolEditorRow("Volume scatter");
-  d->rayVisibilitityShadow        = makeBoolEditorRow("Shadow"        );
-  d->rayVisibilitityShadowCatcher = makeBoolEditorRow("Shadow catcher");
+  d->rayVisibilityCamera        = makeBoolEditorRow("Camera"        );
+  d->rayVisibilityDiffuse       = makeBoolEditorRow("Diffuse"       );
+  d->rayVisibilityGlossy        = makeBoolEditorRow("Glossy"        );
+  d->rayVisibilityTransmission  = makeBoolEditorRow("Transmission"  );
+  d->rayVisibilityScatter       = makeBoolEditorRow("Volume scatter");
+  d->rayVisibilityShadow        = makeBoolEditorRow("Shadow"        );
+  d->rayVisibilityShadowCatcher = makeBoolEditorRow("Shadow catcher");
 
   {
     auto hLayout = new QHBoxLayout();
@@ -626,13 +626,13 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->useLightMask         .set(material.useLightMask         );
   d->useReflection        .set(material.useReflection        );
 
-  d->rayVisibilitityCamera       .set(material.rayVisibilitityCamera       );
-  d->rayVisibilitityDiffuse      .set(material.rayVisibilitityDiffuse      );
-  d->rayVisibilitityGlossy       .set(material.rayVisibilitityGlossy       );
-  d->rayVisibilitityTransmission .set(material.rayVisibilitityTransmission );
-  d->rayVisibilitityScatter      .set(material.rayVisibilitityScatter      );
-  d->rayVisibilitityShadow       .set(material.rayVisibilitityShadow       );
-  d->rayVisibilitityShadowCatcher.set(material.rayVisibilitityShadowCatcher);
+  d->rayVisibilityCamera       .set(material.rayVisibilityCamera       );
+  d->rayVisibilityDiffuse      .set(material.rayVisibilityDiffuse      );
+  d->rayVisibilityGlossy       .set(material.rayVisibilityGlossy       );
+  d->rayVisibilityTransmission .set(material.rayVisibilityTransmission );
+  d->rayVisibilityScatter      .set(material.rayVisibilityScatter      );
+  d->rayVisibilityShadow       .set(material.rayVisibilityShadow       );
+  d->rayVisibilityShadowCatcher.set(material.rayVisibilityShadowCatcher);
 
   d->albedoScaleSlider    .set(material.albedoScale          );
   d->sssSlider            .set(material.sssScale             );
@@ -705,13 +705,13 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.useLightMask          = d->useLightMask     .get();
   d->material.useReflection         = d->useReflection    .get();
 
-  d->material.rayVisibilitityCamera        = d->rayVisibilitityCamera       .get();
-  d->material.rayVisibilitityDiffuse       = d->rayVisibilitityDiffuse      .get();
-  d->material.rayVisibilitityGlossy        = d->rayVisibilitityGlossy       .get();
-  d->material.rayVisibilitityTransmission  = d->rayVisibilitityTransmission .get();
-  d->material.rayVisibilitityScatter       = d->rayVisibilitityScatter      .get();
-  d->material.rayVisibilitityShadow        = d->rayVisibilitityShadow       .get();
-  d->material.rayVisibilitityShadowCatcher = d->rayVisibilitityShadowCatcher.get();
+  d->material.rayVisibilityCamera        = d->rayVisibilityCamera         .get();
+  d->material.rayVisibilityDiffuse       = d->rayVisibilityDiffuse        .get();
+  d->material.rayVisibilityGlossy        = d->rayVisibilityGlossy         .get();
+  d->material.rayVisibilityTransmission  = d->rayVisibilityTransmission   .get();
+  d->material.rayVisibilityScatter       = d->rayVisibilityScatter        .get();
+  d->material.rayVisibilityShadow        = d->rayVisibilityShadow         .get();
+  d->material.rayVisibilityShadowCatcher = d->rayVisibilityShadowCatcher  .get();
 
   d->material.albedoScale           = d->albedoScaleSlider.get();
   d->material.sssScale              = d->sssSlider        .get();
