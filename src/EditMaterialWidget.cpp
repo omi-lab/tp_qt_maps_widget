@@ -392,13 +392,13 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
 
   addTitle("Albedo Color Modification");
-  d->albedoBrightness  = makeFloatEditorRow("Albedo brightness", -1.0f, 1.0f, true);
-  d->albedoContrast    = makeFloatEditorRow("Albedo contrast"  , -1.0f, 1.0f, true);
-  d->albedoGamma       = makeFloatEditorRow("Albedo gamma"     ,  0.0f, 2.0f, true);
-  d->albedoHue         = makeFloatEditorRow("Albedo hue"       ,  0.0f, 1.0f, true);
-  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation",  0.0f, 2.0f, true);
-  d->albedoValue       = makeFloatEditorRow("Albedo value"     ,  0.0f, 2.0f, true);
-  d->albedoFactor      = makeFloatEditorRow("Albedo factor"    ,  0.0f, 1.0f, true);
+  d->albedoBrightness  = makeFloatEditorRow("Albedo brightness", -50.0f, 50.0f, true);
+  d->albedoContrast    = makeFloatEditorRow("Albedo contrast"  , -50.0f, 50.0f, true);
+  d->albedoGamma       = makeFloatEditorRow("Albedo gamma"     ,   0.0f, 50.0f, true);
+  d->albedoHue         = makeFloatEditorRow("Albedo hue"       ,   0.0f,  1.0f, true);
+  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation",   0.0f, 50.0f, true);
+  d->albedoValue       = makeFloatEditorRow("Albedo value"     ,   0.0f, 50.0f, true);
+  d->albedoFactor      = makeFloatEditorRow("Albedo factor"    ,   0.0f,  1.0f, true);
 
 
   addTitle("Displacement");
