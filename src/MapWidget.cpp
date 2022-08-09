@@ -3,6 +3,8 @@
 
 #include "tp_qt_maps/Globals.h"
 
+#include "tp_qt_utils/CrossThreadCallback.h"
+
 #include "tp_maps/MouseEvent.h"
 #include "tp_maps/KeyEvent.h"
 
@@ -97,6 +99,21 @@ public:
     if(!inPaint())
       mapWidget->update();
   }
+
+  //################################################################################################
+  void callAsync(const std::function<void()>& callback) override
+  {
+    callAsyncRequests.push_back(callback);
+    callAsyncProcess.call();
+  }
+
+  //################################################################################################
+  std::vector<std::function<void()>> callAsyncRequests;
+  tp_qt_utils::CrossThreadCallback callAsyncProcess = tp_qt_utils::CrossThreadCallback([&]
+  {
+    while(!callAsyncRequests.empty())
+      tpTakeFirst(callAsyncRequests)();
+  });
 
   MapWidget* mapWidget;
 };
@@ -229,7 +246,6 @@ void MapWidget::resizeGL(int width, int height)
 //##################################################################################################
 void MapWidget::paintGL()
 {
-  //d->map->makeCurrent();
   d->map->paintGL();
 }
 
