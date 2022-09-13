@@ -201,9 +201,9 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   l->addLayout(gridLayout);
 
   //------------------------------------------------------------------------------------------------
-  auto makeFloatEditor = [&](float min, float scaleMax, int row, const bool linear)
+  auto makeFloatEditor = [&](float min, float max, int row, const bool linear)
   {
-    float scale = scaleMax - min;
+    float scale = max - min;
 
     FloatEditor floatEditor;
 
@@ -212,7 +212,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     gridLayout->addLayout(hLayout, row, 1);
 
     auto spin = new QDoubleSpinBox();
-    spin->setRange(double(min), double(scaleMax));
+    spin->setRange(double(min), double(max));
     spin->setDecimals(3);
     spin->setSingleStep(0.01);
     hLayout->addWidget(spin, 1);
@@ -220,7 +220,6 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     auto slider = new QSlider(Qt::Horizontal);
     slider->setRange(0, 100000);
     hLayout->addWidget(slider, 3);
-    connect(slider, &QSlider::valueChanged, this, &EditMaterialWidget::materialEdited);
 
     connect(slider, &QSlider::valueChanged, this, [=]
     {
