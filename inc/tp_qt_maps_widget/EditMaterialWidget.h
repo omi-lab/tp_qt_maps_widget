@@ -3,8 +3,6 @@
 
 #include "tp_qt_maps_widget/Globals.h"
 
-#include "tp_maps/Globals.h"
-
 #include <QWidget>
 
 namespace tp_qt_maps_widget

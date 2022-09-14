@@ -3,7 +3,7 @@
 
 #include "tp_qt_maps_widget/Globals.h"
 
-#include "tp_maps/Globals.h"
+#include "tp_math_utils/Light.h"
 
 #include <QWidget>
 

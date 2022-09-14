@@ -1,12 +1,10 @@
 #include "tp_qt_maps_widget/EditMaterialWidget.h"
-#include "tp_qt_maps_widget/SelectMaterialWidget.h"
 
 #include "tp_qt_widgets/FileDialogLineEdit.h"
 
 #include "tp_image_utils/LoadImages.h"
 
 #include "tp_utils/JSONUtils.h"
-#include "tp_utils/DebugUtils.h"
 
 #include <QDialog>
 #include <QBoxLayout>

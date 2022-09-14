@@ -8,8 +8,6 @@
 
 #include "tp_math_utils/Sphere.h"
 
-#include "tp_utils/JSONUtils.h"
-
 #include <QDialog>
 #include <QBoxLayout>
 #include <QLabel>

@@ -8,6 +8,8 @@
 
 namespace tp_qt_maps_widget
 {
+
+//##################################################################################################
 QMetaObject::Connection connectContext(QOpenGLContext* context, QWidget* parent, const std::function<void()>& aboutToBeDestroyed)
 {
   return QObject::connect(context, &QOpenGLContext::aboutToBeDestroyed, parent, [=]
@@ -15,6 +17,7 @@ QMetaObject::Connection connectContext(QOpenGLContext* context, QWidget* parent,
     aboutToBeDestroyed();
   });
 }
+
 }
 
 #endif

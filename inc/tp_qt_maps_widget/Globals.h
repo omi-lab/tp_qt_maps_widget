@@ -1,7 +1,7 @@
 #ifndef tp_qt_maps_widget_global_h
 #define tp_qt_maps_widget_global_h
 
-#include "tp_maps/Globals.h"
+#include "tp_math_utils/Material.h"
 
 #if defined(TP_QT_MAPS_WIDGET_LIBRARY)
 #  define TP_QT_MAPS_WIDGET_SHARED_EXPORT TP_EXPORT

@@ -3,11 +3,9 @@
 
 #include "tp_qt_maps_widget/Globals.h"
 
-#include "tp_maps/Globals.h"
+#include "tp_math_utils/MaterialSwapParameters.h"
 
 #include <QWidget>
-
-#include "tp_math_utils/MaterialSwapParameters.h"
 
 namespace tp_qt_maps_widget
 {
