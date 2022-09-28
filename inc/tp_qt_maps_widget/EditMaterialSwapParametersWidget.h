@@ -15,8 +15,6 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialSwapParametersWidget : public 
 {
   Q_OBJECT
 public:
-
-
   //################################################################################################
   EditMaterialSwapParametersWidget(QWidget* parent = nullptr);
 
@@ -24,13 +22,10 @@ public:
   ~EditMaterialSwapParametersWidget() override;
 
   //################################################################################################
-  tp_math_utils::Material swappedMaterial( const tp_math_utils::Material& material ) const;
+  void setMaterialSwapParameters(const tp_math_utils::MaterialSwapParameters& materialSwapParameters);
 
   //################################################################################################
   tp_math_utils::MaterialSwapParameters materialSwapParameters() const;
-
-  //################################################################################################
-  glm::vec3 swapColor() const;
 
 Q_SIGNALS:
   //################################################################################################

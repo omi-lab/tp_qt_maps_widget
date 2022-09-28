@@ -1,27 +1,12 @@
 #include "tp_qt_maps_widget/EditMaterialSwapParametersWidget.h"
 
-#include <QDialog>
 #include <QBoxLayout>
-#include <QGridLayout>
 #include <QLabel>
-#include <QComboBox>
-#include <QCheckBox>
 #include <QDoubleSpinBox>
-#include <QRadioButton>
 #include <QSlider>
 #include <QPushButton>
-#include <QPointer>
-#include <QDialogButtonBox>
 #include <QColorDialog>
-#include <QImage>
-#include <QPixmap>
-#include <QLineEdit>
-#include <QGuiApplication>
-#include <QClipboard>
 #include <QPainter>
-#include <QDragEnterEvent>
-#include <QDropEvent>
-#include <QMimeData>
 #include <QScrollArea>
 #include <QScrollBar>
 
@@ -53,7 +38,7 @@ struct EditMaterialSwapParametersWidget::Private
 
   QPushButton* colorButton  {nullptr};
 
-  glm::vec3 swapColor {1.0f, 1.0f, 1.0f};
+  glm::vec3 initialColor{1.0f, 1.0f, 1.0f};
 
   FloatEditor albedoUseR;
   FloatEditor albedoUseG;
@@ -110,7 +95,7 @@ struct EditMaterialSwapParametersWidget::Private
       return QIcon(QPixmap::fromImage(image));
     };
 
-    colorButton  ->setIcon(makeIcon(swapColor));
+    colorButton->setIcon(makeIcon(initialColor));
   }
 };
 
@@ -250,7 +235,7 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
     gridLayout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(name)), row, 0, 1, 2, Qt::AlignLeft);
   };
 
-  d->colorButton   = makeColorEdit("Color"    , [&]()->glm::vec3&{return d->swapColor;} );
+  d->colorButton   = makeColorEdit("Color", [&]()->glm::vec3&{return d->initialColor;});
   d->updateColors();
 
   addTitle("Material Swap Properties");
@@ -305,6 +290,59 @@ EditMaterialSwapParametersWidget::~EditMaterialSwapParametersWidget()
   delete d;
 }
 
+//################################################################################################
+void EditMaterialSwapParametersWidget::setMaterialSwapParameters(const tp_math_utils::MaterialSwapParameters& materialSwapParameters)
+{
+  blockSignals(true);
+  TP_CLEANUP([&]{blockSignals(false);});
+
+  d->albedoUseR.set(materialSwapParameters.albedoUse.x);
+  d->albedoUseG.set(materialSwapParameters.albedoUse.y);
+  d->albedoUseB.set(materialSwapParameters.albedoUse.z);
+  d->albedoScaleR.set(materialSwapParameters.albedoScale.x);
+  d->albedoScaleG.set(materialSwapParameters.albedoScale.y);
+  d->albedoScaleB.set(materialSwapParameters.albedoScale.z);
+  d->albedoBiasR.set(materialSwapParameters.albedoBias.x);
+  d->albedoBiasG.set(materialSwapParameters.albedoBias.y);
+  d->albedoBiasB.set(materialSwapParameters.albedoBias.z);
+
+  d->sssUseR.set(materialSwapParameters.sssUse.x);
+  d->sssUseG.set(materialSwapParameters.sssUse.y);
+  d->sssUseB.set(materialSwapParameters.sssUse.z);
+  d->sssScaleR.set(materialSwapParameters.sssScale.x);
+  d->sssScaleG.set(materialSwapParameters.sssScale.y);
+  d->sssScaleB.set(materialSwapParameters.sssScale.z);
+  d->sssBiasR.set(materialSwapParameters.sssBias.x);
+  d->sssBiasG.set(materialSwapParameters.sssBias.y);
+  d->sssBiasB.set(materialSwapParameters.sssBias.z);
+
+  d->emissionUseR.set(materialSwapParameters.emissionUse.x);
+  d->emissionUseG.set(materialSwapParameters.emissionUse.y);
+  d->emissionUseB.set(materialSwapParameters.emissionUse.z);
+  d->emissionScaleR.set(materialSwapParameters.emissionScale.x);
+  d->emissionScaleG.set(materialSwapParameters.emissionScale.y);
+  d->emissionScaleB.set(materialSwapParameters.emissionScale.z);
+  d->emissionBiasR.set(materialSwapParameters.emissionBias.x);
+  d->emissionBiasG.set(materialSwapParameters.emissionBias.y);
+  d->emissionBiasB.set(materialSwapParameters.emissionBias.z);
+
+  d->velvetUseR.set(materialSwapParameters.velvetUse.x);
+  d->velvetUseG.set(materialSwapParameters.velvetUse.y);
+  d->velvetUseB.set(materialSwapParameters.velvetUse.z);
+  d->velvetScaleR.set(materialSwapParameters.velvetScale.x);
+  d->velvetScaleG.set(materialSwapParameters.velvetScale.y);
+  d->velvetScaleB.set(materialSwapParameters.velvetScale.z);
+  d->velvetBiasR.set(materialSwapParameters.velvetBias.x);
+  d->velvetBiasG.set(materialSwapParameters.velvetBias.y);
+  d->velvetBiasB.set(materialSwapParameters.velvetBias.z);
+
+  d->albedoHue.set(materialSwapParameters.albedoHue);
+
+  d->initialColor = materialSwapParameters.initialColor;
+  d->updateColors();
+}
+
+//##################################################################################################
 tp_math_utils::MaterialSwapParameters EditMaterialSwapParametersWidget::materialSwapParameters() const
 {
   tp_math_utils::MaterialSwapParameters materialSwapParameters;
@@ -351,12 +389,9 @@ tp_math_utils::MaterialSwapParameters EditMaterialSwapParametersWidget::material
 
   materialSwapParameters.albedoHue        = d->albedoHue.get();
 
-  return materialSwapParameters;
-}
+  materialSwapParameters.initialColor     = d->initialColor;
 
-glm::vec3 EditMaterialSwapParametersWidget::swapColor() const
-{
-  return d->swapColor;
+  return materialSwapParameters;
 }
 
 }
