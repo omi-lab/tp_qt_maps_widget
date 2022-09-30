@@ -5,7 +5,6 @@
 #include "tp_image_utils/LoadImages.h"
 
 #include "tp_utils/JSONUtils.h"
-#include "tp_utils/DebugUtils.h"
 
 #include <QDialog>
 #include <QBoxLayout>
@@ -31,6 +30,7 @@
 #include <QMimeData>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QMessageBox>
 
 namespace tp_qt_maps_widget
 {
@@ -57,8 +57,8 @@ struct EditMaterialWidget::Private
 {
   tp_math_utils::Material material;
   TextureSupported textureSupported;
-  std::function<std::vector<tp_utils::StringID>()> getExistingTextures;
-  std::function<tp_utils::StringID(const std::string&)> loadTexture;
+  TPGetExistingTexturesCallback getExistingTextures;
+  TPLoadTextureCallback loadTexture;
 
   QLineEdit* nameEdit{nullptr};
 
@@ -481,12 +481,16 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
         }
         else if(loadRadio->isChecked() && d->loadTexture)
         {
-          auto text = d->loadTexture(load->text().toStdString());
+          std::string error;
+          auto text = d->loadTexture(load->text().toStdString(), error);
           if(text.isValid())
           {
             edit->setText(QString::fromStdString(text.toString()));
             Q_EMIT materialEdited();
-          }
+          }          
+
+          if(!error.empty())
+            QMessageBox::critical(this, "Error Loading Image!", QString::fromStdString(error));
         }
       }
     });
@@ -726,13 +730,13 @@ tp_math_utils::Material EditMaterialWidget::material() const
 }
 
 //##################################################################################################
-void EditMaterialWidget::setGetExistingTextures(const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures)
+void EditMaterialWidget::setGetExistingTextures(const TPGetExistingTexturesCallback& getExistingTextures)
 {
   d->getExistingTextures = getExistingTextures;
 }
 
 //##################################################################################################
-void EditMaterialWidget::setLoadTexture(const std::function<tp_utils::StringID(const std::string&)>& loadTexture)
+void EditMaterialWidget::setLoadTexture(const TPLoadTextureCallback& loadTexture)
 {
   d->loadTexture = loadTexture;
 }
@@ -741,8 +745,8 @@ void EditMaterialWidget::setLoadTexture(const std::function<tp_utils::StringID(c
 bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
                                             tp_math_utils::Material& material,
                                             TextureSupported textureSupported,
-                                            const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures,
-                                            const std::function<tp_utils::StringID(const std::string&)>& loadTexture)
+                                            const TPGetExistingTexturesCallback& getExistingTextures,
+                                            const TPLoadTextureCallback& loadTexture)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});
@@ -792,8 +796,9 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
     auto urls = e->mimeData()->urls();
     if(urls.size() == 1 && urls.front().isLocalFile())
     {
+      std::string error;
       std::string path = urls.front().toLocalFile().toStdString();
-      auto text = d->loadTexture(path);
+      auto text = d->loadTexture(path, error);
       if(text.isValid())
       {
         for(const auto& i: d->textureLineEdits)
@@ -806,6 +811,9 @@ bool EditMaterialWidget::eventFilter(QObject* watched, QEvent* event)
         }
         Q_EMIT materialEdited();
       }
+
+      if(!error.empty())
+        QMessageBox::critical(this, "Error Loading Image!", QString::fromStdString(error));
     }
 
     return true;

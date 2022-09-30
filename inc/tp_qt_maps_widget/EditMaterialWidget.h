@@ -5,8 +5,14 @@
 
 #include <QWidget>
 
+//##################################################################################################
+typedef std::function<tp_utils::StringID(const std::string& path, std::string& error)> TPLoadTextureCallback;
+typedef std::function<std::vector<tp_utils::StringID>()> TPGetExistingTexturesCallback;
+
 namespace tp_qt_maps_widget
 {
+
+
 
 //##################################################################################################
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialWidget : public QWidget
@@ -36,18 +42,18 @@ public:
   tp_math_utils::Material material() const;
 
   //################################################################################################
-  void setGetExistingTextures(const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures);
+  void setGetExistingTextures(const TPGetExistingTexturesCallback& getExistingTextures);
 
   //################################################################################################
-  void setLoadTexture(const std::function<tp_utils::StringID(const std::string&)>& loadTexture);
+  void setLoadTexture(const TPLoadTextureCallback& loadTexture);
 
   //################################################################################################
   //! Shows a dialog to edit the material and returns true if accepted.
   static bool editMaterialDialog(QWidget* parent,
                                  tp_math_utils::Material& material,
                                  TextureSupported textureSupported = TextureSupported::Yes,
-                                 const std::function<std::vector<tp_utils::StringID>()>& getExistingTextures = std::function<std::vector<tp_utils::StringID>()>(),
-                                 const std::function<tp_utils::StringID(const std::string&)>& loadTexture = std::function<std::string(const std::string&)>());
+                                 const TPGetExistingTexturesCallback& getExistingTextures = TPGetExistingTexturesCallback(),
+                                 const TPLoadTextureCallback& loadTexture = TPLoadTextureCallback());
 
 Q_SIGNALS:
   //################################################################################################
