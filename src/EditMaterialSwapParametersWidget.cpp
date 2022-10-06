@@ -1,5 +1,7 @@
 #include "tp_qt_maps_widget/EditMaterialSwapParametersWidget.h"
 
+#include "tp_qt_maps/ConvertTexture.h"
+
 #include <QBoxLayout>
 #include <QLabel>
 #include <QDoubleSpinBox>
@@ -9,6 +11,7 @@
 #include <QPainter>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QCheckBox>
 
 namespace tp_qt_maps_widget
 {
@@ -20,6 +23,7 @@ struct FloatEditor
 {
   std::function<float()> get;
   std::function<void(float)> set;
+  QSlider* slider;
 };
 
 //##################################################################################################
@@ -27,6 +31,7 @@ struct BoolEditor
 {
   std::function<bool()> get;
   std::function<void(bool)> set;
+  QCheckBox* checkbox;
 };
 }
 
@@ -40,44 +45,75 @@ struct EditMaterialSwapParametersWidget::Private
 
   glm::vec3 initialColor{1.0f, 1.0f, 1.0f};
 
+  FloatEditor albedoUse;
   FloatEditor albedoUseR;
   FloatEditor albedoUseG;
   FloatEditor albedoUseB;
+
+  FloatEditor albedoScale;
   FloatEditor albedoScaleR;
   FloatEditor albedoScaleG;
   FloatEditor albedoScaleB;
+
+  FloatEditor albedoBias;
   FloatEditor albedoBiasR;
   FloatEditor albedoBiasG;
   FloatEditor albedoBiasB;
+
+  FloatEditor sssUse;
   FloatEditor sssUseR;
   FloatEditor sssUseG;
   FloatEditor sssUseB;
+
+  FloatEditor sssScale;
   FloatEditor sssScaleR;
   FloatEditor sssScaleG;
   FloatEditor sssScaleB;
+
+  FloatEditor sssBias;
   FloatEditor sssBiasR;
   FloatEditor sssBiasG;
   FloatEditor sssBiasB;
+
+  FloatEditor emissionUse;
   FloatEditor emissionUseR;
   FloatEditor emissionUseG;
   FloatEditor emissionUseB;
+
+  FloatEditor emissionScale;
   FloatEditor emissionScaleR;
   FloatEditor emissionScaleG;
   FloatEditor emissionScaleB;
+
+  FloatEditor emissionBias;
   FloatEditor emissionBiasR;
   FloatEditor emissionBiasG;
   FloatEditor emissionBiasB;
+
+  FloatEditor velvetUse;
   FloatEditor velvetUseR;
   FloatEditor velvetUseG;
   FloatEditor velvetUseB;
+
+  FloatEditor velvetScale;
   FloatEditor velvetScaleR;
   FloatEditor velvetScaleG;
   FloatEditor velvetScaleB;
+
+  FloatEditor velvetBias;
   FloatEditor velvetBiasR;
   FloatEditor velvetBiasG;
   FloatEditor velvetBiasB;
 
-  FloatEditor albedoHue;
+  BoolEditor albedoHueCheckbox;
+
+  FloatEditor albedoSaturationUse;
+  FloatEditor albedoSaturationScale;
+  FloatEditor albedoSaturationBias;
+
+  FloatEditor albedoValueUse;
+  FloatEditor albedoValueScale;
+  FloatEditor albedoValueBias;
 
   //################################################################################################
   void updateColors()
@@ -127,159 +163,552 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
   auto l = new QVBoxLayout(d->scrollContents);
   l->setContentsMargins(4,4,4,4);
 
-  auto gridLayout = new QGridLayout();
-  gridLayout->setContentsMargins(0,0,0,0);
-  l->addLayout(gridLayout);
-
-  //------------------------------------------------------------------------------------------------
-  auto makeFloatEditor = [&](float min, float scaleMax, int row, const bool linear)
   {
-    float scale = scaleMax - min;
 
-    FloatEditor floatEditor;
-
-    auto hLayout = new QHBoxLayout();
-    hLayout->setContentsMargins(0,0,0,0);
-    gridLayout->addLayout(hLayout, row, 1);
-
-    auto spin = new QDoubleSpinBox();
-    spin->setRange(double(min), double(scaleMax));
-    spin->setDecimals(3);
-    spin->setSingleStep(0.01);
-    hLayout->addWidget(spin, 1);
-
-    auto slider = new QSlider(Qt::Horizontal);
-    slider->setRange(0, 100000);
-    hLayout->addWidget(slider, 3);
-    connect(slider, &QSlider::valueChanged, this, &EditMaterialSwapParametersWidget::materialSwapParametersEdited);
-
-    connect(slider, &QSlider::valueChanged, this, [=]
+    auto makeFloatSlider = [&](QBoxLayout* layout, const QString& title, float min, float scaleMax, bool linear, int labelWidth = 120, Qt::Alignment labelAlign = Qt::AlignLeft,  QAbstractButton* button = nullptr)
     {
-      float v = float(slider->value()) / 100000.0f;
-      v = linear?((v*scale) + min):(v*v*scale);
-      if(std::fabs(v-float(spin->value())) > 0.000001f)
+      float scale = scaleMax - min;
+
+      FloatEditor floatEditor;
+
+      auto hLayout = new QHBoxLayout();
+      hLayout->setContentsMargins(0,0,0,0);
+      layout->addLayout(hLayout);
+
+      QLabel* label = new QLabel(title);
+      label->setFixedWidth(labelWidth);
+      label->setAlignment( labelAlign | Qt::AlignVCenter);
+
+      hLayout->addWidget(label, 0, Qt::AlignLeft);
+
+      if( button ) {
+        hLayout->addWidget(button);
+      }
+
+      auto spin = new QDoubleSpinBox();
+      spin->setRange(double(min), double(scaleMax));
+      spin->setDecimals(3);
+      spin->setSingleStep(0.01);
+      spin->setFixedWidth(100);
+      hLayout->addWidget(spin, 1);
+
+      auto slider = new QSlider(Qt::Horizontal);
+      slider->setRange(0, 100000);
+      hLayout->addWidget(slider, Qt::AlignRight);
+      connect(slider, &QSlider::valueChanged, this, &EditMaterialSwapParametersWidget::materialSwapParametersEdited);
+
+      connect(slider, &QSlider::valueChanged, this, [=]
       {
-        spin->blockSignals(true);
+        float v = float(slider->value()) / 100000.0f;
+        v = linear?((v*scale) + min):(v*v*scale);
+        if(std::fabs(v-float(spin->value())) > 0.000001f)
+        {
+          spin->blockSignals(true);
+          spin->setValue(double(v));
+          spin->blockSignals(false);
+          Q_EMIT materialSwapParametersEdited();
+        }
+      });
+
+      auto spinValueChanged = [=]
+      {
+        if(slider->isSliderDown())
+          return;
+
+        auto s = (float(spin->value())-min)/scale;
+        int newSliderValue = int((linear?s:std::sqrt(s))*100000.0f);
+        if(newSliderValue != slider->value())
+        {
+          slider->blockSignals(true);
+          slider->setValue(newSliderValue);
+          slider->blockSignals(false);
+          Q_EMIT materialSwapParametersEdited();
+        }
+      };
+
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
+
+      floatEditor.get = [=]{return spin->value();};
+      floatEditor.set = [=](float v)
+      {
         spin->setValue(double(v));
-        spin->blockSignals(false);
-        Q_EMIT materialSwapParametersEdited();
-      }
-    });
+        spinValueChanged();
+      };
 
-    auto spinValueChanged = [=]
-    {
-      if(slider->isSliderDown())
-        return;
+      floatEditor.slider = slider;
 
-      auto s = (float(spin->value())-min)/scale;
-      int newSliderValue = int((linear?s:std::sqrt(s))*100000.0f);
-      if(newSliderValue != slider->value())
-      {
-        slider->blockSignals(true);
-        slider->setValue(newSliderValue);
-        slider->blockSignals(false);
-        Q_EMIT materialSwapParametersEdited();
-      }
+      return floatEditor;
     };
 
-    connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
-
-    floatEditor.get = [=]{return spin->value();};
-    floatEditor.set = [=](float v)
+    auto makeCheckbox =[&](QBoxLayout* layout, const QString& name, bool checked)
     {
-      spin->setValue(double(v));
-      spinValueChanged();
+      BoolEditor boolEditor;
+
+      boolEditor.checkbox = new QCheckBox(name, this);
+      boolEditor.checkbox->setChecked(checked);
+
+      layout->addWidget(boolEditor.checkbox, 0, Qt::AlignTop);
+
+      boolEditor.get = [=]{return boolEditor.checkbox->isChecked();};
+      boolEditor.set = [=](bool b)
+      {
+        boolEditor.checkbox->setChecked(b);
+      };
+
+      return boolEditor;
     };
 
-    return floatEditor;
-  };
-
-  //------------------------------------------------------------------------------------------------
-  auto makeColorEdit = [&](const QString& text, const std::function<glm::vec3&()>& getColor )
-  {
-    int row = gridLayout->rowCount();
-
-    auto button = new QPushButton(text);
-    button->setStyleSheet("text-align:left; padding-left:2;");
-    gridLayout->addWidget(button, row, 0);
-
-    connect(button, &QAbstractButton::clicked, this, [=]
+    auto makeColorEdit = [&](QBoxLayout* layout, const QString& text, const std::function<glm::vec3&()>& getColor )
     {
-      glm::vec3& c = getColor();
-      QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
-      if(color.isValid())
+      auto button = new QPushButton(text);
+      button->setStyleSheet("text-align:left; padding-left:2;");
+      layout->addWidget(button, 2);
+
+      connect(button, &QAbstractButton::clicked, this, [=]
       {
-        c.x = color.redF();
-        c.y = color.greenF();
-        c.z = color.blueF();
-        d->updateColors();
-        Q_EMIT materialSwapParametersEdited();
-      }
+        glm::vec3& c = getColor();
+        QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
+        if(color.isValid())
+        {
+          c.x = color.redF();
+          c.y = color.greenF();
+          c.z = color.blueF();
+          d->updateColors();
+          Q_EMIT materialSwapParametersEdited();
+        }
+      });
+
+      return button;
+    };
+
+    auto addTitle = [&](QBoxLayout* layout, const QString& name)
+    {
+      layout->addWidget(new QLabel(QString("<h2>%1</h2>").arg(name)), 2, Qt::AlignLeft);
+    };
+
+    auto addSubTitle = [&](QBoxLayout* layout, const QString& name)
+    {
+      layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(name)), 2, Qt::AlignLeft);
+    };
+
+    auto addExpandIcon = [&](QBoxLayout* layout)
+    {
+      QIcon normalIcon = tp_qt_maps::loadIconFromResource("/omi_scene_builder/right_chevron.png");
+      QIcon expandedIcon = tp_qt_maps::loadIconFromResource("/omi_scene_builder/down_chevron.png");
+
+      QPushButton* button = new QPushButton(normalIcon,"");
+      QString buttonStyle = "QPushButton{border:none;background-color:rgba(255, 255, 255,0);}";
+      button->setStyleSheet(buttonStyle); // Style sheet
+      int size = 16;
+      button->setIconSize(QSize(size,size));
+      button->setMinimumSize(size,size);
+      button->setMaximumSize(size,size);
+      layout->addWidget(button);// The horizontal layout
+
+      button->setCheckable(true);
+
+      connect( button, &QAbstractButton::toggled, button, [=]( bool b) {
+        b ? button->setIcon(expandedIcon) : button->setIcon(normalIcon);
+      });
+
+      return button;
+    };
+
+    addTitle(l, "Material Swap Properties");
+
+    d->colorButton   = makeColorEdit(l, "Color", [&]()->glm::vec3&{return d->initialColor;});
+    d->updateColors();
+
+    addSubTitle(l, "Albedo");
+    //--------------------------------ALBEDO USE--------------------------------------
+    auto albedoUseExpandButton = addExpandIcon(l);
+    d->albedoUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, albedoUseExpandButton );
+
+    auto albedoUseHLayout = new QHBoxLayout();
+    albedoUseHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(albedoUseHLayout);
+
+    QWidget* albedoUseRGBGroup = new QWidget(this);
+    auto albedoUseVLayout = new QVBoxLayout(albedoUseRGBGroup);
+    albedoUseVLayout->setContentsMargins(0,0,0,0);
+    d->albedoUseR = makeFloatSlider( albedoUseVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->albedoUseG = makeFloatSlider( albedoUseVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->albedoUseB = makeFloatSlider( albedoUseVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->albedoUse.slider, &QSlider::valueChanged, albedoUseRGBGroup, [=] {
+      d->albedoUseR.set( d->albedoUse.get() );
+      d->albedoUseG.set( d->albedoUse.get() );
+      d->albedoUseB.set( d->albedoUse.get() );
+    } );
+
+    albedoUseHLayout->addWidget(albedoUseRGBGroup);
+
+    connect(albedoUseExpandButton, &QAbstractButton::toggled, albedoUseRGBGroup, [=] {
+      albedoUseRGBGroup->setVisible( albedoUseExpandButton->isChecked() );
     });
 
-    return button;
-  };
+    albedoUseRGBGroup->setVisible(false);
 
-  //------------------------------------------------------------------------------------------------
-  auto makeFloatEditorRow = [&](const QString& name, float min, float scaleMax, bool linear)
-  {
-    int row = gridLayout->rowCount();
-    gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
-    return makeFloatEditor(min, scaleMax, row, linear);
-  };
+    //--------------------------------ALBEDO SCALE------------------------------------
+    auto albedoScaleExpandButton = addExpandIcon(l);
+    d->albedoScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, albedoScaleExpandButton );
+    d->albedoScale.set(1.0f);
 
-  //------------------------------------------------------------------------------------------------
-  auto addTitle = [&](const QString& name)
-  {
-    int row = gridLayout->rowCount();
-    gridLayout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(name)), row, 0, 1, 2, Qt::AlignLeft);
-  };
+    auto albedoScaleHLayout = new QHBoxLayout();
+    albedoScaleHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(albedoScaleHLayout);
 
-  d->colorButton   = makeColorEdit("Color", [&]()->glm::vec3&{return d->initialColor;});
-  d->updateColors();
+    QWidget* albedoScaleRGBGroup = new QWidget(this);
+    auto albedoScaleVLayout = new QVBoxLayout(albedoScaleRGBGroup);
+    albedoScaleVLayout->setContentsMargins(0,0,0,0);
+    d->albedoScaleR = makeFloatSlider( albedoScaleVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->albedoScaleG = makeFloatSlider( albedoScaleVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->albedoScaleB = makeFloatSlider( albedoScaleVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
 
-  addTitle("Material Swap Properties");
-  d->albedoUseR         = makeFloatEditorRow("Albedo Use R"       , 0.0f, 1.0f, true);
-  d->albedoUseG         = makeFloatEditorRow("Albedo Use G"       , 0.0f, 1.0f, true);
-  d->albedoUseB         = makeFloatEditorRow("Albedo Use B"       , 0.0f, 1.0f, true);
-  d->albedoScaleR       = makeFloatEditorRow("Albedo Scale R"     , 0.0f, 1.0f, true);
-  d->albedoScaleG       = makeFloatEditorRow("Albedo Scale G"     , 0.0f, 1.0f, true);
-  d->albedoScaleB       = makeFloatEditorRow("Albedo Scale B"     , 0.0f, 1.0f, true);
-  d->albedoBiasR        = makeFloatEditorRow("Albedo Bias R"      , 0.0f, 1.0f, true);
-  d->albedoBiasG        = makeFloatEditorRow("Albedo Bias G"      , 0.0f, 1.0f, true);
-  d->albedoBiasB        = makeFloatEditorRow("Albedo Bias B"      , 0.0f, 1.0f, true);
+    // connect use slider to the set function of all the sliders
+    connect( d->albedoScale.slider, &QSlider::valueChanged, albedoScaleRGBGroup, [=] {
+      d->albedoScaleR.set( d->albedoScale.get() );
+      d->albedoScaleG.set( d->albedoScale.get() );
+      d->albedoScaleB.set( d->albedoScale.get() );
+    } );
 
-  d->sssUseR            = makeFloatEditorRow("SSS Use R"          , 0.0f, 1.0f, true);
-  d->sssUseG            = makeFloatEditorRow("SSS Use G"          , 0.0f, 1.0f, true);
-  d->sssUseB            = makeFloatEditorRow("SSS Use B"          , 0.0f, 1.0f, true);
-  d->sssScaleR          = makeFloatEditorRow("SSS Scale R"        , 0.0f, 1.0f, true);
-  d->sssScaleG          = makeFloatEditorRow("SSS Scale G"        , 0.0f, 1.0f, true);
-  d->sssScaleB          = makeFloatEditorRow("SSS Scale B"        , 0.0f, 1.0f, true);
-  d->sssBiasR           = makeFloatEditorRow("SSS Bias R"         , 0.0f, 1.0f, true);
-  d->sssBiasG           = makeFloatEditorRow("SSS Bias G"         , 0.0f, 1.0f, true);
-  d->sssBiasB           = makeFloatEditorRow("SSS Bias B"         , 0.0f, 1.0f, true);
+    albedoScaleHLayout->addWidget(albedoScaleRGBGroup);
 
-  d->emissionUseR       = makeFloatEditorRow("Emission Use R"     , 0.0f, 1.0f, true);
-  d->emissionUseG       = makeFloatEditorRow("Emission Use G"     , 0.0f, 1.0f, true);
-  d->emissionUseB       = makeFloatEditorRow("Emission Use B"     , 0.0f, 1.0f, true);
-  d->emissionScaleR     = makeFloatEditorRow("Emission Scale R"   , 0.0f, 1.0f, true);
-  d->emissionScaleG     = makeFloatEditorRow("Emission Scale G"   , 0.0f, 1.0f, true);
-  d->emissionScaleB     = makeFloatEditorRow("Emission Scale B"   , 0.0f, 1.0f, true);
-  d->emissionBiasR      = makeFloatEditorRow("Emission Bias R"    , 0.0f, 1.0f, true);
-  d->emissionBiasG      = makeFloatEditorRow("Emission Bias G"    , 0.0f, 1.0f, true);
-  d->emissionBiasB      = makeFloatEditorRow("Emission Bias B"    , 0.0f, 1.0f, true);
+    connect(albedoScaleExpandButton, &QAbstractButton::toggled, albedoScaleRGBGroup, [=] {
+      albedoScaleRGBGroup->setVisible(albedoScaleExpandButton->isChecked());
+    });
 
-  d->velvetUseR         = makeFloatEditorRow("Velvet Use R"       , 0.0f, 1.0f, true);
-  d->velvetUseG         = makeFloatEditorRow("Velvet Use G"       , 0.0f, 1.0f, true);
-  d->velvetUseB         = makeFloatEditorRow("Velvet Use B"       , 0.0f, 1.0f, true);
-  d->velvetScaleR       = makeFloatEditorRow("Velvet Scale R"     , 0.0f, 1.0f, true);
-  d->velvetScaleG       = makeFloatEditorRow("Velvet Scale G"     , 0.0f, 1.0f, true);
-  d->velvetScaleB       = makeFloatEditorRow("Velvet Scale B"     , 0.0f, 1.0f, true);
-  d->velvetBiasR        = makeFloatEditorRow("Velvet Bias R"      , 0.0f, 1.0f, true);
-  d->velvetBiasG        = makeFloatEditorRow("Velvet Bias G"      , 0.0f, 1.0f, true);
-  d->velvetBiasB        = makeFloatEditorRow("Velvet Bias B"      , 0.0f, 1.0f, true);
+    albedoScaleRGBGroup->setVisible(false);
 
-  d->albedoHue          = makeFloatEditorRow("Albdeo Hue"         , 0.0f, 1.0f, true);
+    //--------------------------------ALBEDO BIAS------------------------------------
+    auto albedoBiasExpandButton = addExpandIcon(l);
+    d->albedoBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, albedoBiasExpandButton );
+    d->albedoBias.set(0.0f);
+
+    auto albedoBiasHLayout = new QHBoxLayout();
+    albedoBiasHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(albedoBiasHLayout);
+
+    QWidget* albedoBiasRGBGroup = new QWidget(this);
+    auto albedoBiasVLayout = new QVBoxLayout(albedoBiasRGBGroup);
+    albedoBiasVLayout->setContentsMargins(0,0,0,0);
+    d->albedoBiasR = makeFloatSlider( albedoBiasVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->albedoBiasG = makeFloatSlider( albedoBiasVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->albedoBiasB = makeFloatSlider( albedoBiasVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->albedoBias.slider, &QSlider::valueChanged, albedoBiasRGBGroup, [=] {
+      d->albedoBiasR.set( d->albedoBias.get() );
+      d->albedoBiasG.set( d->albedoBias.get() );
+      d->albedoBiasB.set( d->albedoBias.get() );
+    } );
+
+    albedoBiasHLayout->addWidget(albedoBiasRGBGroup);
+
+    connect(albedoBiasExpandButton, &QAbstractButton::toggled, albedoBiasRGBGroup, [=] {
+      albedoBiasRGBGroup->setVisible(albedoBiasExpandButton->isChecked());
+    });
+
+    albedoBiasRGBGroup->setVisible(false);
+
+    addSubTitle(l, "SSS");
+    //--------------------------------SSS USE--------------------------------------
+    auto sssUseExpandButton = addExpandIcon(l);
+    d->sssUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, sssUseExpandButton );
+
+    auto sssUseHLayout = new QHBoxLayout();
+    sssUseHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(sssUseHLayout);
+
+    QWidget* sssUseRGBGroup = new QWidget(this);
+    auto sssUseVLayout = new QVBoxLayout(sssUseRGBGroup);
+    sssUseVLayout->setContentsMargins(0,0,0,0);
+    d->sssUseR = makeFloatSlider( sssUseVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->sssUseG = makeFloatSlider( sssUseVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->sssUseB = makeFloatSlider( sssUseVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->sssUse.slider, &QSlider::valueChanged, sssUseRGBGroup, [=] {
+      d->sssUseR.set( d->sssUse.get() );
+      d->sssUseG.set( d->sssUse.get() );
+      d->sssUseB.set( d->sssUse.get() );
+    } );
+
+    sssUseHLayout->addWidget(sssUseRGBGroup);
+
+    connect( sssUseExpandButton, &QAbstractButton::toggled, sssUseRGBGroup, [=] {
+      sssUseRGBGroup->setVisible(sssUseExpandButton->isChecked());
+    });
+
+    sssUseRGBGroup->setVisible(false);
+
+    //--------------------------------SSS SCALE------------------------------------
+    auto sssScaleExpandButton = addExpandIcon(l);
+    d->sssScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, sssScaleExpandButton );
+    d->sssScale.set(1.0f);
+
+    auto sssScaleHLayout = new QHBoxLayout();
+    sssScaleHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(sssScaleHLayout);
+
+    QWidget* sssScaleRGBGroup = new QWidget(this);
+    auto sssScaleVLayout = new QVBoxLayout(sssScaleRGBGroup);
+    sssScaleVLayout->setContentsMargins(0,0,0,0);
+    d->sssScaleR = makeFloatSlider( sssScaleVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->sssScaleG = makeFloatSlider( sssScaleVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->sssScaleB = makeFloatSlider( sssScaleVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->sssScale.slider, &QSlider::valueChanged, sssScaleRGBGroup, [=] {
+      d->sssScaleR.set( d->sssScale.get() );
+      d->sssScaleG.set( d->sssScale.get() );
+      d->sssScaleB.set( d->sssScale.get() );
+    } );
+
+    sssScaleHLayout->addWidget(sssScaleRGBGroup);
+
+    connect( sssScaleExpandButton, &QAbstractButton::toggled, sssScaleRGBGroup, [=] {
+      sssScaleRGBGroup->setVisible(sssScaleExpandButton->isChecked());
+    });
+
+    sssScaleRGBGroup->setVisible(false);
+
+    //--------------------------------SSS BIAS------------------------------------
+    auto sssBiasExpandButton = addExpandIcon(l);
+    d->sssBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, sssBiasExpandButton );
+    d->sssBias.set(0.0f);
+
+    auto sssBiasHLayout = new QHBoxLayout();
+    sssBiasHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(sssBiasHLayout);
+
+    QWidget* sssBiasRGBGroup = new QWidget(this);
+    auto sssBiasVLayout = new QVBoxLayout(sssBiasRGBGroup);
+    sssBiasVLayout->setContentsMargins(0,0,0,0);
+    d->sssBiasR = makeFloatSlider( sssBiasVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->sssBiasG = makeFloatSlider( sssBiasVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->sssBiasB = makeFloatSlider( sssBiasVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->sssBias.slider, &QSlider::valueChanged, sssBiasRGBGroup, [=] {
+      d->sssBiasR.set( d->sssBias.get() );
+      d->sssBiasG.set( d->sssBias.get() );
+      d->sssBiasB.set( d->sssBias.get() );
+    } );
+
+    sssBiasHLayout->addWidget(sssBiasRGBGroup);
+
+    connect( sssBiasExpandButton, &QAbstractButton::toggled, sssBiasRGBGroup, [=] {
+      sssBiasRGBGroup->setVisible(sssBiasExpandButton->isChecked());
+    });
+
+    sssBiasRGBGroup->setVisible(false);
+
+    addSubTitle(l, "Emission");
+    //--------------------------------EMISSION USE--------------------------------------
+    auto emissionUseExpandButton = addExpandIcon(l);
+    d->emissionUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, emissionUseExpandButton );
+
+    auto emissionUseHLayout = new QHBoxLayout();
+    emissionUseHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(emissionUseHLayout);
+
+    QWidget* emissionUseRGBGroup = new QWidget(this);
+    auto emissionUseVLayout = new QVBoxLayout(emissionUseRGBGroup);
+    emissionUseVLayout->setContentsMargins(0,0,0,0);
+    d->emissionUseR = makeFloatSlider( emissionUseVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->emissionUseG = makeFloatSlider( emissionUseVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->emissionUseB = makeFloatSlider( emissionUseVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->emissionUse.slider, &QSlider::valueChanged, emissionUseRGBGroup, [=] {
+      d->emissionUseR.set( d->emissionUse.get() );
+      d->emissionUseG.set( d->emissionUse.get() );
+      d->emissionUseB.set( d->emissionUse.get() );
+    } );
+
+    emissionUseHLayout->addWidget(emissionUseRGBGroup);
+
+    connect( emissionUseExpandButton, &QAbstractButton::toggled, emissionUseRGBGroup, [=] {
+      emissionUseRGBGroup->setVisible(emissionUseExpandButton->isChecked());
+    });
+
+    emissionUseRGBGroup->setVisible(false);
+
+    //--------------------------------EMISSION SCALE------------------------------------
+    auto emissionScaleExpandButton = addExpandIcon(l);
+    d->emissionScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, emissionScaleExpandButton );
+    d->emissionScale.set(1.0f);
+
+    auto emissionScaleHLayout = new QHBoxLayout();
+    emissionScaleHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(emissionScaleHLayout);
+
+    QWidget* emissionScaleRGBGroup = new QWidget(this);
+    auto emissionScaleVLayout = new QVBoxLayout(emissionScaleRGBGroup);
+    emissionScaleVLayout->setContentsMargins(0,0,0,0);
+    d->emissionScaleR = makeFloatSlider( emissionScaleVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->emissionScaleG = makeFloatSlider( emissionScaleVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->emissionScaleB = makeFloatSlider( emissionScaleVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->emissionScale.slider, &QSlider::valueChanged, emissionScaleRGBGroup, [=] {
+      d->emissionScaleR.set( d->emissionScale.get() );
+      d->emissionScaleG.set( d->emissionScale.get() );
+      d->emissionScaleB.set( d->emissionScale.get() );
+    } );
+
+    emissionScaleHLayout->addWidget(emissionScaleRGBGroup);
+
+    connect( emissionScaleExpandButton, &QAbstractButton::toggled, emissionScaleRGBGroup, [=] {
+      emissionScaleRGBGroup->setVisible(emissionScaleExpandButton->isChecked());
+    });
+
+    emissionScaleRGBGroup->setVisible(false);
+
+    //--------------------------------EMISSION BIAS------------------------------------
+    auto emissionBiasExpandButton = addExpandIcon(l);
+    d->emissionBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, emissionBiasExpandButton );
+    d->emissionBias.set(0.0f);
+
+    auto emissionBiasHLayout = new QHBoxLayout();
+    emissionBiasHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(emissionBiasHLayout);
+
+    QWidget* emissionBiasRGBGroup = new QWidget(this);
+    auto emissionBiasVLayout = new QVBoxLayout(emissionBiasRGBGroup);
+    emissionBiasVLayout->setContentsMargins(0,0,0,0);
+    d->emissionBiasR = makeFloatSlider( emissionBiasVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->emissionBiasG = makeFloatSlider( emissionBiasVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->emissionBiasB = makeFloatSlider( emissionBiasVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->emissionBias.slider, &QSlider::valueChanged, emissionBiasRGBGroup, [=] {
+      d->emissionBiasR.set( d->emissionBias.get() );
+      d->emissionBiasG.set( d->emissionBias.get() );
+      d->emissionBiasB.set( d->emissionBias.get() );
+    } );
+
+    emissionBiasHLayout->addWidget(emissionBiasRGBGroup);
+
+    connect( emissionBiasExpandButton, &QAbstractButton::toggled, emissionBiasRGBGroup, [=] {
+      emissionBiasRGBGroup->setVisible(emissionBiasExpandButton->isChecked());
+    });
+
+    emissionBiasRGBGroup->setVisible(false);
+
+    addSubTitle(l, "Velvet");
+    //--------------------------------VELVET USE--------------------------------------
+    auto velvetUseExpandButton = addExpandIcon(l);
+    d->velvetUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, velvetUseExpandButton );
+
+    auto velvetUseHLayout = new QHBoxLayout();
+    velvetUseHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(velvetUseHLayout);
+
+    QWidget* velvetUseRGBGroup = new QWidget(this);
+    auto velvetUseVLayout = new QVBoxLayout(velvetUseRGBGroup);
+    velvetUseVLayout->setContentsMargins(0,0,0,0);
+    d->velvetUseR = makeFloatSlider( velvetUseVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->velvetUseG = makeFloatSlider( velvetUseVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->velvetUseB = makeFloatSlider( velvetUseVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->velvetUse.slider, &QSlider::valueChanged, velvetUseRGBGroup, [=] {
+      d->velvetUseR.set( d->velvetUse.get() );
+      d->velvetUseG.set( d->velvetUse.get() );
+      d->velvetUseB.set( d->velvetUse.get() );
+    } );
+
+    velvetUseHLayout->addWidget(velvetUseRGBGroup);
+
+    connect( velvetUseExpandButton, &QAbstractButton::toggled, velvetUseRGBGroup, [=] {
+      velvetUseRGBGroup->setVisible(velvetUseExpandButton->isChecked());
+    });
+
+    velvetUseRGBGroup->setVisible(false);
+
+    //--------------------------------VELVET SCALE------------------------------------
+    auto velvetScaleExpandButton = addExpandIcon(l);
+    d->velvetScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, velvetScaleExpandButton );
+    d->velvetScale.set(1.0f);
+
+    auto velvetScaleHLayout = new QHBoxLayout();
+    velvetScaleHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(velvetScaleHLayout);
+
+    QWidget* velvetScaleRGBGroup = new QWidget(this);
+    auto velvetScaleVLayout = new QVBoxLayout(velvetScaleRGBGroup);
+    velvetScaleVLayout->setContentsMargins(0,0,0,0);
+    d->velvetScaleR = makeFloatSlider( velvetScaleVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->velvetScaleG = makeFloatSlider( velvetScaleVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->velvetScaleB = makeFloatSlider( velvetScaleVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->velvetScale.slider, &QSlider::valueChanged, velvetScaleRGBGroup, [=] {
+      d->velvetScaleR.set( d->velvetScale.get() );
+      d->velvetScaleG.set( d->velvetScale.get() );
+      d->velvetScaleB.set( d->velvetScale.get() );
+    } );
+
+    velvetScaleHLayout->addWidget(velvetScaleRGBGroup);
+
+    connect(velvetScaleExpandButton, &QAbstractButton::toggled, velvetScaleRGBGroup, [=] {
+      velvetScaleRGBGroup->setVisible(velvetScaleExpandButton->isChecked());
+    });
+
+    velvetScaleRGBGroup->setVisible(false);
+
+    //--------------------------------VELVET BIAS------------------------------------
+    auto velvetBiasExpandButton = addExpandIcon(l);
+    d->velvetBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, velvetBiasExpandButton );
+    d->velvetBias.set(0.0f);
+
+    auto velvetBiasHLayout = new QHBoxLayout();
+    velvetBiasHLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(velvetBiasHLayout);
+
+    QWidget* velvetBiasRGBGroup = new QWidget(this);
+    auto velvetBiasVLayout = new QVBoxLayout(velvetBiasRGBGroup);
+    velvetBiasVLayout->setContentsMargins(0,0,0,0);
+    d->velvetBiasR = makeFloatSlider( velvetBiasVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->velvetBiasG = makeFloatSlider( velvetBiasVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->velvetBiasB = makeFloatSlider( velvetBiasVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+
+    // connect use slider to the set function of all the sliders
+    connect( d->velvetBias.slider, &QSlider::valueChanged, velvetBiasRGBGroup, [=] {
+      d->velvetBiasR.set( d->velvetBias.get() );
+      d->velvetBiasG.set( d->velvetBias.get() );
+      d->velvetBiasB.set( d->velvetBias.get() );
+    } );
+
+    velvetBiasHLayout->addWidget(velvetBiasRGBGroup);
+
+    connect( velvetBiasExpandButton, &QCheckBox::toggled, velvetBiasRGBGroup, [=] {
+      velvetBiasRGBGroup->setVisible(velvetBiasExpandButton->isChecked());
+    });
+
+    velvetBiasRGBGroup->setVisible(false);
+
+    //--------------------------------HSV--------------------------------------------
+    addTitle(l, "HSV");
+    //--------------------------------ALBEDO HUE ------------------------------------
+    d->albedoHueCheckbox = makeCheckbox( l, "Use Albedo Hue", true);
+    connect(d->albedoHueCheckbox.checkbox, &QCheckBox::toggled, this, &EditMaterialSwapParametersWidget::materialSwapParametersEdited);
+
+    //--------------------------------ALBEDO SATURATION ------------------------------------
+    addSubTitle(l, "Albedo saturation");
+    d->albedoSaturationUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->albedoSaturationScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->albedoSaturationBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+
+    //--------------------------------ALBEDO VALUE------------------------------------------
+    addSubTitle(l, "Albedo value");
+    d->albedoValueUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->albedoValueScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->albedoValueBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+  }
 
   d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
 }
@@ -336,9 +765,17 @@ void EditMaterialSwapParametersWidget::setMaterialSwapParameters(const tp_math_u
   d->velvetBiasG.set(materialSwapParameters.velvetBias.y);
   d->velvetBiasB.set(materialSwapParameters.velvetBias.z);
 
-  d->albedoHue.set(materialSwapParameters.albedoHue);
+  d->albedoHueCheckbox.set(materialSwapParameters.useAlbedoHue);
 
   d->initialColor = materialSwapParameters.initialColor;
+
+  d->albedoSaturationUse   .set(materialSwapParameters.albedoSaturationUse);
+  d->albedoSaturationScale .set(materialSwapParameters.albedoSaturationScale);
+  d->albedoSaturationBias  .set(materialSwapParameters.albedoSaturationBias);
+
+  d->albedoValueUse   .set(materialSwapParameters.albedoValueUse);
+  d->albedoValueScale .set(materialSwapParameters.albedoValueScale);
+  d->albedoValueBias  .set(materialSwapParameters.albedoValueBias);
   d->updateColors();
 }
 
@@ -387,9 +824,17 @@ tp_math_utils::MaterialSwapParameters EditMaterialSwapParametersWidget::material
   materialSwapParameters.velvetBias.y     = d->velvetBiasG.get();
   materialSwapParameters.velvetBias.z     = d->velvetBiasB.get();
 
-  materialSwapParameters.albedoHue        = d->albedoHue.get();
+  materialSwapParameters.useAlbedoHue     = d->albedoHueCheckbox.get();
 
   materialSwapParameters.initialColor     = d->initialColor;
+
+  materialSwapParameters.albedoSaturationUse       = d->albedoSaturationUse.get();
+  materialSwapParameters.albedoSaturationScale     = d->albedoSaturationScale.get();
+  materialSwapParameters.albedoSaturationBias      = d->albedoSaturationBias.get();
+
+  materialSwapParameters.albedoValueUse        = d->albedoValueUse.get();
+  materialSwapParameters.albedoValueScale      = d->albedoValueScale.get();
+  materialSwapParameters.albedoValueBias       = d->albedoValueBias.get();
 
   return materialSwapParameters;
 }

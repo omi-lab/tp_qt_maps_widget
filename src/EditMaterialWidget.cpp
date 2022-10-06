@@ -157,6 +157,12 @@ struct EditMaterialWidget::Private
     sssColorButton     ->setIcon(makeIcon(material.sss     ));
     emissionColorButton->setIcon(makeIcon(material.emission));
     velvetColorButton  ->setIcon(makeIcon(material.velvet  ));
+
+    // Calculate hsv
+    glm::vec3 hsv = tp_math_utils::rgb2hsv( material.albedo );
+    albedoHue.set(hsv.x);
+    albedoSaturation.set(hsv.y);
+    albedoValue.set(hsv.z);
   }
 };
 
@@ -394,8 +400,8 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->albedoContrast    = makeFloatEditorRow("Albedo contrast"  , -50.0f, 50.0f, true);
   d->albedoGamma       = makeFloatEditorRow("Albedo gamma"     ,   0.0f, 50.0f, true);
   d->albedoHue         = makeFloatEditorRow("Albedo hue"       ,   0.0f,  1.0f, true);
-  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation",   0.0f, 50.0f, true);
-  d->albedoValue       = makeFloatEditorRow("Albedo value"     ,   0.0f, 50.0f, true);
+  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation",   0.0f, 10.0f, true);
+  d->albedoValue       = makeFloatEditorRow("Albedo value"     ,   0.0f, 10.0f, true);
   d->albedoFactor      = makeFloatEditorRow("Albedo factor"    ,   0.0f,  1.0f, true);
 
 
