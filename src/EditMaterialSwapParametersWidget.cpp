@@ -24,6 +24,7 @@ struct FloatEditor
   std::function<float()> get;
   std::function<void(float)> set;
   QSlider* slider;
+  QDoubleSpinBox* spin;
 };
 
 //##################################################################################################
@@ -236,6 +237,7 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       };
 
       floatEditor.slider = slider;
+      floatEditor.spin = spin;
 
       return floatEditor;
     };
@@ -342,6 +344,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       d->albedoUseB.set( d->albedoUse.get() );
     } );
 
+    connect( d->albedoUse.spin, &QDoubleSpinBox::valueChanged, albedoUseRGBGroup, [=] {
+      d->albedoUseR.set( d->albedoUse.get() );
+      d->albedoUseG.set( d->albedoUse.get() );
+      d->albedoUseB.set( d->albedoUse.get() );
+    } );
+
     albedoUseHLayout->addWidget(albedoUseRGBGroup);
 
     connect(albedoUseExpandButton, &QAbstractButton::toggled, albedoUseRGBGroup, [=] {
@@ -368,6 +376,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
     // connect use slider to the set function of all the sliders
     connect( d->albedoScale.slider, &QSlider::valueChanged, albedoScaleRGBGroup, [=] {
+      d->albedoScaleR.set( d->albedoScale.get() );
+      d->albedoScaleG.set( d->albedoScale.get() );
+      d->albedoScaleB.set( d->albedoScale.get() );
+    } );
+
+    connect( d->albedoScale.spin, &QDoubleSpinBox::valueChanged, albedoScaleRGBGroup, [=] {
       d->albedoScaleR.set( d->albedoScale.get() );
       d->albedoScaleG.set( d->albedoScale.get() );
       d->albedoScaleB.set( d->albedoScale.get() );
@@ -404,6 +418,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       d->albedoBiasB.set( d->albedoBias.get() );
     } );
 
+    connect( d->albedoBias.spin, &QDoubleSpinBox::valueChanged, albedoBiasRGBGroup, [=] {
+      d->albedoBiasR.set( d->albedoBias.get() );
+      d->albedoBiasG.set( d->albedoBias.get() );
+      d->albedoBiasB.set( d->albedoBias.get() );
+    } );
+
     albedoBiasHLayout->addWidget(albedoBiasRGBGroup);
 
     connect(albedoBiasExpandButton, &QAbstractButton::toggled, albedoBiasRGBGroup, [=] {
@@ -430,6 +450,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
     // connect use slider to the set function of all the sliders
     connect( d->sssUse.slider, &QSlider::valueChanged, sssUseRGBGroup, [=] {
+      d->sssUseR.set( d->sssUse.get() );
+      d->sssUseG.set( d->sssUse.get() );
+      d->sssUseB.set( d->sssUse.get() );
+    } );
+
+    connect( d->sssUse.spin, &QDoubleSpinBox::valueChanged, sssUseRGBGroup, [=] {
       d->sssUseR.set( d->sssUse.get() );
       d->sssUseG.set( d->sssUse.get() );
       d->sssUseB.set( d->sssUse.get() );
@@ -466,6 +492,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       d->sssScaleB.set( d->sssScale.get() );
     } );
 
+    connect( d->sssScale.spin, &QDoubleSpinBox::valueChanged, sssScaleRGBGroup, [=] {
+      d->sssScaleR.set( d->sssScale.get() );
+      d->sssScaleG.set( d->sssScale.get() );
+      d->sssScaleB.set( d->sssScale.get() );
+    } );
+
     sssScaleHLayout->addWidget(sssScaleRGBGroup);
 
     connect( sssScaleExpandButton, &QAbstractButton::toggled, sssScaleRGBGroup, [=] {
@@ -492,6 +524,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
     // connect use slider to the set function of all the sliders
     connect( d->sssBias.slider, &QSlider::valueChanged, sssBiasRGBGroup, [=] {
+      d->sssBiasR.set( d->sssBias.get() );
+      d->sssBiasG.set( d->sssBias.get() );
+      d->sssBiasB.set( d->sssBias.get() );
+    } );
+
+    connect( d->sssBias.spin, &QDoubleSpinBox::valueChanged, sssBiasRGBGroup, [=] {
       d->sssBiasR.set( d->sssBias.get() );
       d->sssBiasG.set( d->sssBias.get() );
       d->sssBiasB.set( d->sssBias.get() );
@@ -528,6 +566,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       d->emissionUseB.set( d->emissionUse.get() );
     } );
 
+    connect( d->emissionUse.spin, &QDoubleSpinBox::valueChanged, emissionUseRGBGroup, [=] {
+      d->emissionUseR.set( d->emissionUse.get() );
+      d->emissionUseG.set( d->emissionUse.get() );
+      d->emissionUseB.set( d->emissionUse.get() );
+    } );
+
     emissionUseHLayout->addWidget(emissionUseRGBGroup);
 
     connect( emissionUseExpandButton, &QAbstractButton::toggled, emissionUseRGBGroup, [=] {
@@ -554,6 +598,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
     // connect use slider to the set function of all the sliders
     connect( d->emissionScale.slider, &QSlider::valueChanged, emissionScaleRGBGroup, [=] {
+      d->emissionScaleR.set( d->emissionScale.get() );
+      d->emissionScaleG.set( d->emissionScale.get() );
+      d->emissionScaleB.set( d->emissionScale.get() );
+    } );
+
+    connect( d->emissionScale.spin, &QDoubleSpinBox::valueChanged, emissionScaleRGBGroup, [=] {
       d->emissionScaleR.set( d->emissionScale.get() );
       d->emissionScaleG.set( d->emissionScale.get() );
       d->emissionScaleB.set( d->emissionScale.get() );
@@ -590,6 +640,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       d->emissionBiasB.set( d->emissionBias.get() );
     } );
 
+    connect( d->emissionBias.spin, &QDoubleSpinBox::valueChanged, emissionBiasRGBGroup, [=] {
+      d->emissionBiasR.set( d->emissionBias.get() );
+      d->emissionBiasG.set( d->emissionBias.get() );
+      d->emissionBiasB.set( d->emissionBias.get() );
+    } );
+
     emissionBiasHLayout->addWidget(emissionBiasRGBGroup);
 
     connect( emissionBiasExpandButton, &QAbstractButton::toggled, emissionBiasRGBGroup, [=] {
@@ -616,6 +672,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
     // connect use slider to the set function of all the sliders
     connect( d->velvetUse.slider, &QSlider::valueChanged, velvetUseRGBGroup, [=] {
+      d->velvetUseR.set( d->velvetUse.get() );
+      d->velvetUseG.set( d->velvetUse.get() );
+      d->velvetUseB.set( d->velvetUse.get() );
+    } );
+
+    connect( d->velvetUse.spin, &QDoubleSpinBox::valueChanged, velvetUseRGBGroup, [=] {
       d->velvetUseR.set( d->velvetUse.get() );
       d->velvetUseG.set( d->velvetUse.get() );
       d->velvetUseB.set( d->velvetUse.get() );
@@ -652,6 +714,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
       d->velvetScaleB.set( d->velvetScale.get() );
     } );
 
+    connect( d->velvetScale.spin, &QDoubleSpinBox::valueChanged, velvetScaleRGBGroup, [=] {
+      d->velvetScaleR.set( d->velvetScale.get() );
+      d->velvetScaleG.set( d->velvetScale.get() );
+      d->velvetScaleB.set( d->velvetScale.get() );
+    } );
+
     velvetScaleHLayout->addWidget(velvetScaleRGBGroup);
 
     connect(velvetScaleExpandButton, &QAbstractButton::toggled, velvetScaleRGBGroup, [=] {
@@ -678,6 +746,12 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
     // connect use slider to the set function of all the sliders
     connect( d->velvetBias.slider, &QSlider::valueChanged, velvetBiasRGBGroup, [=] {
+      d->velvetBiasR.set( d->velvetBias.get() );
+      d->velvetBiasG.set( d->velvetBias.get() );
+      d->velvetBiasB.set( d->velvetBias.get() );
+    } );
+
+    connect( d->velvetBias.spin, &QDoubleSpinBox::valueChanged, velvetBiasRGBGroup, [=] {
       d->velvetBiasR.set( d->velvetBias.get() );
       d->velvetBiasG.set( d->velvetBias.get() );
       d->velvetBiasB.set( d->velvetBias.get() );
