@@ -394,8 +394,8 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   d->albedoContrast    = makeFloatEditorRow("Albedo contrast"  , -50.0f, 50.0f, true);
   d->albedoGamma       = makeFloatEditorRow("Albedo gamma"     ,   0.0f, 50.0f, true);
   d->albedoHue         = makeFloatEditorRow("Albedo hue shift" ,   0.0f,  1.0f, true);
-  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation multiplier",   0.0f, 10.0f, true);
-  d->albedoValue       = makeFloatEditorRow("Albedo value multiplier"     ,   0.0f, 10.0f, true);
+  d->albedoSaturation  = makeFloatEditorRow("Albedo saturation",   0.0f, 10.0f, true);
+  d->albedoValue       = makeFloatEditorRow("Albedo value"     ,   0.0f, 10.0f, true);
   d->albedoFactor      = makeFloatEditorRow("Albedo factor"    ,   0.0f,  1.0f, true);
 
 
