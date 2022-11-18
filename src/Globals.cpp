@@ -13,15 +13,12 @@ int staticInit()
 #ifdef TP_FORCE_ES3
   format.setProfile(QSurfaceFormat::CoreProfile);
   format.setRenderableType(QSurfaceFormat::OpenGLES);
-  format.setMajorVersion(3);
-  format.setMinorVersion(0);
+  format.setVersion(3, 0);
 #elif defined TP_OSX
   format.setProfile(QSurfaceFormat::CoreProfile);
-  format.setMajorVersion(4);
-  format.setMinorVersion(1);
+  format.setVersion(4, 1);
 #else
-  format.setMajorVersion(3);
-  format.setMinorVersion(2);
+  format.setVersion(3, 2);
   format.setSamples(4);
 #endif
 
