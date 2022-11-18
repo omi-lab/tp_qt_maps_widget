@@ -4,6 +4,9 @@
 
 #include "tp_maps/layers/FBOLayer.h"
 
+#include "tp_maps/Map.h"
+#include "tp_maps/Buffers.h"
+
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QLabel>
@@ -28,6 +31,9 @@ struct ConfigureFBOLayerWidget::Private
 
   QComboBox* source{nullptr};
   QSpinBox* index{nullptr};
+
+
+  QComboBox* storedBuffers{nullptr};
 
   //################################################################################################
   Private(tp_maps::FBOLayer* fboLayer_):
@@ -114,6 +120,26 @@ ConfigureFBOLayerWidget::ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer):
 
     connect(d->source, &QComboBox::currentTextChanged, this, edited);
     connect(d->index, &QSpinBox::valueChanged, this, edited);
+  }
+
+  {
+    QStringList dst;
+    std::vector<std::string> keys;
+
+    for( auto& i : fboLayer->map()->buffers().storedBuffers() ) {
+      keys.push_back( i.first );
+    }
+
+    auto src = keys;
+    dst.reserve(src.size());
+    for(const auto& i : src)
+      dst.push_back(QString::fromStdString(i));
+
+
+    l->addWidget(new QLabel("Stored buffers"));
+    d->source = new QComboBox();
+    l->addWidget(d->source);
+    d->source->addItems( dst );
   }
 
   update();
