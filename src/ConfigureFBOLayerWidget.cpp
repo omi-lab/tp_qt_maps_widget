@@ -2,10 +2,9 @@
 
 #include "tp_qt_utils/Globals.h"
 
-#include "tp_maps/layers/FBOLayer.h"
-
 #include "tp_maps/Map.h"
 #include "tp_maps/Buffers.h"
+#include "tp_maps/layers/FBOLayer.h"
 
 #include <QCheckBox>
 #include <QDoubleSpinBox>
@@ -13,6 +12,10 @@
 #include <QBoxLayout>
 #include <QGridLayout>
 #include <QComboBox>
+#include <QListWidget>
+#include <QPushButton>
+#include <QGroupBox>
+#include <QSplitter>
 
 namespace tp_qt_maps_widget
 {
@@ -20,32 +23,146 @@ namespace tp_qt_maps_widget
 //##################################################################################################
 struct ConfigureFBOLayerWidget::Private
 {
+  ConfigureFBOLayerWidget* q;
+
   tp_maps::FBOLayer* fboLayer;
 
   QCheckBox* enableCheckBox{nullptr};
 
+  QListWidget* windowsList{nullptr};
+  QPushButton* addButton{nullptr};
+  QPushButton* removeButton{nullptr};
+
+  QGroupBox* groupBox{nullptr};
   QDoubleSpinBox* positionX{nullptr};
   QDoubleSpinBox* positionY{nullptr};
   QDoubleSpinBox* sizeX{nullptr};
   QDoubleSpinBox* sizeY{nullptr};
 
+  QComboBox* fboNames{nullptr};
   QComboBox* source{nullptr};
-  QSpinBox* index{nullptr};
-
-
-  QComboBox* storedBuffers{nullptr};
+  QSpinBox* level{nullptr};
 
   //################################################################################################
-  Private(tp_maps::FBOLayer* fboLayer_):
+  Private(ConfigureFBOLayerWidget* q_, tp_maps::FBOLayer* fboLayer_):
+    q(q_),
     fboLayer(fboLayer_)
   {
 
+  }
+
+  //################################################################################################
+  size_t currentSelection()
+  {
+    if(auto items = windowsList->selectedItems(); !items.empty())
+      return size_t(windowsList->row(items.front()));
+
+    return 0;
+  }
+
+  //################################################################################################
+  void addClicked()
+  {
+    std::vector<tp_maps::FBOWindow> windows = fboLayer->windows();
+    tp_maps::FBOWindow& window = windows.emplace_back();
+
+    if(auto fbos = fboLayer->map()->buffers().storedBuffers(); !fbos.empty())
+      window.fboName = fbos.begin()->first;
+
+    fboLayer->setWindows(windows);
+    q->update();
+  }
+
+  //################################################################################################
+  void removeClicked()
+  {
+    size_t selectedIndex = currentSelection();
+    std::vector<tp_maps::FBOWindow> windows = fboLayer->windows();
+
+    if(selectedIndex<windows.size())
+    {
+      tpRemoveAt(windows, selectedIndex);
+
+      fboLayer->setWindows(windows);
+      q->update();
+    }
+  }
+
+  //################################################################################################
+  void edited()
+  {
+    size_t selectedIndex = currentSelection();
+    std::vector<tp_maps::FBOWindow> windows = fboLayer->windows();
+
+    if(selectedIndex<windows.size())
+    {
+      tp_maps::FBOWindow& window = windows.at(selectedIndex);
+
+      window.fboName = fboNames->currentText().toStdString();
+      window.source  = tp_maps::fboLayerSourceFromString(source->currentText().toStdString());
+      window.level   = level->value();
+      window.origin  = {float(positionX->value()), float(positionY->value())};
+      window.size    = {float(sizeX->value()), float(sizeY->value())};
+
+      fboLayer->setWindows(windows);
+      q->update();
+    }
+  }
+
+  //################################################################################################
+  void updateSelection()
+  {
+    size_t selectedIndex = currentSelection();
+    const auto& windows = fboLayer->windows();
+
+    if(selectedIndex >= windows.size())
+    {
+      groupBox->setEnabled(false);
+      return;
+    }
+
+    groupBox->setEnabled(true);
+
+    const auto& window = windows.at(selectedIndex);
+
+    positionX->blockSignals(true);
+    positionY->blockSignals(true);
+    sizeX    ->blockSignals(true);
+    sizeY    ->blockSignals(true);
+
+    positionX->setValue(double(window.origin.x));
+    positionY->setValue(double(window.origin.y));
+    sizeX    ->setValue(double(window.size.x));
+    sizeY    ->setValue(double(window.size.y));
+
+    positionX->blockSignals(false);
+    positionY->blockSignals(false);
+    sizeX    ->blockSignals(false);
+    sizeY    ->blockSignals(false);
+
+    {
+      fboNames->blockSignals(true);
+      fboNames->clear();
+      for(auto& i : fboLayer->map()->buffers().storedBuffers())
+        fboNames->addItem(QString::fromStdString(i.first));
+      fboNames->setCurrentText(QString::fromStdString(window.fboName));
+      fboNames->blockSignals(false);
+    }
+
+    source->blockSignals(true);
+    source->setCurrentText(QString::fromStdString(tp_maps::fboLayerSourceToString(window.source)));
+    source->blockSignals(false);
+
+    level->blockSignals(true);
+    level->setRange(0, fboLayer->map()->maxSpotLightLevels());
+    level->setValue(int(window.level));
+    level->blockSignals(false);
   }
 };
 
 //##################################################################################################
 ConfigureFBOLayerWidget::ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer):
-  d(new Private(fboLayer))
+  d(new Private(this, fboLayer))
 {
   auto l = new QVBoxLayout(this);
 
@@ -57,10 +174,40 @@ ConfigureFBOLayerWidget::ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer):
     d->fboLayer->setVisible(d->enableCheckBox->isChecked());
   });
 
+  auto mainSplitter = new QSplitter();
+  l->addWidget(mainSplitter);
+
   {
-    auto ll = new QGridLayout();
-    ll->setContentsMargins(0,0,0,0);
-    l->addLayout(ll);
+    auto w = new QWidget();
+    auto ll = new QVBoxLayout(w);
+    mainSplitter->addWidget(w);
+
+    ll->addWidget(new QLabel("FBO windows"));
+
+    d->windowsList = new QListWidget();
+    ll->addWidget(d->windowsList);
+    connect(d->windowsList->selectionModel(), &QItemSelectionModel::selectionChanged, this, [&]
+    {
+      d->updateSelection();
+    });
+
+    auto buttonLayout = new QHBoxLayout();
+    ll->addLayout(buttonLayout);
+    buttonLayout->setContentsMargins(0,0,0,0);
+
+    d->addButton = new QPushButton("Add");
+    buttonLayout->addWidget(d->addButton);
+    connect(d->addButton, &QPushButton::clicked, this, [&]{d->addClicked();});
+
+    d->removeButton = new QPushButton("Remove");
+    buttonLayout->addWidget(d->removeButton);
+    connect(d->removeButton, &QPushButton::clicked, this, [&]{d->removeClicked();});
+  }
+
+  {
+    d->groupBox = new QGroupBox();
+    auto ll = new QGridLayout(d->groupBox);
+    mainSplitter->addWidget(d->groupBox);
 
     ll->addWidget(new QLabel("Position X"), 0, 0);
     d->positionX = new QDoubleSpinBox();
@@ -90,56 +237,26 @@ ConfigureFBOLayerWidget::ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer):
     d->sizeY->setSingleStep(0.04);
     ll->addWidget(d->sizeY, 1, 3);
 
-    auto edited = [&]
-    {
-      glm::vec2 position = {float(d->positionX->value()), float(d->positionY->value())};
-      glm::vec2 size = {float(d->sizeX->value()), float(d->sizeY->value())};
-      d->fboLayer->setImageCoords(position, size);
-    };
+    ll->addWidget(new QLabel("FBO"), 2, 0, 1, 4);
+    d->fboNames = new QComboBox();
+    ll->addWidget(d->fboNames, 3, 0, 1, 4);
 
-    connect(d->positionX, &QDoubleSpinBox::valueChanged, this, edited);
-    connect(d->positionY, &QDoubleSpinBox::valueChanged, this, edited);
-    connect(d->sizeX, &QDoubleSpinBox::valueChanged, this, edited);
-    connect(d->sizeY, &QDoubleSpinBox::valueChanged, this, edited);
-  }
-
-  {
-    l->addWidget(new QLabel("Source"));
+    ll->addWidget(new QLabel("Texture"), 4, 0, 1, 4);
     d->source = new QComboBox();
-    l->addWidget(d->source);
+    ll->addWidget(d->source, 5, 0, 1, 4);
     d->source->addItems(tp_qt_utils::convertStringList(tp_maps::fboLayerSources()));
 
-    l->addWidget(new QLabel("Light index"));
-    d->index = new QSpinBox();
-    l->addWidget(d->index);
-    d->index->setRange(0, 4);
-    auto edited = [&]
-    {
-      d->fboLayer->setSource(tp_maps::fboLayerSourceFromString(d->source->currentText().toStdString()), d->index->value());
-    };
+    ll->addWidget(new QLabel("Light level"), 6, 0, 1, 4);
+    d->level = new QSpinBox();
+    ll->addWidget(d->level, 7, 0, 1, 4);
 
-    connect(d->source, &QComboBox::currentTextChanged, this, edited);
-    connect(d->index, &QSpinBox::valueChanged, this, edited);
-  }
-
-  {
-    QStringList dst;
-    std::vector<std::string> keys;
-
-    for( auto& i : fboLayer->map()->buffers().storedBuffers() ) {
-      keys.push_back( i.first );
-    }
-
-    auto src = keys;
-    dst.reserve(src.size());
-    for(const auto& i : src)
-      dst.push_back(QString::fromStdString(i));
-
-
-    l->addWidget(new QLabel("Stored buffers"));
-    d->source = new QComboBox();
-    l->addWidget(d->source);
-    d->source->addItems( dst );
+    connect(d->positionX, &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
+    connect(d->positionY, &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
+    connect(d->sizeX    , &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
+    connect(d->sizeY    , &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
+    connect(d->fboNames , &QComboBox::currentTextChanged, this, [&]{d->edited();});
+    connect(d->source   , &QComboBox::currentTextChanged, this, [&]{d->edited();});
+    connect(d->level    , &QSpinBox::valueChanged       , this, [&]{d->edited();});
   }
 
   update();
@@ -156,28 +273,26 @@ void ConfigureFBOLayerWidget::update()
 {
   d->enableCheckBox->setChecked(d->fboLayer->visible());
 
-  d->positionX->blockSignals(true);
-  d->positionY->blockSignals(true);
-  d->sizeX    ->blockSignals(true);
-  d->sizeY    ->blockSignals(true);
+  //------------------------------------------------------------------------------------------------
+  // Update the list of windows.
+  int selectedIndex=0;
+  {
+    if(auto items = d->windowsList->selectedItems(); !items.empty())
+      selectedIndex = d->windowsList->row(items.front());
 
-  d->positionX->setValue(double(d->fboLayer->origin().x));
-  d->positionY->setValue(double(d->fboLayer->origin().y));
-  d->sizeX    ->setValue(double(d->fboLayer->size().x));
-  d->sizeY    ->setValue(double(d->fboLayer->size().y));
+    d->windowsList->blockSignals(true);
+    d->windowsList->clear();
+    for(const auto& window : d->fboLayer->windows())
+      d->windowsList->addItem(QString::fromStdString(window.fboName));
 
-  d->positionX->blockSignals(false);
-  d->positionY->blockSignals(false);
-  d->sizeX    ->blockSignals(false);
-  d->sizeY    ->blockSignals(false);
+    d->windowsList->clearSelection();
+    if(auto item = d->windowsList->item(selectedIndex); item)
+      item->setSelected(true);
 
-  d->source->blockSignals(true);
-  d->source->setCurrentText(QString::fromStdString(tp_maps::fboLayerSourceToString(d->fboLayer->source())));
-  d->source->blockSignals(false);
+    d->windowsList->blockSignals(false);
+  }
 
-  d->index->blockSignals(true);
-  d->index->setValue(int(d->fboLayer->index()));
-  d->index->blockSignals(false);
+  d->updateSelection();
 }
 
 }
