@@ -248,6 +248,8 @@ void MapWidget::resizeGL(int width, int height)
 void MapWidget::paintGL()
 {
   d->map->paintGL();
+  // workaround on wsl linux for transparency in qt gl widget
+  d->map->setWriteAlpha(true);
 }
 
 //##################################################################################################
