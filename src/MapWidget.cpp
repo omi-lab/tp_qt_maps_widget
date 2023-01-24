@@ -177,6 +177,7 @@ MapWidget::MapWidget(QWidget *parent):
   //  setFormat(format);
 
   d->map->setVisible(false);
+  d->map->setWriteAlpha(true);
 }
 
 //##################################################################################################
