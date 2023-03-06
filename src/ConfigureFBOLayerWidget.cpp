@@ -154,7 +154,7 @@ struct ConfigureFBOLayerWidget::Private
     source->blockSignals(false);
 
     level->blockSignals(true);
-    level->setRange(0, fboLayer->map()->maxSpotLightLevels());
+    level->setRange(0, int(fboLayer->map()->maxSpotLightLevels()));
     level->setValue(int(window.level));
     level->blockSignals(false);
   }
