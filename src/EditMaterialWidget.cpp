@@ -609,16 +609,16 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->albedoValue          .set(material.albedoValue          );
   d->albedoFactor         .set(material.albedoFactor         );
 
-  d->skewU                .set(material.skewUV.x             );
-  d->skewV                .set(material.skewUV.y             );
+  d->skewU                .set(material.uvTransformation.skewUV.x     );
+  d->skewV                .set(material.uvTransformation.skewUV.y     );
 
-  d->scaleU               .set(material.scaleUV.x            );
-  d->scaleV               .set(material.scaleUV.y            );
+  d->scaleU               .set(material.uvTransformation.scaleUV.x    );
+  d->scaleV               .set(material.uvTransformation.scaleUV.y    );
 
-  d->translateU           .set(material.translateUV.x        );
-  d->translateV           .set(material.translateUV.y        );
+  d->translateU           .set(material.uvTransformation.translateUV.x);
+  d->translateV           .set(material.uvTransformation.translateUV.y);
 
-  d->rotateUV             .set(material.rotateUV             );
+  d->rotateUV             .set(material.uvTransformation.rotateUV     );
 
   d->useAmbient           .set(material.useAmbient           );
   d->useDiffuse           .set(material.useDiffuse           );
@@ -688,16 +688,16 @@ tp_math_utils::Material EditMaterialWidget::material() const
   d->material.albedoValue      = d->albedoValue     .get();
   d->material.albedoFactor     = d->albedoFactor    .get();
 
-  d->material.skewUV.x         = d->skewU           .get();
-  d->material.skewUV.y         = d->skewV           .get();
+  d->material.uvTransformation.skewUV.x      = d->skewU     .get();
+  d->material.uvTransformation.skewUV.y      = d->skewV     .get();
 
-  d->material.scaleUV.x        = d->scaleU          .get();
-  d->material.scaleUV.y        = d->scaleV          .get();
+  d->material.uvTransformation.scaleUV.x     = d->scaleU    .get();
+  d->material.uvTransformation.scaleUV.y     = d->scaleV    .get();
 
-  d->material.translateUV.x    = d->translateU      .get();
-  d->material.translateUV.y    = d->translateV      .get();
+  d->material.uvTransformation.translateUV.x = d->translateU.get();
+  d->material.uvTransformation.translateUV.y = d->translateV.get();
 
-  d->material.rotateUV         = d->rotateUV        .get();
+  d->material.uvTransformation.rotateUV      = d->rotateUV  .get();
 
   d->material.useAmbient            = d->useAmbient       .get();
   d->material.useDiffuse            = d->useDiffuse       .get();
