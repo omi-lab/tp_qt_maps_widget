@@ -5,7 +5,12 @@
 #include "tp_maps/Map.h"
 
 #include <QOpenGLWidget>
+#include <memory>
 
+namespace tp_utils
+{
+  class Profiler;
+}
 namespace tp_qt_maps_widget
 {
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
@@ -13,7 +18,7 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
   Q_OBJECT
 public:
   //################################################################################################
-  MapWidget(QWidget* parent = nullptr);
+  MapWidget(QWidget* parent = nullptr, tp_utils::Profiler* profiler = nullptr);
 
   //################################################################################################
   ~MapWidget() override;

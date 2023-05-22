@@ -11,6 +11,7 @@
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
 #include "tp_utils/StackTrace.h"
+#include "tp_utils/Profiler.h"
 
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -54,11 +55,12 @@ class Map_lt final : public tp_maps::Map
 {
 public:
   TP_NONCOPYABLE(Map_lt);
-
+  tp_utils::Profiler* profiler;
   //################################################################################################
-  Map_lt(MapWidget* mapWidget_):
-    tp_maps::Map(false)
+  Map_lt(MapWidget* mapWidget_, tp_utils::Profiler* profiler_):
+    tp_maps::Map(false, profiler_)
   {
+    profiler = profiler_;
     mapWidget = mapWidget_;
     setOpenGLProfile(tp_qt_maps::getOpenGLProfile());
   }
@@ -131,12 +133,14 @@ struct MapWidget::Private
   int animationTimerID{-1};
 
   QMetaObject::Connection aboutToBeDestroyedConnection;
+  tp_utils::Profiler* profiler;
 
   //################################################################################################
-  Private(MapWidget* q_):
-    q(q_)
+  Private(MapWidget* q_, tp_utils::Profiler* profiler):
+    q(q_),
+    profiler(profiler)
   {
-    map = new Map_lt(q);
+    map = new Map_lt(q, profiler);
   }
 
   //################################################################################################
@@ -162,9 +166,9 @@ struct MapWidget::Private
 
 
 //##################################################################################################
-MapWidget::MapWidget(QWidget *parent):
+MapWidget::MapWidget(QWidget *parent, tp_utils::Profiler* profiler):
   QOpenGLWidget(parent),
-  d(new Private(this))
+  d(new Private(this, profiler))
 {
   setFocusPolicy(Qt::StrongFocus);
   //setFocusPolicy(Qt::ClickFocus);
