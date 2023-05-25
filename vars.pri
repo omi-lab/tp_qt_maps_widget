@@ -29,3 +29,6 @@ HEADERS += inc/tp_qt_maps_widget/ConnectContext.h
 
 SOURCES += src/ConfigureFBOLayerWidget.cpp
 HEADERS += inc/tp_qt_maps_widget/ConfigureFBOLayerWidget.h
+
+SOURCES += src/ProgressEventsGraph.cpp
+HEADERS += inc/tp_qt_maps_widget/ProgressEventsGraph.h
