@@ -7,6 +7,7 @@
 
 #include "tp_maps/MouseEvent.h"
 #include "tp_maps/KeyEvent.h"
+#include "tp_maps/DragDropEvent.h"
 
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
@@ -14,7 +15,12 @@
 
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QDrag>
+#include <QDragEnterEvent>
+#include <QDragLeaveEvent>
+#include <QMimeData>
 #include <QTimer>
+
 
 namespace tp_qt_maps_widget
 {
@@ -166,6 +172,7 @@ MapWidget::MapWidget(QWidget* parent):
   QOpenGLWidget(parent),
   d(new Private(this))
 {
+  setAcceptDrops(true);
   setFocusPolicy(Qt::StrongFocus);
   //setFocusPolicy(Qt::ClickFocus);
 
@@ -250,6 +257,81 @@ void MapWidget::paintGL()
   d->map->paintGL();
   // workaround on wsl linux for transparency in qt gl widget
   d->map->setWriteAlpha(true);
+}
+
+//################################################################################################
+void MapWidget::dragEnterEvent(QDragEnterEvent *event)
+{
+  if(event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id")))
+  {
+    QByteArray assetData = event->mimeData()->data(QStringLiteral("text/omi_asset_id"));
+    QDataStream dataStream(&assetData, QIODevice::ReadOnly);
+    QString assetId;
+    dataStream >> assetId;
+
+    tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Enter);
+    e.pos.x = event->position().toPoint().x();
+    e.pos.y = event->position().toPoint().y();
+    e.payload = nlohmann::json({{"assetId", assetId.toStdString()}});
+    if(d->map->dragDropEvent(e))
+      event->accept();
+  }
+  else
+  {
+    event->ignore();
+  }
+}
+
+//################################################################################################
+void MapWidget::dragLeaveEvent(QDragLeaveEvent *event)
+{
+  tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Leave);
+  d->map->dragDropEvent(e);
+  event->accept();
+}
+
+//################################################################################################
+void MapWidget::dragMoveEvent(QDragMoveEvent *event)
+{
+  if (event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id"))) 
+  {
+    tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Move);
+    e.pos.x = event->position().toPoint().x();
+    e.pos.y = event->position().toPoint().y();
+    d->map->dragDropEvent(e);
+
+    event->setDropAction(Qt::MoveAction);
+    event->accept();
+  } 
+  else 
+  {
+    event->ignore();
+  }
+}
+
+//################################################################################################
+void MapWidget::dropEvent(QDropEvent *event)
+{
+  if (event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id"))) 
+  {
+    QByteArray assetData = event->mimeData()->data(QStringLiteral("text/omi_asset_id"));
+    QDataStream dataStream(&assetData, QIODevice::ReadOnly);
+    QString assetId;
+    dataStream >> assetId;
+    
+    tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Drop);
+    e.pos.x = event->position().toPoint().x();
+    e.pos.y = event->position().toPoint().y();
+    e.payload = nlohmann::json({{"assetId", assetId.toStdString()}});
+    d->map->dragDropEvent(e);
+
+    event->setDropAction(Qt::MoveAction);
+    event->accept();
+  } 
+  else 
+  {
+      event->ignore();
+  }
 }
 
 //##################################################################################################
