@@ -296,8 +296,8 @@ void MapWidget::dragMoveEvent(QDragMoveEvent *event)
   if (event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id"))) 
   {
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Move);
-    e.pos.x = event->position().toPoint().x();
-    e.pos.y = event->position().toPoint().y();
+    e.pos.x = event->position().toPoint().x() * devicePixelRatio();
+    e.pos.y = event->position().toPoint().y() * devicePixelRatio();
     d->map->dragDropEvent(e);
 
     event->setDropAction(Qt::MoveAction);
@@ -320,8 +320,8 @@ void MapWidget::dropEvent(QDropEvent *event)
     dataStream >> assetId;
     
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Drop);
-    e.pos.x = event->position().toPoint().x();
-    e.pos.y = event->position().toPoint().y();
+    e.pos.x = event->position().toPoint().x() * devicePixelRatio();
+    e.pos.y = event->position().toPoint().y() * devicePixelRatio();
     e.payload = nlohmann::json({{"assetId", assetId.toStdString()}});
     d->map->dragDropEvent(e);
 
