@@ -13,6 +13,7 @@
 #include <QImage>
 #include <QPixmap>
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QPainter>
 
 namespace tp_qt_maps_widget
@@ -53,6 +54,8 @@ struct EditLightWidget::Private
   QDoubleSpinBox* orthoRadius{nullptr};
 
   QSlider* offsetScale{nullptr};
+
+  QCheckBox* castShadows{nullptr};
 
   //################################################################################################
   void updateColors()
@@ -299,6 +302,12 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->offsetScale->setSingleStep(1);
     connect(d->offsetScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
   }
+
+  {
+    d->castShadows = new QCheckBox("Cast shadows");
+    l->addWidget(d->castShadows);
+    connect(d->castShadows, &QCheckBox::clicked, this, &EditLightWidget::lightEdited);
+  }
 }
 
 //##################################################################################################
@@ -357,6 +366,8 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
     float scaled = light.offsetScale.x*5000.0f;
     d->offsetScale->setValue(int(scaled));
   }
+
+  d->castShadows->setChecked(light.castShadows);
 }
 
 //##################################################################################################
@@ -397,6 +408,8 @@ tp_math_utils::Light EditLightWidget::light() const
     s/=5000.0f;
     d->light.offsetScale = {s,s,s};
   }
+
+  d->light.castShadows = d->castShadows->isChecked();
 
   return d->light;
 }
