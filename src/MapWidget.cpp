@@ -260,7 +260,7 @@ void MapWidget::paintGL()
 }
 
 //################################################################################################
-void MapWidget::dragEnterEvent(QDragEnterEvent *event)
+void MapWidget::dragEnterEvent(QDragEnterEvent* event)
 {
   if(event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id")))
   {
