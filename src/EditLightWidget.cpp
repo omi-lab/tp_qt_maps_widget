@@ -1,5 +1,10 @@
 #include "tp_qt_maps_widget/EditLightWidget.h"
 
+#include "tp_utils/JSONUtils.h"
+#include "tp_utils/DebugUtils.h"
+
+#include "glm/gtx/norm.hpp" // IWYU pragma: keep
+
 #include <QDialog>
 #include <QBoxLayout>
 #include <QLabel>
@@ -15,6 +20,9 @@
 #include <QLineEdit>
 #include <QCheckBox>
 #include <QPainter>
+#include <QToolButton>
+#include <QClipboard>
+#include <QGuiApplication>
 
 namespace tp_qt_maps_widget
 {
@@ -100,8 +108,69 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   l->addWidget(d->typeCombo);
   connect(d->typeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &EditLightWidget::lightEdited);
 
+  auto copyPasteTitle = [&](auto title, auto copy, auto paste)
   {
-    l->addWidget(new QLabel("Position"));
+    auto ll = new QHBoxLayout();
+    ll->setContentsMargins(0,0,0,0);
+    l->addLayout(ll);
+    ll->addWidget(new QLabel(title));
+
+    ll->addStretch();
+
+    auto copyButton = new QToolButton();
+    copyButton->setIcon(QIcon(":/tp_qt_icons_technical/copy.png"));
+    copyButton->setFixedSize(18, 18);
+    copyButton->setIconSize(QSize(12, 12));
+    copyButton->setToolTip("Copy");
+    ll->addWidget(copyButton);
+    connect(copyButton, &QToolButton::clicked, this, copy);
+
+    auto pasteButton = new QToolButton();
+    pasteButton->setIcon(QIcon(":/tp_qt_icons_technical/paste.png"));
+    pasteButton->setFixedSize(18, 18);
+    pasteButton->setIconSize(QSize(12, 12));
+    pasteButton->setToolTip("Paste");
+    ll->addWidget(pasteButton);
+    connect(pasteButton, &QToolButton::clicked, this, paste);
+  };
+
+  {
+    copyPasteTitle("Position", [=]
+    {
+      QGuiApplication::clipboard()->setText(
+            QString::fromStdString(nlohmann::json::array(
+                                     {
+                                       d->positionX->value(),
+                                       d->positionY->value(),
+                                       d->positionZ->value()
+                                     }).dump(2)
+                                   ));
+    }, [=]
+    {
+      nlohmann::json j = tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString());
+
+      if(j.is_array() &&
+         j.size()==3 &&
+         j.at(0).is_number() &&
+         j.at(1).is_number() &&
+         j.at(2).is_number())
+      {
+        d->positionX->blockSignals(true);
+        d->positionY->blockSignals(true);
+        d->positionZ->blockSignals(true);
+
+        d->positionX->setValue(j.at(0).get<double>());
+        d->positionY->setValue(j.at(1).get<double>());
+        d->positionZ->setValue(j.at(2).get<double>());
+
+        d->positionX->blockSignals(false);
+        d->positionY->blockSignals(false);
+        d->positionZ->blockSignals(false);
+
+        emit lightEdited();
+      }
+    });
+
     auto ll = new QHBoxLayout();
     ll->setContentsMargins(0,0,0,0);
     l->addLayout(ll);
@@ -123,7 +192,50 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   }
 
   {
-    l->addWidget(new QLabel("Direction"));
+    copyPasteTitle("Direction", [=]
+    {
+      QGuiApplication::clipboard()->setText(
+            QString::fromStdString(nlohmann::json::array(
+                                     {
+                                       d->directionX->value(),
+                                       d->directionY->value(),
+                                       d->directionZ->value()
+                                     }).dump(2)
+                                   ));
+    }, [=]
+    {
+      nlohmann::json j = tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString());
+
+      if(j.is_array() &&
+         j.size()==3 &&
+         j.at(0).is_number() &&
+         j.at(1).is_number() &&
+         j.at(2).is_number())
+      {
+        d->directionX->blockSignals(true);
+        d->directionY->blockSignals(true);
+        d->directionZ->blockSignals(true);
+
+        glm::vec3 v{j.at(0).get<float>(), j.at(1).get<float>(), j.at(2).get<float>()};
+        if(glm::length2(v) > 0.1f)
+        {
+          v = glm::normalize(v);
+
+          d->directionX->setValue(double(v.x));
+          d->directionY->setValue(double(v.y));
+          d->directionZ->setValue(double(v.z));
+
+          d->light.setDirection(v);
+        }
+
+        d->directionX->blockSignals(false);
+        d->directionY->blockSignals(false);
+        d->directionZ->blockSignals(false);
+
+        emit lightEdited();
+      }
+    });
+
     auto ll = new QHBoxLayout();
     ll->setContentsMargins(0,0,0,0);
     l->addLayout(ll);
@@ -378,11 +490,6 @@ tp_math_utils::Light EditLightWidget::light() const
   d->light.type = tp_math_utils::lightTypeFromString(d->typeCombo->currentText().toStdString());
 
   d->light.setPosition({d->positionX->value(), d->positionY->value(), d->positionZ->value()});
-
-  //d->light.direction.x = d->directionX->value();
-  //d->light.direction.y = d->directionY->value();
-  //d->light.direction.z = d->directionZ->value();
-  //d->light.direction = glm::normalize(d->light.direction);
 
   {
     float scaled = float(d->diffuseScale->value());
