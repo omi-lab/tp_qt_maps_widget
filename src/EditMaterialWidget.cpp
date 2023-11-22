@@ -538,7 +538,9 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       hLayout->addWidget(button);
       connect(button, &QPushButton::clicked, this, [=]
       {
-        QGuiApplication::clipboard()->setText(QString::fromStdString(material().saveState().dump(2)));
+        nlohmann::json j;
+        material().saveState(j);
+        QGuiApplication::clipboard()->setText(QString::fromStdString(j.dump(2)));
       });
     }
     {
