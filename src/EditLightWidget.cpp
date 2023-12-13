@@ -61,7 +61,7 @@ struct EditLightWidget::Private
   QDoubleSpinBox* fov       {nullptr};
   QDoubleSpinBox* orthoRadius{nullptr};
 
-  QSlider* offsetScale{nullptr};
+  QDoubleSpinBox* offsetScale{nullptr};
 
   QCheckBox* castShadows{nullptr};
 
@@ -407,12 +407,13 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   }
 
   {
+    d->offsetScale = new QDoubleSpinBox();
     l->addWidget(new QLabel("Offset scale"));
-    d->offsetScale = new QSlider(Qt::Horizontal);
     l->addWidget(d->offsetScale);
-    d->offsetScale->setRange(1, 10000);
-    d->offsetScale->setSingleStep(1);
-    connect(d->offsetScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
+    d->offsetScale->setRange(0.0002, 2.);
+    d->orthoRadius->setDecimals(2);
+    d->offsetScale->setSingleStep(0.01);
+    connect(d->offsetScale, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
   }
 
   {
@@ -474,10 +475,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
   setValue(d->fov        , light.fov        );
   setValue(d->orthoRadius, light.orthoRadius);
 
-  {
-    float scaled = light.offsetScale.x*5000.0f;
-    d->offsetScale->setValue(int(scaled));
-  }
+  setValue(d->offsetScale, light.offsetScale.x);
 
   d->castShadows->setChecked(light.castShadows);
 }
@@ -512,7 +510,6 @@ tp_math_utils::Light EditLightWidget::light() const
 
   {
     float s = float(d->offsetScale->value());
-    s/=5000.0f;
     d->light.offsetScale = {s,s,s};
   }
 
