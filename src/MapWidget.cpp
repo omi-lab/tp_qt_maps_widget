@@ -265,13 +265,13 @@ void MapWidget::dragEnterEvent(QDragEnterEvent* event)
   {
     QByteArray assetData = event->mimeData()->data(QStringLiteral("text/omi_asset_id"));
     QDataStream dataStream(&assetData, QIODevice::ReadOnly);
-    QString assetId;
-    dataStream >> assetId;
+    QString dataPayload;
+    dataStream >> dataPayload;
 
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Enter);
     e.pos.x = event->position().toPoint().x();
     e.pos.y = event->position().toPoint().y();
-    e.payload = nlohmann::json({{"assetId", assetId.toStdString()}});
+    e.payload = nlohmann::json::parse(dataPayload.toStdString());
     if(d->map->dragDropEvent(e))
       event->accept();
   }
@@ -315,13 +315,13 @@ void MapWidget::dropEvent(QDropEvent *event)
   {
     QByteArray assetData = event->mimeData()->data(QStringLiteral("text/omi_asset_id"));
     QDataStream dataStream(&assetData, QIODevice::ReadOnly);
-    QString assetId;
-    dataStream >> assetId;
-    
+    QString dataPayload;
+    dataStream >> dataPayload;
+
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Drop);
     e.pos.x = event->position().toPoint().x() * devicePixelRatio();
     e.pos.y = event->position().toPoint().y() * devicePixelRatio();
-    e.payload = nlohmann::json({{"assetId", assetId.toStdString()}});
+    e.payload = nlohmann::json::parse(dataPayload.toStdString());
     d->map->dragDropEvent(e);
 
     event->setDropAction(Qt::MoveAction);
