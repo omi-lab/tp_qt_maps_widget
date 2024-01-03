@@ -66,7 +66,7 @@ public:
     tp_maps::Map(false)
   {
     mapWidget = mapWidget_;
-    setOpenGLProfile(tp_qt_maps::getOpenGLProfile());
+    setShaderProfile(tp_qt_maps::getShaderProfile());
   }
 
   //################################################################################################
