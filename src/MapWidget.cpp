@@ -12,7 +12,6 @@
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
 #include "tp_utils/StackTrace.h"
-#include "tp_utils/TimerThread.h"
 
 #include <QMouseEvent>
 #include <QWheelEvent>
@@ -104,20 +103,7 @@ public:
     tp_maps::Map::update(renderFromStage);
 
     if(!inPaint())
-    {
-      setFastRender(true);
       mapWidget->update();
-    }
-
-    if(tp_maps::RenderFromStage::Full == renderFromStage.type)
-    {
-      if(!fullRenderTriggerTimer)
-        fullRenderTriggerTimer = std::make_unique<tp_utils::TimerThread>([&]
-        {
-          setFastRender(false);
-          mapWidget->update();
-        }, 1000);
-    }
   }
 
   //################################################################################################
@@ -136,8 +122,6 @@ public:
   });
 
   MapWidget* mapWidget;
-
-  std::unique_ptr<tp_utils::TimerThread> fullRenderTriggerTimer;
 };
 }
 
