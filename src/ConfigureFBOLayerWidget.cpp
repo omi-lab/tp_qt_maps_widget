@@ -41,7 +41,6 @@ struct ConfigureFBOLayerWidget::Private
 
   QComboBox* fboNames{nullptr};
   QComboBox* source{nullptr};
-  QSpinBox* level{nullptr};
 
   //################################################################################################
   Private(ConfigureFBOLayerWidget* q_, tp_maps::FBOLayer* fboLayer_):
@@ -100,7 +99,6 @@ struct ConfigureFBOLayerWidget::Private
 
       window.fboName = fboNames->currentText().toStdString();
       window.source  = tp_maps::fboLayerSourceFromString(source->currentText().toStdString());
-      window.level   = level->value();
       window.origin  = {float(positionX->value()), float(positionY->value())};
       window.size    = {float(sizeX->value()), float(sizeY->value())};
 
@@ -152,11 +150,6 @@ struct ConfigureFBOLayerWidget::Private
     source->blockSignals(true);
     source->setCurrentText(QString::fromStdString(tp_maps::fboLayerSourceToString(window.source)));
     source->blockSignals(false);
-
-    level->blockSignals(true);
-    level->setRange(0, int(fboLayer->map()->maxSpotLightLevels()));
-    level->setValue(int(window.level));
-    level->blockSignals(false);
   }
 };
 
@@ -246,17 +239,12 @@ ConfigureFBOLayerWidget::ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer):
     ll->addWidget(d->source, 5, 0, 1, 4);
     d->source->addItems(tp_qt_utils::convertStringList(tp_maps::fboLayerSources()));
 
-    ll->addWidget(new QLabel("Light level"), 6, 0, 1, 4);
-    d->level = new QSpinBox();
-    ll->addWidget(d->level, 7, 0, 1, 4);
-
     connect(d->positionX, &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
     connect(d->positionY, &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
     connect(d->sizeX    , &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
     connect(d->sizeY    , &QDoubleSpinBox::valueChanged , this, [&]{d->edited();});
     connect(d->fboNames , &QComboBox::currentTextChanged, this, [&]{d->edited();});
     connect(d->source   , &QComboBox::currentTextChanged, this, [&]{d->edited();});
-    connect(d->level    , &QSpinBox::valueChanged       , this, [&]{d->edited();});
   }
 
   update();
