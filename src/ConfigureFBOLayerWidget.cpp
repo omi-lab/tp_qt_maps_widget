@@ -3,8 +3,8 @@
 #include "tp_qt_utils/Globals.h"
 
 #include "tp_maps/Map.h"
-#include "tp_maps/Buffers.h"
 #include "tp_maps/layers/FBOLayer.h"
+#include "tp_maps/subsystems/open_gl/OpenGLBuffers.h"
 
 #include <QCheckBox>
 #include <QDoubleSpinBox>
