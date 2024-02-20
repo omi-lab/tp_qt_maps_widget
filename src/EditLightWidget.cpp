@@ -410,7 +410,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->offsetScale = new QDoubleSpinBox();
     l->addWidget(new QLabel("Offset scale"));
     l->addWidget(d->offsetScale);
-    d->offsetScale->setRange(0.0002, 2.);
+    d->offsetScale->setRange(0.0002, 100.0);
     d->orthoRadius->setDecimals(2);
     d->offsetScale->setSingleStep(0.01);
     connect(d->offsetScale, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
