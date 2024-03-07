@@ -4,6 +4,9 @@
 
 #include "tp_image_utils/LoadImages.h"
 
+#include "tp_math_utils/materials/OpenGLMaterial.h"
+#include "tp_math_utils/materials/LegacyMaterial.h"
+
 #include "tp_utils/JSONUtils.h"
 
 #include <QDialog>
@@ -153,10 +156,13 @@ struct EditMaterialWidget::Private
       return QIcon(QPixmap::fromImage(image));
     };
 
-    albedoColorButton  ->setIcon(makeIcon(material.albedo  ));
-    sssColorButton     ->setIcon(makeIcon(material.sss     ));
-    emissionColorButton->setIcon(makeIcon(material.emission));
-    velvetColorButton  ->setIcon(makeIcon(material.velvet  ));
+    auto openGLMaterial = material.findOrAddOpenGL();
+    auto legacyMaterial = material.findOrAddLegacy();
+
+    albedoColorButton  ->setIcon(makeIcon(openGLMaterial->albedo  ));
+    sssColorButton     ->setIcon(makeIcon(legacyMaterial->sss     ));
+    emissionColorButton->setIcon(makeIcon(legacyMaterial->emission));
+    velvetColorButton  ->setIcon(makeIcon(legacyMaterial->velvet  ));
   }
 };
 
@@ -333,12 +339,11 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     connect(d->shaderType, &QComboBox::currentTextChanged, this, [this]{emit materialEdited();});
   }
 
-
   addTitle("Colors");
-  d->albedoColorButton   = makeColorEdit("Albedo"    , [&]()->glm::vec3&{return d->material.albedo;}  , d->albedoScaleSlider  ,     4.0f, false);
-  d->sssColorButton      = makeColorEdit("Subsurface", [&]()->glm::vec3&{return d->material.sss;}     , d->sssSlider          ,     1.0f, false);
-  d->emissionColorButton = makeColorEdit("Emission"  , [&]()->glm::vec3&{return d->material.emission;}, d->emissionSlider     , 50000.0f, false);
-  d->velvetColorButton   = makeColorEdit("Velvet"    , [&]()->glm::vec3&{return d->material.velvet;}  , d->velvetSlider       ,     1.0f, false);
+  d->albedoColorButton   = makeColorEdit("Albedo"    , [&]()->glm::vec3&{return d->material.findOrAddOpenGL()->albedo;}  , d->albedoScaleSlider  ,     4.0f, false);
+  d->sssColorButton      = makeColorEdit("Subsurface", [&]()->glm::vec3&{return d->material.findOrAddLegacy()->sss;}     , d->sssSlider          ,     1.0f, false);
+  d->emissionColorButton = makeColorEdit("Emission"  , [&]()->glm::vec3&{return d->material.findOrAddLegacy()->emission;}, d->emissionSlider     , 50000.0f, false);
+  d->velvetColorButton   = makeColorEdit("Velvet"    , [&]()->glm::vec3&{return d->material.findOrAddLegacy()->velvet;}  , d->velvetSlider       ,     1.0f, false);
 
 
   addTitle("Material Properties");
@@ -487,7 +492,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
           {
             edit->setText(QString::fromStdString(text.toString()));
             Q_EMIT materialEdited();
-          }          
+          }
 
           if(!error.empty())
             QMessageBox::critical(this, "Error Loading Image!", QString::fromStdString(error));
@@ -500,11 +505,13 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     return edit;
   };
 
-  d->material.viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
+  if(textureSupported == TextureSupported::Yes)
   {
-    if(textureSupported == TextureSupported::Yes)
+    d->material.findOrAddLegacy()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
+    {
       d->textureLineEdits[type] = addTextureEdit(pretty);
-  });
+    });
+  }
 
   addTitle("OpenGL Shading Calculation");
   d->useAmbient     = makeFloatEditorRow("Use ambient"    , 0.0f, 1.0f, true);
@@ -572,44 +579,46 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   TP_CLEANUP([&]{blockSignals(false);});
 
   d->material = material;
+  auto openGLMaterial = d->material.findOrAddOpenGL();
+  auto legacyMaterial = d->material.findOrAddLegacy();
 
   d->nameEdit->setText(QString::fromStdString(material.name.toString()));
 
-  d->shaderType->setCurrentText(QString::fromStdString(tp_math_utils::shaderTypeToString(material.shaderType)));
+  d->shaderType->setCurrentText(QString::fromStdString(tp_math_utils::shaderTypeToString(legacyMaterial->shaderType)));
 
   d->updateColors();
 
-  d->alpha                .set(material.alpha                );
-  d->roughness            .set(material.roughness            );
-  d->metalness            .set(material.metalness            );
-  d->specular             .set(material.specular             );
-  d->transmission         .set(material.transmission         );
-  d->transmissionRoughness.set(material.transmissionRoughness);
-  d->heightScale          .set(material.heightScale          );
-  d->heightMidlevel       .set(material.heightMidlevel       );
-  d->ior                  .set(material.ior                  );
-  d->sheen                .set(material.sheen                );
-  d->sheenTint            .set(material.sheenTint            );
-  d->clearCoat            .set(material.clearCoat            );
-  d->clearCoatRoughness   .set(material.clearCoatRoughness   );
-  d->iridescentFactor     .set(material.iridescentFactor     );
-  d->iridescentOffset     .set(material.iridescentOffset     );
-  d->iridescentFrequency  .set(material.iridescentFrequency  );
-  d->normalStrength       .set(material.normalStrength       );
+  d->alpha                .set(openGLMaterial->alpha                );
+  d->roughness            .set(openGLMaterial->roughness            );
+  d->metalness            .set(openGLMaterial->metalness            );
+  d->specular             .set(legacyMaterial->specular             );
+  d->transmission         .set(openGLMaterial->transmission         );
+  d->transmissionRoughness.set(openGLMaterial->transmissionRoughness);
+  d->heightScale          .set(legacyMaterial->heightScale          );
+  d->heightMidlevel       .set(legacyMaterial->heightMidlevel       );
+  d->ior                  .set(legacyMaterial->ior                  );
+  d->sheen                .set(legacyMaterial->sheen                );
+  d->sheenTint            .set(legacyMaterial->sheenTint            );
+  d->clearCoat            .set(legacyMaterial->clearCoat            );
+  d->clearCoatRoughness   .set(legacyMaterial->clearCoatRoughness   );
+  d->iridescentFactor     .set(legacyMaterial->iridescentFactor     );
+  d->iridescentOffset     .set(legacyMaterial->iridescentOffset     );
+  d->iridescentFrequency  .set(legacyMaterial->iridescentFrequency  );
+  d->normalStrength       .set(legacyMaterial->normalStrength       );
 
-  d->sssRadiusR->setValue(double(material.sssRadius.x));
-  d->sssRadiusG->setValue(double(material.sssRadius.y));
-  d->sssRadiusB->setValue(double(material.sssRadius.z));
+  d->sssRadiusR->setValue(double(legacyMaterial->sssRadius.x));
+  d->sssRadiusG->setValue(double(legacyMaterial->sssRadius.y));
+  d->sssRadiusB->setValue(double(legacyMaterial->sssRadius.z));
 
-  d->sssMethod->setCurrentText(QString::fromStdString(tp_math_utils::sssMethodToString(material.sssMethod)));
+  d->sssMethod->setCurrentText(QString::fromStdString(tp_math_utils::sssMethodToString(legacyMaterial->sssMethod)));
 
-  d->albedoBrightness     .set(material.albedoBrightness     );
-  d->albedoContrast       .set(material.albedoContrast       );
-  d->albedoGamma          .set(material.albedoGamma          );
-  d->albedoHue            .set(material.albedoHue            );
-  d->albedoSaturation     .set(material.albedoSaturation     );
-  d->albedoValue          .set(material.albedoValue          );
-  d->albedoFactor         .set(material.albedoFactor         );
+  d->albedoBrightness     .set(openGLMaterial->albedoBrightness     );
+  d->albedoContrast       .set(openGLMaterial->albedoContrast       );
+  d->albedoGamma          .set(openGLMaterial->albedoGamma          );
+  d->albedoHue            .set(openGLMaterial->albedoHue            );
+  d->albedoSaturation     .set(openGLMaterial->albedoSaturation     );
+  d->albedoValue          .set(openGLMaterial->albedoValue          );
+  d->albedoFactor         .set(openGLMaterial->albedoFactor         );
 
   d->skewU                .set(material.uvTransformation.skewUV.x     );
   d->skewV                .set(material.uvTransformation.skewUV.y     );
@@ -622,28 +631,28 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 
   d->rotateUV             .set(material.uvTransformation.rotateUV     );
 
-  d->useAmbient           .set(material.useAmbient           );
-  d->useDiffuse           .set(material.useDiffuse           );
-  d->useNdotL             .set(material.useNdotL             );
-  d->useAttenuation       .set(material.useAttenuation       );
-  d->useShadow            .set(material.useShadow            );
-  d->useLightMask         .set(material.useLightMask         );
-  d->useReflection        .set(material.useReflection        );
+  d->useAmbient           .set(openGLMaterial->useAmbient           );
+  d->useDiffuse           .set(openGLMaterial->useDiffuse           );
+  d->useNdotL             .set(openGLMaterial->useNdotL             );
+  d->useAttenuation       .set(openGLMaterial->useAttenuation       );
+  d->useShadow            .set(openGLMaterial->useShadow            );
+  d->useLightMask         .set(openGLMaterial->useLightMask         );
+  d->useReflection        .set(openGLMaterial->useReflection        );
 
-  d->rayVisibilityCamera       .set(material.rayVisibilityCamera       );
-  d->rayVisibilityDiffuse      .set(material.rayVisibilityDiffuse      );
-  d->rayVisibilityGlossy       .set(material.rayVisibilityGlossy       );
-  d->rayVisibilityTransmission .set(material.rayVisibilityTransmission );
-  d->rayVisibilityScatter      .set(material.rayVisibilityScatter      );
-  d->rayVisibilityShadow       .set(material.rayVisibilityShadow       );
-  d->rayVisibilityShadowCatcher.set(material.rayVisibilityShadowCatcher);
+  d->rayVisibilityCamera       .set(legacyMaterial->rayVisibilityCamera       );
+  d->rayVisibilityDiffuse      .set(legacyMaterial->rayVisibilityDiffuse      );
+  d->rayVisibilityGlossy       .set(legacyMaterial->rayVisibilityGlossy       );
+  d->rayVisibilityTransmission .set(legacyMaterial->rayVisibilityTransmission );
+  d->rayVisibilityScatter      .set(legacyMaterial->rayVisibilityScatter      );
+  d->rayVisibilityShadow       .set(legacyMaterial->rayVisibilityShadow       );
+  d->rayVisibilityShadowCatcher.set(openGLMaterial->rayVisibilityShadowCatcher);
 
-  d->albedoScaleSlider    .set(material.albedoScale          );
-  d->sssSlider            .set(material.sssScale             );
-  d->emissionSlider       .set(material.emissionScale        );
-  d->velvetSlider         .set(material.velvetScale          );
+  d->albedoScaleSlider    .set(openGLMaterial->albedoScale          );
+  d->sssSlider            .set(legacyMaterial->sssScale             );
+  d->emissionSlider       .set(legacyMaterial->emissionScale        );
+  d->velvetSlider         .set(legacyMaterial->velvetScale          );
 
-  d->material.viewTypedTextures([&](const auto& type, const auto& value, const auto&)
+  legacyMaterial->viewTypedTextures([&](const auto& type, const auto& value, const auto&)
   {
     if(d->textureSupported == TextureSupported::Yes)
       d->textureLineEdits[type]->setText(QString::fromStdString(value.toString()));
@@ -653,42 +662,45 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
 //##################################################################################################
 tp_math_utils::Material EditMaterialWidget::material() const
 {
+  auto openGLMaterial = d->material.findOrAddOpenGL();
+  auto legacyMaterial = d->material.findOrAddLegacy();
+
   d->material.name = d->nameEdit->text().toStdString();
 
-  d->material.shaderType = tp_math_utils::shaderTypeFromString(d->shaderType->currentText().toStdString());
+  legacyMaterial->shaderType = tp_math_utils::shaderTypeFromString(d->shaderType->currentText().toStdString());
 
-  d->material.alpha                 = d->alpha                .get();
-  d->material.roughness             = d->roughness            .get();
-  d->material.metalness             = d->metalness            .get();
-  d->material.specular              = d->specular             .get();
-  d->material.transmission          = d->transmission         .get();
-  d->material.transmissionRoughness = d->transmissionRoughness.get();
-  d->material.heightScale           = d->heightScale          .get();
-  d->material.heightMidlevel        = d->heightMidlevel       .get();
-  d->material.ior                   = d->ior                  .get();
-  d->material.sheen                 = d->sheen                .get();
-  d->material.sheenTint             = d->sheenTint            .get();
-  d->material.clearCoat             = d->clearCoat            .get();
-  d->material.clearCoatRoughness    = d->clearCoatRoughness   .get();
-  d->material.iridescentFactor      = d->iridescentFactor     .get();
-  d->material.iridescentOffset      = d->iridescentOffset     .get();
-  d->material.iridescentFrequency   = d->iridescentFrequency  .get();
-  d->material.normalStrength        = d->normalStrength       .get();
+  openGLMaterial->alpha                 = d->alpha                .get();
+  openGLMaterial->roughness             = d->roughness            .get();
+  openGLMaterial->metalness             = d->metalness            .get();
+  legacyMaterial->specular              = d->specular             .get();
+  openGLMaterial->transmission          = d->transmission         .get();
+  openGLMaterial->transmissionRoughness = d->transmissionRoughness.get();
+  legacyMaterial->heightScale           = d->heightScale          .get();
+  legacyMaterial->heightMidlevel        = d->heightMidlevel       .get();
+  legacyMaterial->ior                   = d->ior                  .get();
+  legacyMaterial->sheen                 = d->sheen                .get();
+  legacyMaterial->sheenTint             = d->sheenTint            .get();
+  legacyMaterial->clearCoat             = d->clearCoat            .get();
+  legacyMaterial->clearCoatRoughness    = d->clearCoatRoughness   .get();
+  legacyMaterial->iridescentFactor      = d->iridescentFactor     .get();
+  legacyMaterial->iridescentOffset      = d->iridescentOffset     .get();
+  legacyMaterial->iridescentFrequency   = d->iridescentFrequency  .get();
+  legacyMaterial->normalStrength        = d->normalStrength       .get();
 
-  d->material.sssRadius.x = d->sssRadiusR->value();
-  d->material.sssRadius.y = d->sssRadiusG->value();
-  d->material.sssRadius.z = d->sssRadiusB->value();
+  legacyMaterial->sssRadius.x = d->sssRadiusR->value();
+  legacyMaterial->sssRadius.y = d->sssRadiusG->value();
+  legacyMaterial->sssRadius.z = d->sssRadiusB->value();
 
-  d->material.sssMethod = tp_math_utils::sssMethodFromString(d->sssMethod->currentText().toStdString());
+  legacyMaterial->sssMethod = tp_math_utils::sssMethodFromString(d->sssMethod->currentText().toStdString());
 
 
-  d->material.albedoBrightness = d->albedoBrightness.get();
-  d->material.albedoContrast   = d->albedoContrast  .get();
-  d->material.albedoGamma      = d->albedoGamma     .get();
-  d->material.albedoHue        = d->albedoHue       .get();
-  d->material.albedoSaturation = d->albedoSaturation.get();
-  d->material.albedoValue      = d->albedoValue     .get();
-  d->material.albedoFactor     = d->albedoFactor    .get();
+  openGLMaterial->albedoBrightness = d->albedoBrightness.get();
+  openGLMaterial->albedoContrast   = d->albedoContrast  .get();
+  openGLMaterial->albedoGamma      = d->albedoGamma     .get();
+  openGLMaterial->albedoHue        = d->albedoHue       .get();
+  openGLMaterial->albedoSaturation = d->albedoSaturation.get();
+  openGLMaterial->albedoValue      = d->albedoValue     .get();
+  openGLMaterial->albedoFactor     = d->albedoFactor    .get();
 
   d->material.uvTransformation.skewUV.x      = d->skewU     .get();
   d->material.uvTransformation.skewUV.y      = d->skewV     .get();
@@ -701,28 +713,28 @@ tp_math_utils::Material EditMaterialWidget::material() const
 
   d->material.uvTransformation.rotateUV      = d->rotateUV  .get();
 
-  d->material.useAmbient            = d->useAmbient       .get();
-  d->material.useDiffuse            = d->useDiffuse       .get();
-  d->material.useNdotL              = d->useNdotL         .get();
-  d->material.useAttenuation        = d->useAttenuation   .get();
-  d->material.useShadow             = d->useShadow        .get();
-  d->material.useLightMask          = d->useLightMask     .get();
-  d->material.useReflection         = d->useReflection    .get();
+  openGLMaterial->useAmbient            = d->useAmbient       .get();
+  openGLMaterial->useDiffuse            = d->useDiffuse       .get();
+  openGLMaterial->useNdotL              = d->useNdotL         .get();
+  openGLMaterial->useAttenuation        = d->useAttenuation   .get();
+  openGLMaterial->useShadow             = d->useShadow        .get();
+  openGLMaterial->useLightMask          = d->useLightMask     .get();
+  openGLMaterial->useReflection         = d->useReflection    .get();
 
-  d->material.rayVisibilityCamera        = d->rayVisibilityCamera         .get();
-  d->material.rayVisibilityDiffuse       = d->rayVisibilityDiffuse        .get();
-  d->material.rayVisibilityGlossy        = d->rayVisibilityGlossy         .get();
-  d->material.rayVisibilityTransmission  = d->rayVisibilityTransmission   .get();
-  d->material.rayVisibilityScatter       = d->rayVisibilityScatter        .get();
-  d->material.rayVisibilityShadow        = d->rayVisibilityShadow         .get();
-  d->material.rayVisibilityShadowCatcher = d->rayVisibilityShadowCatcher  .get();
+  legacyMaterial->rayVisibilityCamera        = d->rayVisibilityCamera         .get();
+  legacyMaterial->rayVisibilityDiffuse       = d->rayVisibilityDiffuse        .get();
+  legacyMaterial->rayVisibilityGlossy        = d->rayVisibilityGlossy         .get();
+  legacyMaterial->rayVisibilityTransmission  = d->rayVisibilityTransmission   .get();
+  legacyMaterial->rayVisibilityScatter       = d->rayVisibilityScatter        .get();
+  legacyMaterial->rayVisibilityShadow        = d->rayVisibilityShadow         .get();
+  openGLMaterial->rayVisibilityShadowCatcher = d->rayVisibilityShadowCatcher  .get();
 
-  d->material.albedoScale           = d->albedoScaleSlider.get();
-  d->material.sssScale              = d->sssSlider        .get();
-  d->material.emissionScale         = d->emissionSlider   .get();
-  d->material.velvetScale           = d->velvetSlider     .get();
+  openGLMaterial->albedoScale           = d->albedoScaleSlider.get();
+  legacyMaterial->sssScale              = d->sssSlider        .get();
+  legacyMaterial->emissionScale         = d->emissionSlider   .get();
+  legacyMaterial->velvetScale           = d->velvetSlider     .get();
 
-  d->material.updateTypedTextures([&](const auto& type, auto& value, const auto&)
+  legacyMaterial->updateTypedTextures([&](const auto& type, auto& value, const auto&)
   {
     if(d->textureSupported == TextureSupported::Yes)
       value = d->textureLineEdits[type]->text().toStdString();

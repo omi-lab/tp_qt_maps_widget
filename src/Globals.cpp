@@ -1,5 +1,7 @@
 #include "tp_qt_maps_widget/Globals.h"
 
+#include "tp_math_utils/materials/OpenGLMaterial.h"
+
 #include <QSurfaceFormat>
 
 namespace tp_qt_maps_widget
@@ -39,93 +41,84 @@ std::vector<tp_math_utils::Material> materialLibrary()
   };
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Silver polished";
-    material.albedo        = toF(252, 250, 249);
-    material.roughness     = 0.1f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Silver polished").findOrAddOpenGL();
+    material->albedo        = toF(252, 250, 249);
+    material->roughness     = 0.1f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Silver satin";
-    material.albedo        = toF(252, 250, 249);
-    material.roughness     = 0.4f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Silver satin").findOrAddOpenGL();
+    material->albedo        = toF(252, 250, 249);
+    material->roughness     = 0.4f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Silver matte";
-    material.albedo        = toF(252, 250, 249);
-    material.roughness     = 0.7f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Silver matte").findOrAddOpenGL();
+    material->albedo        = toF(252, 250, 249);
+    material->roughness     = 0.7f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Gold polished";
-    material.albedo        = toF(243, 201, 104);
-    material.roughness     = 0.1f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Gold polished").findOrAddOpenGL();
+    material->albedo        = toF(243, 201, 104);
+    material->roughness     = 0.1f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Gold satin";
-    material.albedo        = toF(243, 201, 104);
-    material.roughness     = 0.4f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Gold satin").findOrAddOpenGL();
+    material->albedo        = toF(243, 201, 104);
+    material->roughness     = 0.4f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Gold matte";
-    material.albedo        = toF(243, 201, 104);
-    material.roughness     = 0.7f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Gold matte").findOrAddOpenGL();
+    material->albedo        = toF(243, 201, 104);
+    material->roughness     = 0.7f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Copper polished";
-    material.albedo        = toF(238, 158, 137);
-    material.roughness     = 0.1f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Copper polished").findOrAddOpenGL();
+    material->albedo        = toF(238, 158, 137);
+    material->roughness     = 0.1f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Copper satin";
-    material.albedo        = toF(238, 158, 137);
-    material.roughness     = 0.4f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Copper satin").findOrAddOpenGL();
+    material->albedo        = toF(238, 158, 137);
+    material->roughness     = 0.4f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   {
-    auto& material = materials.emplace_back();
-    material.name          = "Copper matte";
-    material.albedo        = toF(238, 158, 137);
-    material.roughness     = 0.7f;
-    material.metalness     = 1.0f;
-    material.alpha         = 1.0f;
-    material.albedoScale   = 1.0f;
+    auto material = materials.emplace_back("Copper matte").findOrAddOpenGL();
+    material->albedo        = toF(238, 158, 137);
+    material->roughness     = 0.7f;
+    material->metalness     = 1.0f;
+    material->alpha         = 1.0f;
+    material->albedoScale   = 1.0f;
   }
 
   return materials;
