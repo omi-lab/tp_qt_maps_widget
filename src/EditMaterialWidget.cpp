@@ -507,6 +507,11 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
   if(textureSupported == TextureSupported::Yes)
   {
+    d->material.findOrAddOpenGL()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
+    {
+      d->textureLineEdits[type] = addTextureEdit(pretty);
+    });
+
     d->material.findOrAddLegacy()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
     {
       d->textureLineEdits[type] = addTextureEdit(pretty);
@@ -652,6 +657,12 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
   d->emissionSlider       .set(legacyMaterial->emissionScale        );
   d->velvetSlider         .set(legacyMaterial->velvetScale          );
 
+  openGLMaterial->viewTypedTextures([&](const auto& type, const auto& value, const auto&)
+  {
+    if(d->textureSupported == TextureSupported::Yes)
+      d->textureLineEdits[type]->setText(QString::fromStdString(value.toString()));
+  });
+
   legacyMaterial->viewTypedTextures([&](const auto& type, const auto& value, const auto&)
   {
     if(d->textureSupported == TextureSupported::Yes)
@@ -733,6 +744,12 @@ tp_math_utils::Material EditMaterialWidget::material() const
   legacyMaterial->sssScale              = d->sssSlider        .get();
   legacyMaterial->emissionScale         = d->emissionSlider   .get();
   legacyMaterial->velvetScale           = d->velvetSlider     .get();
+
+  openGLMaterial->updateTypedTextures([&](const auto& type, auto& value, const auto&)
+  {
+    if(d->textureSupported == TextureSupported::Yes)
+      value = d->textureLineEdits[type]->text().toStdString();
+  });
 
   legacyMaterial->updateTypedTextures([&](const auto& type, auto& value, const auto&)
   {
