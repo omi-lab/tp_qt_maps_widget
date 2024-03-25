@@ -11,6 +11,7 @@
 
 #include "tp_utils/DebugUtils.h"
 #include "tp_utils/TimeUtils.h"
+#include "tp_utils/JSONUtils.h"
 #include "tp_utils/StackTrace.h"
 
 #include <QMouseEvent>
@@ -138,6 +139,8 @@ struct MapWidget::Private
 
   QMetaObject::Connection aboutToBeDestroyedConnection;
 
+  QString dragDropMimeType;
+
   //################################################################################################
   Private(MapWidget* q_):
     q(q_)
@@ -150,6 +153,23 @@ struct MapWidget::Private
   {
     map->clearLayers();
     delete map;
+  }
+
+  //################################################################################################
+  bool getDragDropPayload(QDropEvent* event, nlohmann::json& j)
+  {
+    if(event->mimeData()->hasFormat(dragDropMimeType))
+    {
+      QByteArray assetData = event->mimeData()->data(dragDropMimeType);
+      QDataStream dataStream(&assetData, QIODevice::ReadOnly);
+      QString dataPayload;
+      dataStream >> dataPayload;
+      j = tp_utils::jsonFromString(dataPayload.toStdString());
+
+      return true;
+    }
+
+    return false;
   }
 
   //################################################################################################
@@ -197,6 +217,12 @@ MapWidget::~MapWidget()
 tp_maps::Map* MapWidget::map()
 {
   return d->map;
+}
+
+//##################################################################################################
+void MapWidget::setDragDropMimeType(const QString& dragDropMimeType)
+{
+  d->dragDropMimeType = dragDropMimeType;
 }
 
 //##################################################################################################
@@ -261,17 +287,13 @@ void MapWidget::paintGL()
 //################################################################################################
 void MapWidget::dragEnterEvent(QDragEnterEvent* event)
 {
-  if(event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id")))
+  nlohmann::json j;
+  if(d->getDragDropPayload(event, j))
   {
-    QByteArray assetData = event->mimeData()->data(QStringLiteral("text/omi_asset_id"));
-    QDataStream dataStream(&assetData, QIODevice::ReadOnly);
-    QString dataPayload;
-    dataStream >> dataPayload;
-
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Enter);
     e.pos.x = event->position().toPoint().x();
     e.pos.y = event->position().toPoint().y();
-    e.payload = nlohmann::json::parse(dataPayload.toStdString());
+    e.payload = j;
     if(d->map->dragDropEvent(e))
       event->accept();
   }
@@ -281,28 +303,30 @@ void MapWidget::dragEnterEvent(QDragEnterEvent* event)
   }
 }
 
-//################################################################################################
-void MapWidget::dragLeaveEvent(QDragLeaveEvent *event)
+//##################################################################################################
+void MapWidget::dragLeaveEvent(QDragLeaveEvent* event)
 {
   tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Leave);
   d->map->dragDropEvent(e);
   event->accept();
 }
 
-//################################################################################################
-void MapWidget::dragMoveEvent(QDragMoveEvent *event)
+//##################################################################################################
+void MapWidget::dragMoveEvent(QDragMoveEvent* event)
 {
-  if (event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id"))) 
+  nlohmann::json j;
+  if(d->getDragDropPayload(event, j))
   {
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Move);
     e.pos.x = event->position().toPoint().x() * devicePixelRatio();
     e.pos.y = event->position().toPoint().y() * devicePixelRatio();
+    e.payload = j;
     d->map->dragDropEvent(e);
 
     event->setDropAction(Qt::MoveAction);
     event->accept();
-  } 
-  else 
+  }
+  else
   {
     event->ignore();
   }
@@ -311,23 +335,19 @@ void MapWidget::dragMoveEvent(QDragMoveEvent *event)
 //################################################################################################
 void MapWidget::dropEvent(QDropEvent *event)
 {
-  if (event->mimeData()->hasFormat(QStringLiteral("text/omi_asset_id"))) 
+  nlohmann::json j;
+  if(d->getDragDropPayload(event, j))
   {
-    QByteArray assetData = event->mimeData()->data(QStringLiteral("text/omi_asset_id"));
-    QDataStream dataStream(&assetData, QIODevice::ReadOnly);
-    QString dataPayload;
-    dataStream >> dataPayload;
-
     tp_maps::DragDropEvent e(tp_maps::DragDropEventType::Drop);
     e.pos.x = event->position().toPoint().x() * devicePixelRatio();
     e.pos.y = event->position().toPoint().y() * devicePixelRatio();
-    e.payload = nlohmann::json::parse(dataPayload.toStdString());
+    e.payload = j;
     d->map->dragDropEvent(e);
 
     event->setDropAction(Qt::MoveAction);
     event->accept();
-  } 
-  else 
+  }
+  else
   {
       event->ignore();
   }
