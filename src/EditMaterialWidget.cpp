@@ -6,8 +6,10 @@
 
 #include "tp_math_utils/materials/OpenGLMaterial.h"
 #include "tp_math_utils/materials/LegacyMaterial.h"
+#include "tp_math_utils/materials/ExternalMaterial.h"
 
 #include "tp_utils/JSONUtils.h"
+#include "tp_utils/DebugUtils.h"
 
 #include <QDialog>
 #include <QBoxLayout>
@@ -62,6 +64,7 @@ struct EditMaterialWidget::Private
   TextureSupported textureSupported;
   TPGetExistingTexturesCallback getExistingTextures;
   TPLoadTextureCallback loadTexture;
+  TPLoadMaterialBlendCallback loadMaterialBlend;
 
   QLineEdit* nameEdit{nullptr};
 
@@ -139,6 +142,8 @@ struct EditMaterialWidget::Private
   BoolEditor rayVisibilityShadowCatcher;
 
   std::map<std::string, QLineEdit*> textureLineEdits;
+
+  QLineEdit* blendFileLineEdit{nullptr};
 
   //################################################################################################
   void updateColors()
@@ -423,7 +428,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
 
   addTitle("Texture Maps");
-  auto addTextureEdit = [&](const auto& name)
+  auto addTextureBlendEdit = [&](const auto& name, bool isBlendFile=false)
   {
     int row = gridLayout->rowCount();
     gridLayout->addWidget(new QLabel(name), row, 0, Qt::AlignLeft);
@@ -462,7 +467,11 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       auto load = new tp_qt_widgets::FileDialogLineEdit();
       load->setQSettingsPath("EditMaterialWidget");
       load->setMode(tp_qt_widgets::FileDialogLineEdit::OpenFileMode);
-      load->setFilter(QString::fromStdString(tp_image_utils::imageTypesFilter()));
+      if(isBlendFile)
+        load->setFilter(QString::fromStdString("*.blend"));
+      else
+        load->setFilter(QString::fromStdString(tp_image_utils::imageTypesFilter()));
+        
       l->addWidget(load);
 
       connect(loadRadio, &QRadioButton::toggled, this, [=]
@@ -484,20 +493,37 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
           edit->setText(existing->currentText());
           Q_EMIT materialEdited();
         }
-        else if(loadRadio->isChecked() && d->loadTexture)
+        else if(loadRadio->isChecked())
         {
-          std::string error;
-          auto text = d->loadTexture(load->text().toStdString(), error);
-          if(text.isValid())
+          if(isBlendFile)
           {
-            edit->setText(QString::fromStdString(text.toString()));
-            Q_EMIT materialEdited();
-          }
+              std::string error;
+              auto text = d->loadMaterialBlend(load->text().toStdString(), error);
+              if(text.isValid())
+              {
+                  edit->setText(QString::fromStdString(text.toString()));
+                  Q_EMIT materialEdited();
+              }
 
-          if(!error.empty())
-            QMessageBox::critical(this, "Error Loading Image!", QString::fromStdString(error));
+              if(!error.empty())
+                  QMessageBox::critical(this, "Error Loading Blend Material!", QString::fromStdString(error));
+          }
+          else if(d->loadTexture)
+          {
+              std::string error;
+              auto text = d->loadTexture(load->text().toStdString(), error);
+              if(text.isValid())
+              {
+                  edit->setText(QString::fromStdString(text.toString()));
+                  Q_EMIT materialEdited();
+              }
+
+              if(!error.empty())
+                  QMessageBox::critical(this, "Error Loading Image!", QString::fromStdString(error));
+          }
         }
-      }
+
+        }
     });
 
     edit->installEventFilter(this);
@@ -509,14 +535,17 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   {
     d->material.findOrAddOpenGL()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
     {
-      d->textureLineEdits[type] = addTextureEdit(pretty);
+      d->textureLineEdits[type] = addTextureBlendEdit(pretty);
     });
 
     d->material.findOrAddLegacy()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
     {
-      d->textureLineEdits[type] = addTextureEdit(pretty);
+      d->textureLineEdits[type] = addTextureBlendEdit(pretty);
     });
   }
+
+  addTitle(".Blend Material");
+  d->blendFileLineEdit = addTextureBlendEdit(".blend material", true);
 
   addTitle("OpenGL Shading Calculation");
   d->useAmbient     = makeFloatEditorRow("Use ambient"    , 0.0f, 1.0f, true);
@@ -668,6 +697,8 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
     if(d->textureSupported == TextureSupported::Yes)
       d->textureLineEdits[type]->setText(QString::fromStdString(value.toString()));
   });
+
+  d->blendFileLineEdit->setText(QString::fromStdString(d->material.findOrAddExternal("blend")->subPath.toString()));
 }
 
 //##################################################################################################
@@ -675,6 +706,7 @@ tp_math_utils::Material EditMaterialWidget::material() const
 {
   auto openGLMaterial = d->material.findOrAddOpenGL();
   auto legacyMaterial = d->material.findOrAddLegacy();
+  auto externalMaterial = d->material.findOrAddExternal("blend");
 
   d->material.name = d->nameEdit->text().toStdString();
 
@@ -757,6 +789,7 @@ tp_math_utils::Material EditMaterialWidget::material() const
       value = d->textureLineEdits[type]->text().toStdString();
   });
 
+  externalMaterial->subPath = d->blendFileLineEdit->text().toStdString();
   return d->material;
 }
 
@@ -772,12 +805,20 @@ void EditMaterialWidget::setLoadTexture(const TPLoadTextureCallback& loadTexture
   d->loadTexture = loadTexture;
 }
 
+
+//################################################################################################
+void EditMaterialWidget::setMaterialBlend(const TPLoadMaterialBlendCallback& loadMaterialBlend)
+{
+  d->loadMaterialBlend = loadMaterialBlend;
+}
+
 //##################################################################################################
 bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
                                             tp_math_utils::Material& material,
                                             TextureSupported textureSupported,
                                             const TPGetExistingTexturesCallback& getExistingTextures,
-                                            const TPLoadTextureCallback& loadTexture)
+                                            const TPLoadTextureCallback& loadTexture,
+                                            const TPLoadMaterialBlendCallback& loadMaterialBlend)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});
@@ -791,6 +832,7 @@ bool EditMaterialWidget::editMaterialDialog(QWidget* parent,
   editMaterialWidget->setMaterial(material);
   editMaterialWidget->setGetExistingTextures(getExistingTextures);
   editMaterialWidget->setLoadTexture(loadTexture);
+  editMaterialWidget->setMaterialBlend(loadMaterialBlend);
 
   auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   l->addWidget(buttons);

@@ -7,6 +7,7 @@
 
 //##################################################################################################
 typedef std::function<tp_utils::StringID(const std::string& path, std::string& error)> TPLoadTextureCallback;
+typedef std::function<tp_utils::StringID(const std::string& path, std::string& error)> TPLoadMaterialBlendCallback;
 typedef std::function<std::vector<tp_utils::StringID>()> TPGetExistingTexturesCallback;
 
 namespace tp_qt_maps_widget
@@ -48,12 +49,16 @@ public:
   void setLoadTexture(const TPLoadTextureCallback& loadTexture);
 
   //################################################################################################
+  void setMaterialBlend(const TPLoadMaterialBlendCallback& loadMaterialBlend);
+
+  //################################################################################################
   //! Shows a dialog to edit the material and returns true if accepted.
   static bool editMaterialDialog(QWidget* parent,
                                  tp_math_utils::Material& material,
                                  TextureSupported textureSupported = TextureSupported::Yes,
                                  const TPGetExistingTexturesCallback& getExistingTextures = TPGetExistingTexturesCallback(),
-                                 const TPLoadTextureCallback& loadTexture = TPLoadTextureCallback());
+                                 const TPLoadTextureCallback& loadTexture = TPLoadTextureCallback(),
+                                 const TPLoadMaterialBlendCallback& loadMaterialBlend = TPLoadMaterialBlendCallback());
 
 Q_SIGNALS:
   //################################################################################################
