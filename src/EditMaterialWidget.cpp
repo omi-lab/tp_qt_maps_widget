@@ -9,7 +9,6 @@
 #include "tp_math_utils/materials/ExternalMaterial.h"
 
 #include "tp_utils/JSONUtils.h"
-#include "tp_utils/DebugUtils.h"
 
 #include <QDialog>
 #include <QBoxLayout>
