@@ -698,7 +698,11 @@ void EditMaterialWidget::setMaterial(const tp_math_utils::Material& material)
       d->textureLineEdits[type]->setText(QString::fromStdString(value.toString()));
   });
 
-  d->blendFileLineEdit->setText(QString::fromStdString(d->material.findOrAddExternal("blend")->subPath.toString()));
+  d->blendFileLineEdit->setText("");
+  d->material.viewExternal("blend", [&](const tp_math_utils::ExternalMaterial& externalMaterial)
+  {
+    d->blendFileLineEdit->setText(QString::fromStdString(externalMaterial.subPath.toString()));
+  });
 }
 
 //##################################################################################################
@@ -706,7 +710,6 @@ tp_math_utils::Material EditMaterialWidget::material() const
 {
   auto openGLMaterial = d->material.findOrAddOpenGL();
   auto legacyMaterial = d->material.findOrAddLegacy();
-  auto externalMaterial = d->material.findOrAddExternal("blend");
 
   d->material.name = d->nameEdit->text().toStdString();
 
@@ -789,7 +792,18 @@ tp_math_utils::Material EditMaterialWidget::material() const
       value = d->textureLineEdits[type]->text().toStdString();
   });
 
-  externalMaterial->subPath = d->blendFileLineEdit->text().toStdString();
+  {
+    tp_utils::StringID subPath = d->blendFileLineEdit->text().toStdString();
+    if(subPath.isValid())
+    {
+      auto externalMaterial = d->material.findOrAddExternal("blend");
+      externalMaterial->subPath = d->blendFileLineEdit->text().toStdString();
+    }
+    else
+    {
+      d->material.removeExternal("blend");
+    }
+  }
   return d->material;
 }
 
