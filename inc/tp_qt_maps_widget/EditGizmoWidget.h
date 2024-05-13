@@ -1,39 +1,40 @@
-#ifndef tp_qt_maps_widget_EditLightWidget_h
-#define tp_qt_maps_widget_EditLightWidget_h
+#ifndef tp_qt_maps_widget_EditGizmoWidget_h
+#define tp_qt_maps_widget_EditGizmoWidget_h
 
 #include "tp_qt_maps_widget/Globals.h"
 
-#include "tp_math_utils/Light.h"
+#include "tp_maps/layers/GizmoLayer.h"
 
 #include <QWidget>
 
+class QVBoxLayout;
+
 namespace tp_qt_maps_widget
 {
-class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditLightWidget : public QWidget
+class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditGizmoWidget : public QWidget
 {
   Q_OBJECT
   TP_DQ;
 public:
   //################################################################################################
-  EditLightWidget(QWidget* parent = nullptr);
+  EditGizmoWidget(const std::function<void(QVBoxLayout*)>& populateLoadAndSave={},
+                  QWidget* parent = nullptr);
 
   //################################################################################################
-  ~EditLightWidget() override;
+  ~EditGizmoWidget() override;
 
   //################################################################################################
-  void setLight(const tp_math_utils::Light& light);
+  void setGizmoParameters(const tp_maps::GizmoParameters& gizmoParameters);
 
   //################################################################################################
-  tp_math_utils::Light light() const;
+  const tp_maps::GizmoParameters& gizmoParameters() const;
 
   //################################################################################################
-  //! Shows a dialog to edit the light and returns true if accepted.
-  static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light);
+  //! Shows a dialog to edit the gizmo parameters and returns true if accepted.
+  static bool editGizmoDialog(QWidget* parent, tp_maps::GizmoParameters& gizmoParameters);
 
-Q_SIGNALS:
   //################################################################################################
-  //! Emitted when a light is edited by the user.
-  void lightEdited();
+  tp_utils::CallbackCollection<void()> edited;
 };
 }
 #endif

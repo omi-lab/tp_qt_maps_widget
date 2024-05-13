@@ -1,33 +1,34 @@
-#ifndef tp_qt_maps_widget_EditVec3Widget_h
-#define tp_qt_maps_widget_EditVec3Widget_h
+#ifndef tp_qt_maps_widget_EditGizmoPlaneWidget_h
+#define tp_qt_maps_widget_EditGizmoPlaneWidget_h
 
 #include "tp_qt_maps_widget/Globals.h"
+
+#include "tp_maps/layers/GizmoLayer.h"
 
 #include <QWidget>
 
 namespace tp_qt_maps_widget
 {
-
-class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditVec3Widget : public QWidget
+class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditGizmoPlaneWidget : public QWidget
 {
   Q_OBJECT
   TP_DQ;
 public:
   //################################################################################################
-  EditVec3Widget(const QString& label, QWidget* parent = nullptr);
+  EditGizmoPlaneWidget(QWidget* parent = nullptr);
 
   //################################################################################################
-  ~EditVec3Widget() override;
+  ~EditGizmoPlaneWidget() override;
 
   //################################################################################################
-  void setVec3(const glm::vec3& vec);
+  void setGizmoPlaneParameters(const tp_maps::GizmoPlaneParameters& gizmoPlaneParameters);
 
   //################################################################################################
-  glm::vec3 vec() const;
+  const tp_maps::GizmoPlaneParameters& gizmoPlaneParameters() const;
 
   //################################################################################################
-  //! Shows a dialog to edit the vector and returns true if accepted.
-  static bool editVec3Dialog(QWidget* parent, const QString& title, const QString& label, glm::vec3& vec);
+  tp_utils::CallbackCollection<void()> edited;
 };
 }
 #endif
+

@@ -16,6 +16,7 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT ConfigureFBOLayerWidget : public QWidget
 {
   Q_OBJECT
+  TP_DQ;
 public:
   //################################################################################################
   ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer);
@@ -25,11 +26,6 @@ public:
 
   //################################################################################################
   void update();
-
-private:
-  struct Private;
-  Private* d;
-  friend struct Private;
 };
 }
 #endif

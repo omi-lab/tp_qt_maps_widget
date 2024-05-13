@@ -12,6 +12,7 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT MapWidget : public QOpenGLWidget
 {
   Q_OBJECT
+  TP_DQ;
 public:
   //################################################################################################
   MapWidget(QWidget* parent = nullptr);
@@ -89,11 +90,6 @@ protected:
 
   //################################################################################################
   void showEvent(QShowEvent* event) override;
-
-private:
-  struct Private;
-  Private* d;
-  friend struct Private;
 };
 }
 #endif

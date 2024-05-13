@@ -19,6 +19,7 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialWidget : public QWidget
 {
   Q_OBJECT
+  TP_DQ;
 public:
   //################################################################################################
   //! Use to set whether the widgets to set material textures should be available or not.
@@ -68,11 +69,6 @@ Q_SIGNALS:
 protected:
   //################################################################################################
   bool eventFilter(QObject* watched, QEvent* event) override;
-
-private:
-  struct Private;
-  Private* d;
-  friend struct Private;
 };
 }
 #endif

@@ -21,6 +21,18 @@ HEADERS += inc/tp_qt_maps_widget/EditMaterialSwapParametersWidget.h
 SOURCES += src/EditVec3Widget.cpp
 HEADERS += inc/tp_qt_maps_widget/EditVec3Widget.h
 
+SOURCES += src/EditGizmoWidget.cpp
+HEADERS += inc/tp_qt_maps_widget/EditGizmoWidget.h
+
+SOURCES += src/EditGizmoArrowWidget.cpp
+HEADERS += inc/tp_qt_maps_widget/EditGizmoArrowWidget.h
+
+SOURCES += src/EditGizmoPlaneWidget.cpp
+HEADERS += inc/tp_qt_maps_widget/EditGizmoPlaneWidget.h
+
+SOURCES += src/EditGizmoRingWidget.cpp
+HEADERS += inc/tp_qt_maps_widget/EditGizmoRingWidget.h
+
 SOURCES += src/SelectMaterialWidget.cpp
 HEADERS += inc/tp_qt_maps_widget/SelectMaterialWidget.h
 

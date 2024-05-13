@@ -10,6 +10,7 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT SelectMaterialWidget : public QWidget
 {
   Q_OBJECT
+  TP_DQ;
 public:
   //################################################################################################
   SelectMaterialWidget(QWidget* parent = nullptr);
@@ -37,11 +38,6 @@ Q_SIGNALS:
   //################################################################################################
   //! Emitted when the user selects a material.
   void selectionChanged();
-
-private:
-  struct Private;
-  Private* d;
-  friend struct Private;
 };
 }
 #endif

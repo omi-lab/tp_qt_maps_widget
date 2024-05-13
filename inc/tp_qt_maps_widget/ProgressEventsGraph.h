@@ -13,6 +13,7 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT ProgressEventsGraph : public QWidget
 {
   Q_OBJECT
+  TP_DQ;
 public:
   //################################################################################################
   ProgressEventsGraph(QWidget* parent = nullptr);
@@ -22,11 +23,6 @@ public:
 
   //################################################################################################
   void setProgressEvents(const std::vector<tp_utils::ProgressEvent>& progressEvents);
-
-private:
-  struct Private;
-  Private* d;
-  friend struct Private;
 };
 }
 #endif

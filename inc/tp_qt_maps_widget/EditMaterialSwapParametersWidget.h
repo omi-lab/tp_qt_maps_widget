@@ -14,6 +14,7 @@ namespace tp_qt_maps_widget
 class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditMaterialSwapParametersWidget : public QWidget
 {
   Q_OBJECT
+  TP_DQ;
 public:
   //################################################################################################
   EditMaterialSwapParametersWidget(QWidget* parent = nullptr);
@@ -31,13 +32,6 @@ Q_SIGNALS:
   //################################################################################################
   //! Emitted when material swap parameters are edited by the user.
   void materialSwapParametersEdited();
-
-protected:
-
-private:
-  struct Private;
-  Private* d;
-  friend struct Private;
 };
 }
 #endif
