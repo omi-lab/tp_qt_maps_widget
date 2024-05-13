@@ -4,6 +4,7 @@
 #include "tp_qt_maps_widget/Globals.h"
 #include "tp_maps/Map.h"
 
+#define GL_DO_NOT_WARN_IF_MULTI_GL_VERSION_HEADERS_INCLUDED
 #include <QOpenGLWidget>
 #include <memory>
 
