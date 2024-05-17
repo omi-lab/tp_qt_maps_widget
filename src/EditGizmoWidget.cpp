@@ -80,6 +80,30 @@ struct EditGizmoWidget::Private
   }
 
   //################################################################################################
+  void addGroupRing(QVBoxLayout* l,
+                    const QString& title,
+                    std::vector<tp_maps::GizmoRingParameters tp_maps::GizmoParameters::*> fields)
+  {
+    addTitle(l, title);
+
+    auto widget = new EditGizmoRingWidget(true);
+    l->addWidget(widget);
+    edited.connect(widget->edited);
+
+    toUI.addCallback([=]
+    {
+      auto field = fields.front();
+      widget->setGizmoRingParameters(gizmoParameters.*field);
+    });
+
+    fromUI.addCallback([=]
+    {
+      for(auto field : fields)
+        widget->updateGizmoRingParameters(gizmoParameters.*field);
+    });
+  }
+
+  //################################################################################################
   void addArrow(QVBoxLayout* l,
                 const QString& title,
                 tp_maps::GizmoArrowParameters tp_maps::GizmoParameters::* field)
@@ -102,6 +126,30 @@ struct EditGizmoWidget::Private
   }
 
   //################################################################################################
+  void addGroupArrow(QVBoxLayout* l,
+                     const QString& title,
+                     std::vector<tp_maps::GizmoArrowParameters tp_maps::GizmoParameters::*> fields)
+  {
+    addTitle(l, title);
+
+    auto widget = new EditGizmoArrowWidget(true);
+    l->addWidget(widget);
+    edited.connect(widget->edited);
+
+    toUI.addCallback([=]
+    {
+      auto field = fields.front();
+      widget->setGizmoArrowParameters(gizmoParameters.*field);
+    });
+
+    fromUI.addCallback([=]
+    {
+      for(auto field : fields)
+        widget->updateGizmoArrowParameters(gizmoParameters.*field);
+    });
+  }
+
+  //################################################################################################
   void addPlane(QVBoxLayout* l,
                 const QString& title,
                 tp_maps::GizmoPlaneParameters tp_maps::GizmoParameters::* field)
@@ -120,6 +168,30 @@ struct EditGizmoWidget::Private
     fromUI.addCallback([=]
     {
       gizmoParameters.*field = widget->gizmoPlaneParameters();
+    });
+  }
+
+  //################################################################################################
+  void addGroupPlane(QVBoxLayout* l,
+                     const QString& title,
+                     std::vector<tp_maps::GizmoPlaneParameters tp_maps::GizmoParameters::*> fields)
+  {
+    addTitle(l, title);
+
+    auto widget = new EditGizmoPlaneWidget(true);
+    l->addWidget(widget);
+    edited.connect(widget->edited);
+
+    toUI.addCallback([=]
+    {
+      auto field = fields.front();
+      widget->setGizmoPlaneParameters(gizmoParameters.*field);
+    });
+
+    fromUI.addCallback([=]
+    {
+      for(auto field : fields)
+        widget->updateGizmoPlaneParameters(gizmoParameters.*field);
     });
   }
 };
@@ -313,6 +385,13 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
     d->addRing(l, "Rotation ring Z"     , &tp_maps::GizmoParameters::rotationZ     );
     d->addRing(l, "Rotation ring screen", &tp_maps::GizmoParameters::rotationScreen);
 
+    d->addGroupRing(l, "Common rotation ring XYZ",
+                    {
+                      &tp_maps::GizmoParameters::rotationX,
+                      &tp_maps::GizmoParameters::rotationY,
+                      &tp_maps::GizmoParameters::rotationZ
+                    });
+
     l->addStretch();
   }
 
@@ -329,6 +408,20 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
     d->addPlane(l, "Translation plane screen", &tp_maps::GizmoParameters::translationPlaneScreen);
 
+    d->addGroupArrow(l, "Common translation arrow XYZ",
+                     {
+                       &tp_maps::GizmoParameters::translationArrowX,
+                       &tp_maps::GizmoParameters::translationArrowY,
+                       &tp_maps::GizmoParameters::translationArrowZ
+                     });
+
+    d->addGroupPlane(l, "Common translation plane XYZ",
+                     {
+                       &tp_maps::GizmoParameters::translationPlaneX,
+                       &tp_maps::GizmoParameters::translationPlaneY,
+                       &tp_maps::GizmoParameters::translationPlaneZ
+                     });
+
     l->addStretch();
   }
 
@@ -339,6 +432,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
     d->addArrow(l, "Scale arrow Y", &tp_maps::GizmoParameters::scaleArrowY);
     d->addArrow(l, "Scale arrow Z", &tp_maps::GizmoParameters::scaleArrowZ);
 
+    d->addGroupArrow(l, "Common scale arrow XYZ",
+                     {
+                       &tp_maps::GizmoParameters::scaleArrowX,
+                       &tp_maps::GizmoParameters::scaleArrowY,
+                       &tp_maps::GizmoParameters::scaleArrowZ
+                     });
     l->addStretch();
   }
 

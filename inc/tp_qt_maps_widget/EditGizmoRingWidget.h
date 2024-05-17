@@ -15,16 +15,20 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditGizmoRingWidget : public QWidget
   TP_DQ;
 public:
   //################################################################################################
-  EditGizmoRingWidget(QWidget* parent = nullptr);
+  EditGizmoRingWidget(bool optionalFields=false, QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditGizmoRingWidget() override;
+
 
   //################################################################################################
   void setGizmoRingParameters(const tp_maps::GizmoRingParameters& gizmoRingParameters);
 
   //################################################################################################
   const tp_maps::GizmoRingParameters& gizmoRingParameters() const;
+
+  //################################################################################################
+  void updateGizmoRingParameters(tp_maps::GizmoRingParameters& gizmoRingParameters) const;
 
   //################################################################################################
   tp_utils::CallbackCollection<void()> edited;

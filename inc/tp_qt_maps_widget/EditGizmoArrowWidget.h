@@ -15,7 +15,7 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditGizmoArrowWidget : public QWidget
   TP_DQ;
 public:
   //################################################################################################
-  EditGizmoArrowWidget(QWidget* parent = nullptr);
+  EditGizmoArrowWidget(bool optionalFields=false, QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditGizmoArrowWidget() override;
@@ -25,6 +25,9 @@ public:
 
   //################################################################################################
   const tp_maps::GizmoArrowParameters& gizmoArrowParameters() const;
+
+  //################################################################################################
+  void updateGizmoArrowParameters(tp_maps::GizmoArrowParameters& gizmoArrowParameters) const;
 
   //################################################################################################
   tp_utils::CallbackCollection<void()> edited;

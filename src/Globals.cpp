@@ -3,6 +3,8 @@
 #include "tp_math_utils/materials/OpenGLMaterial.h"
 
 #include <QSurfaceFormat>
+#include <QBoxLayout>
+#include <QCheckBox>
 
 namespace tp_qt_maps_widget
 {
@@ -122,6 +124,34 @@ std::vector<tp_math_utils::Material> materialLibrary()
   }
 
   return materials;
+}
+
+//##################################################################################################
+OptionalEditRow OptionalEditRow::init(bool optionalFields, QVBoxLayout* l)
+{
+  OptionalEditRow r;
+  if(optionalFields)
+  {
+    auto hLayout = new QHBoxLayout();
+    hLayout->setContentsMargins(0,0,0,0);
+    l->addLayout(hLayout);
+
+    auto checkBox = new QCheckBox();
+    hLayout->addWidget(checkBox);
+
+    auto vLayout = new QVBoxLayout();
+    vLayout->setContentsMargins(0,0,0,0);
+    hLayout->addLayout(vLayout);
+
+    r.l = vLayout;
+    r.enabled = [=]{return checkBox->isChecked();};
+  }
+  else
+  {
+    r.l = l;
+    r.enabled = []{return true;};
+  }
+  return r;
 }
 
 }

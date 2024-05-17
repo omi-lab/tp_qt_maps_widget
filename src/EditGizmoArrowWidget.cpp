@@ -18,7 +18,7 @@ struct EditGizmoArrowWidget::Private
   tp_maps::GizmoArrowParameters gizmoArrowParameters;
 
   tp_utils::CallbackCollection<void()> toUI;
-  tp_utils::CallbackCollection<void()> fromUI;
+  tp_utils::CallbackCollection<void(tp_maps::GizmoArrowParameters& gizmoArrowParameters)> fromUI;
 
   //################################################################################################
   Private(Q* q_):
@@ -35,7 +35,7 @@ struct EditGizmoArrowWidget::Private
 };
 
 //##################################################################################################
-EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
+EditGizmoArrowWidget::EditGizmoArrowWidget(bool optionalFields, QWidget* parent):
   QWidget(parent),
   d(new Private(this))
 {
@@ -43,8 +43,10 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
   l->setContentsMargins(0,0,0,0);
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto checkBox = new QCheckBox("Enabled");
-    l->addWidget(checkBox);
+    r.l->addWidget(checkBox);
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
@@ -53,15 +55,18 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       checkBox->setChecked(d->gizmoArrowParameters.enable);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.enable = checkBox->isChecked();
+      if(r.enabled())
+        gizmoArrowParameters.enable = checkBox->isChecked();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto button = new tp_qt_widgets::ColorButton("Color");
-    l->addWidget(button);
+    r.l->addWidget(button);
     d->edited.connect(button->edited);
 
     d->toUI.addCallback([=]
@@ -69,15 +74,18 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       button->setColor<glm::vec3>(d->gizmoArrowParameters.color);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.color = button->toFloat3<glm::vec3>();
+      if(r.enabled())
+        gizmoArrowParameters.color = button->toFloat3<glm::vec3>();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto checkBox = new QCheckBox("Use selected color");
-    l->addWidget(checkBox);
+    r.l->addWidget(checkBox);
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
@@ -86,15 +94,18 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       checkBox->setChecked(d->gizmoArrowParameters.useSelectedColor);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.useSelectedColor = checkBox->isChecked();
+      if(r.enabled())
+        gizmoArrowParameters.useSelectedColor = checkBox->isChecked();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto button = new tp_qt_widgets::ColorButton("Selected color");
-    l->addWidget(button);
+    r.l->addWidget(button);
     d->edited.connect(button->edited);
 
     d->toUI.addCallback([=]
@@ -102,16 +113,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       button->setColor<glm::vec3>(d->gizmoArrowParameters.selectedColor);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.selectedColor = button->toFloat3<glm::vec3>();
+      if(r.enabled())
+        gizmoArrowParameters.selectedColor = button->toFloat3<glm::vec3>();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto spin = new QDoubleSpinBox();
-    l->addWidget(new QLabel("Stem start"));
-    l->addWidget(spin);
+    r.l->addWidget(new QLabel("Stem start"));
+    r.l->addWidget(spin);
 
     connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
 
@@ -123,16 +137,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       spin->setValue(double(d->gizmoArrowParameters.stemStart));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.stemStart = float(spin->value());
+      if(r.enabled())
+        gizmoArrowParameters.stemStart = float(spin->value());
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto spin = new QDoubleSpinBox();
-    l->addWidget(new QLabel("Stem length"));
-    l->addWidget(spin);
+    r.l->addWidget(new QLabel("Stem length"));
+    r.l->addWidget(spin);
 
     connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
 
@@ -144,16 +161,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       spin->setValue(double(d->gizmoArrowParameters.stemLength));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.stemLength = float(spin->value());
+      if(r.enabled())
+        gizmoArrowParameters.stemLength = float(spin->value());
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto spin = new QDoubleSpinBox();
-    l->addWidget(new QLabel("Stem radius"));
-    l->addWidget(spin);
+    r.l->addWidget(new QLabel("Stem radius"));
+    r.l->addWidget(spin);
 
     connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
 
@@ -165,16 +185,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       spin->setValue(double(d->gizmoArrowParameters.stemRadius));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.stemRadius = float(spin->value());
+      if(r.enabled())
+        gizmoArrowParameters.stemRadius = float(spin->value());
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto spin = new QDoubleSpinBox();
-    l->addWidget(new QLabel("Cone radius"));
-    l->addWidget(spin);
+    r.l->addWidget(new QLabel("Cone radius"));
+    r.l->addWidget(spin);
 
     connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
 
@@ -186,16 +209,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       spin->setValue(double(d->gizmoArrowParameters.coneRadius));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.coneRadius = float(spin->value());
+      if(r.enabled())
+        gizmoArrowParameters.coneRadius = float(spin->value());
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto spin = new QDoubleSpinBox();
-    l->addWidget(new QLabel("Cone length"));
-    l->addWidget(spin);
+    r.l->addWidget(new QLabel("Cone length"));
+    r.l->addWidget(spin);
 
     connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
 
@@ -207,16 +233,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       spin->setValue(double(d->gizmoArrowParameters.coneLength));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.coneLength = float(spin->value());
+      if(r.enabled())
+        gizmoArrowParameters.coneLength = float(spin->value());
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto combo = new QComboBox();
-    l->addWidget(new QLabel("Positive style"));
-    l->addWidget(combo);
+    r.l->addWidget(new QLabel("Positive style"));
+    r.l->addWidget(combo);
 
     connect(combo, &QComboBox::activated, this, [&]{edited();});
 
@@ -227,16 +256,19 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       combo->setCurrentText(QString::fromStdString(tp_maps::gizmoArrowStyleToString(d->gizmoArrowParameters.positiveArrowStyle)));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.positiveArrowStyle = tp_maps::gizmoArrowStyleFromString(combo->currentText().toStdString());
+      if(r.enabled())
+        gizmoArrowParameters.positiveArrowStyle = tp_maps::gizmoArrowStyleFromString(combo->currentText().toStdString());
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto combo = new QComboBox();
-    l->addWidget(new QLabel("Negative style"));
-    l->addWidget(combo);
+    r.l->addWidget(new QLabel("Negative style"));
+    r.l->addWidget(combo);
 
     connect(combo, &QComboBox::activated, this, [&]{edited();});
 
@@ -247,12 +279,12 @@ EditGizmoArrowWidget::EditGizmoArrowWidget(QWidget* parent):
       combo->setCurrentText(QString::fromStdString(tp_maps::gizmoArrowStyleToString(d->gizmoArrowParameters.negativeArrowStyle)));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoArrowParameters& gizmoArrowParameters)
     {
-      d->gizmoArrowParameters.negativeArrowStyle = tp_maps::gizmoArrowStyleFromString(combo->currentText().toStdString());
+      if(r.enabled())
+        gizmoArrowParameters.negativeArrowStyle = tp_maps::gizmoArrowStyleFromString(combo->currentText().toStdString());
     });
   }
-
 
   d->toUI();
 }
@@ -276,8 +308,14 @@ void EditGizmoArrowWidget::setGizmoArrowParameters(const tp_maps::GizmoArrowPara
 //##################################################################################################
 const tp_maps::GizmoArrowParameters& EditGizmoArrowWidget::gizmoArrowParameters() const
 {
-  d->fromUI();
+  d->fromUI(d->gizmoArrowParameters);
   return d->gizmoArrowParameters;
+}
+
+//##################################################################################################
+void EditGizmoArrowWidget::updateGizmoArrowParameters(tp_maps::GizmoArrowParameters& gizmoArrowParameters) const
+{
+  d->fromUI(gizmoArrowParameters);
 }
 
 }

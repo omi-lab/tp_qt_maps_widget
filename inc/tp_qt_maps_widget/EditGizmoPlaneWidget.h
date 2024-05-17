@@ -15,7 +15,7 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditGizmoPlaneWidget : public QWidget
   TP_DQ;
 public:
   //################################################################################################
-  EditGizmoPlaneWidget(QWidget* parent = nullptr);
+  EditGizmoPlaneWidget(bool optionalFields=false, QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditGizmoPlaneWidget() override;
@@ -25,6 +25,9 @@ public:
 
   //################################################################################################
   const tp_maps::GizmoPlaneParameters& gizmoPlaneParameters() const;
+
+  //################################################################################################
+  void updateGizmoPlaneParameters(tp_maps::GizmoPlaneParameters& gizmoPlaneParameters) const;
 
   //################################################################################################
   tp_utils::CallbackCollection<void()> edited;

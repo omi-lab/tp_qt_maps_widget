@@ -19,7 +19,7 @@ struct EditGizmoRingWidget::Private
   tp_maps::GizmoRingParameters gizmoRingParameters;
 
   tp_utils::CallbackCollection<void()> toUI;
-  tp_utils::CallbackCollection<void()> fromUI;
+  tp_utils::CallbackCollection<void(tp_maps::GizmoRingParameters& gizmoRingParameters)> fromUI;
 
   //################################################################################################
   Private(Q* q_):
@@ -36,7 +36,7 @@ struct EditGizmoRingWidget::Private
 };
 
 //##################################################################################################
-EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
+EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
   QWidget(parent),
   d(new Private(this))
 {
@@ -44,8 +44,10 @@ EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
   l->setContentsMargins(0,0,0,0);
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto checkBox = new QCheckBox("Enabled");
-    l->addWidget(checkBox);
+    r.l->addWidget(checkBox);
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
@@ -54,15 +56,18 @@ EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
       checkBox->setChecked(d->gizmoRingParameters.enable);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
-      d->gizmoRingParameters.enable = checkBox->isChecked();
+      if(r.enabled())
+        gizmoRingParameters.enable = checkBox->isChecked();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto button = new tp_qt_widgets::ColorButton("Color");
-    l->addWidget(button);
+    r.l->addWidget(button);
     d->edited.connect(button->edited);
 
     d->toUI.addCallback([=]
@@ -70,15 +75,18 @@ EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
       button->setColor<glm::vec3>(d->gizmoRingParameters.color);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
-      d->gizmoRingParameters.color = button->toFloat3<glm::vec3>();
+      if(r.enabled())
+        gizmoRingParameters.color = button->toFloat3<glm::vec3>();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto checkBox = new QCheckBox("Use selected color");
-    l->addWidget(checkBox);
+    r.l->addWidget(checkBox);
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
@@ -87,15 +95,18 @@ EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
       checkBox->setChecked(d->gizmoRingParameters.useSelectedColor);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
-      d->gizmoRingParameters.useSelectedColor = checkBox->isChecked();
+      if(r.enabled())
+        gizmoRingParameters.useSelectedColor = checkBox->isChecked();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto button = new tp_qt_widgets::ColorButton("Selected color");
-    l->addWidget(button);
+    r.l->addWidget(button);
     d->edited.connect(button->edited);
 
     d->toUI.addCallback([=]
@@ -103,16 +114,19 @@ EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
       button->setColor<glm::vec3>(d->gizmoRingParameters.selectedColor);
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
-      d->gizmoRingParameters.selectedColor = button->toFloat3<glm::vec3>();
+      if(r.enabled())
+        gizmoRingParameters.selectedColor = button->toFloat3<glm::vec3>();
     });
   }
 
   {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
     auto combo = new QComboBox();
-    l->addWidget(new QLabel("Style"));
-    l->addWidget(combo);
+    r.l->addWidget(new QLabel("Style"));
+    r.l->addWidget(combo);
 
     connect(combo, &QComboBox::activated, this, [&]{edited();});
 
@@ -123,9 +137,10 @@ EditGizmoRingWidget::EditGizmoRingWidget(QWidget* parent):
       combo->setCurrentText(QString::fromStdString(tp_maps::gizmoRingStyleToString(d->gizmoRingParameters.style)));
     });
 
-    d->fromUI.addCallback([=]
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
-      d->gizmoRingParameters.style = tp_maps::gizmoRingStyleFromString(combo->currentText().toStdString());
+      if(r.enabled())
+        gizmoRingParameters.style = tp_maps::gizmoRingStyleFromString(combo->currentText().toStdString());
     });
   }
 
@@ -151,8 +166,14 @@ void EditGizmoRingWidget::setGizmoRingParameters(const tp_maps::GizmoRingParamet
 //##################################################################################################
 const tp_maps::GizmoRingParameters& EditGizmoRingWidget::gizmoRingParameters() const
 {
-  d->fromUI();
+  d->fromUI(d->gizmoRingParameters);
   return d->gizmoRingParameters;
+}
+
+//##################################################################################################
+void EditGizmoRingWidget::updateGizmoRingParameters(tp_maps::GizmoRingParameters& gizmoRingParameters) const
+{
+  d->fromUI(gizmoRingParameters);
 }
 
 }
