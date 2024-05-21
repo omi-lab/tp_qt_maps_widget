@@ -8,6 +8,7 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QCheckBox>
+#include <QDoubleSpinBox>
 
 namespace tp_qt_maps_widget
 {
@@ -141,6 +142,156 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     {
       if(r.enabled())
         gizmoRingParameters.style = tp_maps::gizmoRingStyleFromString(combo->currentText().toStdString());
+    });
+  }
+
+  {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
+    auto spin = new QDoubleSpinBox();
+    r.l->addWidget(new QLabel("Ring height"));
+    r.l->addWidget(spin);
+
+    connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
+
+    spin->setRange(0.0, 2.0);
+    spin->setSingleStep(0.01);
+    spin->setDecimals(3);
+
+    d->toUI.addCallback([=]
+    {
+      spin->setValue(double(d->gizmoRingParameters.ringHeight));
+    });
+
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    {
+      if(r.enabled())
+        gizmoRingParameters.ringHeight = float(spin->value());
+    });
+  }
+
+  {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
+    auto spin = new QDoubleSpinBox();
+    r.l->addWidget(new QLabel("Outer radius"));
+    r.l->addWidget(spin);
+
+    connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
+
+    spin->setRange(0.0, 2.0);
+    spin->setSingleStep(0.01);
+    spin->setDecimals(3);
+
+    d->toUI.addCallback([=]
+    {
+      spin->setValue(double(d->gizmoRingParameters.outerRadius));
+    });
+
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    {
+      if(r.enabled())
+        gizmoRingParameters.outerRadius = float(spin->value());
+    });
+  }
+
+  {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
+    auto spin = new QDoubleSpinBox();
+    r.l->addWidget(new QLabel("Inner radius"));
+    r.l->addWidget(spin);
+
+    connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
+
+    spin->setRange(0.0, 2.0);
+    spin->setSingleStep(0.01);
+    spin->setDecimals(3);
+
+    d->toUI.addCallback([=]
+    {
+      spin->setValue(double(d->gizmoRingParameters.innerRadius));
+    });
+
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    {
+      if(r.enabled())
+        gizmoRingParameters.innerRadius = float(spin->value());
+    });
+  }
+
+  {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
+    auto spin = new QDoubleSpinBox();
+    r.l->addWidget(new QLabel("Spike radius"));
+    r.l->addWidget(spin);
+
+    connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
+
+    spin->setRange(0.0, 2.0);
+    spin->setSingleStep(0.01);
+    spin->setDecimals(3);
+
+    d->toUI.addCallback([=]
+    {
+      spin->setValue(double(d->gizmoRingParameters.spikeRadius));
+    });
+
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    {
+      if(r.enabled())
+        gizmoRingParameters.spikeRadius = float(spin->value());
+    });
+  }
+
+  {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
+    auto spin = new QDoubleSpinBox();
+    r.l->addWidget(new QLabel("Arrow inner radius"));
+    r.l->addWidget(spin);
+
+    connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
+
+    spin->setRange(0.0, 2.0);
+    spin->setSingleStep(0.01);
+    spin->setDecimals(3);
+
+    d->toUI.addCallback([=]
+    {
+      spin->setValue(double(d->gizmoRingParameters.arrowInnerRadius));
+    });
+
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    {
+      if(r.enabled())
+        gizmoRingParameters.arrowInnerRadius = float(spin->value());
+    });
+  }
+
+  {
+    auto r = OptionalEditRow::init(optionalFields, l);
+
+    auto spin = new QDoubleSpinBox();
+    r.l->addWidget(new QLabel("Arrow outer radius"));
+    r.l->addWidget(spin);
+
+    connect(spin, &QDoubleSpinBox::valueChanged, this, [&]{edited();});
+
+    spin->setRange(0.0, 2.0);
+    spin->setSingleStep(0.01);
+    spin->setDecimals(3);
+
+    d->toUI.addCallback([=]
+    {
+      spin->setValue(double(d->gizmoRingParameters.arrowOuterRadius));
+    });
+
+    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    {
+      if(r.enabled())
+        gizmoRingParameters.arrowOuterRadius = float(spin->value());
     });
   }
 

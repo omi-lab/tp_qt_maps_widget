@@ -318,6 +318,26 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
     {
       auto combo = new QComboBox();
+      l->addWidget(new QLabel("Shader selection"));
+      l->addWidget(combo);
+
+      connect(combo, &QComboBox::activated, this, [&]{edited();});
+
+      combo->addItems(tp_qt_utils::convertStringList(tp_maps::Geometry3DLayer::shaderSelections()));
+
+      d->toUI.addCallback([=]
+      {
+        combo->setCurrentText(QString::fromStdString(tp_maps::Geometry3DLayer::shaderSelectionToString(d->gizmoParameters.shaderSelection)));
+      });
+
+      d->fromUI.addCallback([=]
+      {
+        d->gizmoParameters.shaderSelection = tp_maps::Geometry3DLayer::shaderSelectionFromString(combo->currentText().toStdString());
+      });
+    }
+
+    {
+      auto combo = new QComboBox();
       l->addWidget(new QLabel("Scale mode"));
       l->addWidget(combo);
 
@@ -431,6 +451,8 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
     d->addArrow(l, "Scale arrow X", &tp_maps::GizmoParameters::scaleArrowX);
     d->addArrow(l, "Scale arrow Y", &tp_maps::GizmoParameters::scaleArrowY);
     d->addArrow(l, "Scale arrow Z", &tp_maps::GizmoParameters::scaleArrowZ);
+
+    d->addArrow(l, "Scale arrow screen", &tp_maps::GizmoParameters::scaleArrowScreen);
 
     d->addGroupArrow(l, "Common scale arrow XYZ",
                      {
