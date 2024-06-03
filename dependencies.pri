@@ -1,3 +1,4 @@
+QT += core
 DEPENDENCIES += tp_qt_maps
 DEPENDENCIES += tp_qt_widgets
 INCLUDEPATHS += tp_qt_maps_widget/inc/
