@@ -457,6 +457,9 @@ void MapWidget::keyReleaseEvent(QKeyEvent *event)
 //##################################################################################################
 void MapWidget::timerEvent(QTimerEvent* event)
 {
+  if(isHidden() || visibleRegion().isEmpty())
+    return;
+
   if(event->timerId() == d->animationTimerID)
     d->map->animate(double(tp_utils::currentTimeMS()));
 }
