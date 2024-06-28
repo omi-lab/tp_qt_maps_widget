@@ -28,6 +28,7 @@ struct ConfigureFBOLayerWidget::Private
   tp_maps::FBOLayer* fboLayer;
 
   QCheckBox* enableCheckBox{nullptr};
+  QCheckBox* pollPickingCheckBox{nullptr};
 
   QListWidget* windowsList{nullptr};
   QPushButton* addButton{nullptr};
@@ -167,6 +168,14 @@ ConfigureFBOLayerWidget::ConfigureFBOLayerWidget(tp_maps::FBOLayer* fboLayer):
     d->fboLayer->setVisible(d->enableCheckBox->isChecked());
   });
 
+  d->pollPickingCheckBox = new QCheckBox("Poll picking.");
+  l->addWidget(d->pollPickingCheckBox);
+
+  connect(d->pollPickingCheckBox, &QCheckBox::clicked, this, [&]
+  {
+    d->fboLayer->setPollPicking(d->pollPickingCheckBox->isChecked());
+  });
+
   auto mainSplitter = new QSplitter();
   l->addWidget(mainSplitter);
 
@@ -260,6 +269,7 @@ ConfigureFBOLayerWidget::~ConfigureFBOLayerWidget()
 void ConfigureFBOLayerWidget::update()
 {
   d->enableCheckBox->setChecked(d->fboLayer->visible());
+  d->pollPickingCheckBox->setChecked(d->fboLayer->pollPicking());
 
   //------------------------------------------------------------------------------------------------
   // Update the list of windows.
