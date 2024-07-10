@@ -3,9 +3,11 @@
 
 #include "tp_qt_maps_widget/Globals.h"
 
+#include "tp_math_utils/LightSwapParameters.h"
 #include "tp_math_utils/Light.h"
 
 #include <QWidget>
+#include <optional>
 
 namespace tp_qt_maps_widget
 {
@@ -21,14 +23,20 @@ public:
   ~EditLightWidget() override;
 
   //################################################################################################
-  void setLight(const tp_math_utils::Light& light);
+  void setLight(const tp_math_utils::Light& light, std::optional<tp_math_utils::LightSwapParameters> lightSwapParamsOpt);
 
   //################################################################################################
   tp_math_utils::Light light() const;
 
   //################################################################################################
+  bool isTemplate() const;
+
+  //################################################################################################
+  std::optional<tp_math_utils::LightSwapParameters> lightSwapParameters() const;
+
+  //################################################################################################
   //! Shows a dialog to edit the light and returns true if accepted.
-  static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light);
+  static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light, std::optional<tp_math_utils::LightSwapParameters> lightSwapParamsOpt);
 
 Q_SIGNALS:
   //################################################################################################

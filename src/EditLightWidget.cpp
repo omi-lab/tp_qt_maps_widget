@@ -1,4 +1,5 @@
 #include "tp_qt_maps_widget/EditLightWidget.h"
+#include "tp_qt_maps_widget/EditLightSwapParametersWidget.h"
 
 #include "tp_utils/JSONUtils.h"
 #include "tp_utils/DebugUtils.h"
@@ -31,6 +32,7 @@ namespace tp_qt_maps_widget
 struct EditLightWidget::Private
 {
   tp_math_utils::Light light;
+  tp_math_utils::LightSwapParameters lightSwapParameters;
 
   QLineEdit* nameEdit{nullptr};
 
@@ -64,6 +66,9 @@ struct EditLightWidget::Private
   QDoubleSpinBox* offsetScale{nullptr};
 
   QCheckBox* castShadows{nullptr};
+
+  QCheckBox* isTemplateCheckbox{nullptr};
+  tp_qt_maps_widget::EditLightSwapParametersWidget* editLightSwapParametersWidget{nullptr};
 
   //################################################################################################
   void updateColors()
@@ -421,6 +426,22 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     l->addWidget(d->castShadows);
     connect(d->castShadows, &QCheckBox::clicked, this, &EditLightWidget::lightEdited);
   }
+
+  d->isTemplateCheckbox  = new QCheckBox("Is template");
+  d->isTemplateCheckbox->setChecked(false);
+  l->addWidget(d->isTemplateCheckbox);
+
+  connect(d->isTemplateCheckbox, &QCheckBox::toggled, this, [=]
+  {
+    Q_EMIT lightEdited();
+  });
+
+  d->editLightSwapParametersWidget = new tp_qt_maps_widget::EditLightSwapParametersWidget();
+  connect(d->editLightSwapParametersWidget, &tp_qt_maps_widget::EditLightSwapParametersWidget::lightSwapParametersEdited, this, [=]
+  {
+    Q_EMIT lightEdited();
+  });
+  l->addWidget(d->editLightSwapParametersWidget);
 }
 
 //##################################################################################################
@@ -430,7 +451,7 @@ EditLightWidget::~EditLightWidget()
 }
 
 //##################################################################################################
-void EditLightWidget::setLight(const tp_math_utils::Light& light)
+void EditLightWidget::setLight(const tp_math_utils::Light& light, std::optional<tp_math_utils::LightSwapParameters> lightSwapParamsOpt)
 {
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
@@ -442,6 +463,9 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
   };
 
   d->light = light;
+
+  if(lightSwapParamsOpt)
+    d->lightSwapParameters = (*lightSwapParamsOpt);
 
   d->nameEdit->setText(QString::fromStdString(light.name.toString()));
 
@@ -478,6 +502,13 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
   setValue(d->offsetScale, light.offsetScale.x);
 
   d->castShadows->setChecked(light.castShadows);
+  d->isTemplateCheckbox->setChecked(lightSwapParamsOpt.has_value());
+  d->editLightSwapParametersWidget->setVisible(d->isTemplateCheckbox->isChecked());
+  if(lightSwapParamsOpt.has_value())
+  {
+    d->editLightSwapParametersWidget->setLightSwapParameters(lightSwapParamsOpt.value());
+  }
+
 }
 
 //##################################################################################################
@@ -518,8 +549,24 @@ tp_math_utils::Light EditLightWidget::light() const
   return d->light;
 }
 
+//################################################################################################
+bool EditLightWidget::isTemplate() const
+{
+  return d->isTemplateCheckbox->isChecked();
+}
+
+
+//################################################################################################
+std::optional<tp_math_utils::LightSwapParameters> EditLightWidget::lightSwapParameters() const
+{
+  if(isTemplate())
+    return d->editLightSwapParametersWidget->lightSwapParameters();
+
+  return std::nullopt;
+}
+
 //##################################################################################################
-bool EditLightWidget::editLightDialog(QWidget* parent, tp_math_utils::Light& light)
+bool EditLightWidget::editLightDialog(QWidget* parent, tp_math_utils::Light& light, std::optional<tp_math_utils::LightSwapParameters> lightSwapParamsOpt)
 {
   QPointer<QDialog> dialog = new QDialog(parent);
   TP_CLEANUP([&]{delete dialog;});
@@ -530,7 +577,7 @@ bool EditLightWidget::editLightDialog(QWidget* parent, tp_math_utils::Light& lig
 
   auto editLightWidget = new EditLightWidget();
   l->addWidget(editLightWidget);
-  editLightWidget->setLight(light);
+  editLightWidget->setLight(light, lightSwapParamsOpt);
 
   auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   l->addWidget(buttons);
