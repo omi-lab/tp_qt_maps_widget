@@ -2,6 +2,8 @@
 
 #include "tp_qt_maps/ConvertTexture.h"
 
+#include <algorithm>
+
 #include <QBoxLayout>
 #include <QLabel>
 #include <QDoubleSpinBox>
@@ -41,9 +43,6 @@ struct EditLightSwapParametersWidget::Private
 {
   QScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
-
-  QPushButton* colorButton  {nullptr};
-  glm::vec3 initialColor{1.0f, 1.0f, 1.0f};
 
   FloatEditor ambientUse;
   FloatEditor ambientUseR;
@@ -118,25 +117,6 @@ struct EditLightSwapParametersWidget::Private
   FloatEditor fovUse;
   FloatEditor fovScale;
   FloatEditor fovBias;
-
-  //################################################################################################
-  void updateColors()
-  {
-    auto makeIcon = [](const glm::vec3& c)
-    {
-      QImage image(24, 24, QImage::Format_ARGB32);
-      image.fill(QColor(0,0,0,0));
-      {
-        QPainter p(&image);
-        p.setBrush(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)));
-        p.setPen(Qt::black);
-        p.drawRoundedRect(2,2,20,20,2.0, 2.0);
-      }
-      return QIcon(QPixmap::fromImage(image));
-    };
-
-    colorButton->setIcon(makeIcon(initialColor));
-  }
 };
 
 //##################################################################################################
@@ -169,7 +149,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
   {
 
-    auto makeFloatSlider = [&](QBoxLayout* layout, const QString& title, float min, float scaleMax, bool linear, int labelWidth = 120, Qt::Alignment labelAlign = Qt::AlignLeft,  QAbstractButton* button = nullptr)
+    auto makeFloatSlider = [&](QBoxLayout* layout, const QString& title, float min, float scaleMax, bool linear, int labelWidth = 120, Qt::Alignment labelAlign = Qt::AlignLeft,  QAbstractButton* button = nullptr, bool blockSignal = false)
     {
       float scale = scaleMax - min;
 
@@ -210,7 +190,8 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
           spin->blockSignals(true);
           spin->setValue(double(v));
           spin->blockSignals(false);
-          Q_EMIT lightSwapParametersEdited();
+          if(!blockSignal)
+            Q_EMIT lightSwapParametersEdited();
         }
       });
 
@@ -226,7 +207,8 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
           slider->blockSignals(true);
           slider->setValue(newSliderValue);
           slider->blockSignals(false);
-          Q_EMIT lightSwapParametersEdited();
+          if(!blockSignal)
+            Q_EMIT lightSwapParametersEdited();
         }
       };
 
@@ -263,29 +245,6 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
       return boolEditor;
     };
 
-    auto makeColorEdit = [&](QBoxLayout* layout, const QString& text, const std::function<glm::vec3&()>& getColor )
-    {
-      auto button = new QPushButton(text);
-      button->setStyleSheet("text-align:left; padding-left:2;");
-      layout->addWidget(button, 2);
-
-      connect(button, &QAbstractButton::clicked, this, [=]
-      {
-        glm::vec3& c = getColor();
-        QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
-        if(color.isValid())
-        {
-          c.x = color.redF();
-          c.y = color.greenF();
-          c.z = color.blueF();
-          d->updateColors();
-          Q_EMIT lightSwapParametersEdited();
-        }
-      });
-
-      return button;
-    };
-
     auto addTitle = [&](QBoxLayout* layout, const QString& name)
     {
       layout->addWidget(new QLabel(QString("<h2>%1</h2>").arg(name)), 2, Qt::AlignLeft);
@@ -319,15 +278,19 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
       return button;
     };
 
+    auto emitParametersChangedAfter = [&](const std::function<void()>& closure)
+    {
+      blockSignals(true);
+      closure();
+      blockSignals(false);
+      Q_EMIT lightSwapParametersEdited();
+    };
+
     addTitle(l, "Light Swap Properties");
-
-    d->colorButton   = makeColorEdit(l, "Color", [&]()->glm::vec3&{return d->initialColor;});
-    d->updateColors();
-
     addSubTitle(l, "Ambient");
     //--------------------------------AMBIENT USE--------------------------------------
     auto ambientUseExpandButton = addExpandIcon(l);
-    d->ambientUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, ambientUseExpandButton );
+    d->ambientUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, ambientUseExpandButton, true);
 
     auto ambientUseHLayout = new QHBoxLayout();
     ambientUseHLayout->setContentsMargins(0,0,0,0);
@@ -341,17 +304,25 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     d->ambientUseB = makeFloatSlider( ambientUseVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
 
     // connect use slider to the set function of all the sliders
-    connect( d->ambientUse.slider, &QSlider::valueChanged, ambientUseRGBGroup, [=] {
-      d->ambientUseR.set( d->ambientUse.get() );
-      d->ambientUseG.set( d->ambientUse.get() );
-      d->ambientUseB.set( d->ambientUse.get() );
-    } );
+    connect( d->ambientUse.slider, &QSlider::valueChanged, ambientUseRGBGroup, [=] 
+    {
+      emitParametersChangedAfter([&]()
+      {
+        d->ambientUseR.set( d->ambientUse.get() );
+        d->ambientUseG.set( d->ambientUse.get() );
+        d->ambientUseB.set( d->ambientUse.get() );
+      });
+    });
 
-    connect( d->ambientUse.spin, &QDoubleSpinBox::valueChanged, ambientUseRGBGroup, [=] {
-      d->ambientUseR.set( d->ambientUse.get() );
-      d->ambientUseG.set( d->ambientUse.get() );
-      d->ambientUseB.set( d->ambientUse.get() );
-    } );
+    connect( d->ambientUse.spin, &QDoubleSpinBox::valueChanged, ambientUseRGBGroup, [=] 
+    {
+      emitParametersChangedAfter([&]()
+      {
+        d->ambientUseR.set( d->ambientUse.get() );
+        d->ambientUseG.set( d->ambientUse.get() );
+        d->ambientUseB.set( d->ambientUse.get() );
+      });
+    });
 
     ambientUseHLayout->addWidget(ambientUseRGBGroup);
 
@@ -363,7 +334,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------AMBIENT SCALE------------------------------------
     auto ambientScaleExpandButton = addExpandIcon(l);
-    d->ambientScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, ambientScaleExpandButton );
+    d->ambientScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, ambientScaleExpandButton, true);
     d->ambientScale.set(1.0f);
 
     auto ambientScaleHLayout = new QHBoxLayout();
@@ -379,15 +350,22 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->ambientScale.slider, &QSlider::valueChanged, ambientScaleRGBGroup, [=] {
-      d->ambientScaleR.set( d->ambientScale.get() );
-      d->ambientScaleG.set( d->ambientScale.get() );
-      d->ambientScaleB.set( d->ambientScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->ambientScaleR.set( d->ambientScale.get() );
+        d->ambientScaleG.set( d->ambientScale.get() );
+        d->ambientScaleB.set( d->ambientScale.get() );
+      });
     } );
 
-    connect( d->ambientScale.spin, &QDoubleSpinBox::valueChanged, ambientScaleRGBGroup, [=] {
-      d->ambientScaleR.set( d->ambientScale.get() );
-      d->ambientScaleG.set( d->ambientScale.get() );
-      d->ambientScaleB.set( d->ambientScale.get() );
+    connect( d->ambientScale.spin, &QDoubleSpinBox::valueChanged, ambientScaleRGBGroup, [=] 
+    {
+      emitParametersChangedAfter([&]()
+      {
+        d->ambientScaleR.set( d->ambientScale.get() );
+        d->ambientScaleG.set( d->ambientScale.get() );
+        d->ambientScaleB.set( d->ambientScale.get() );
+      });
     } );
 
     ambientScaleHLayout->addWidget(ambientScaleRGBGroup);
@@ -400,7 +378,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------AMBIENT BIAS------------------------------------
     auto ambientBiasExpandButton = addExpandIcon(l);
-    d->ambientBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, ambientBiasExpandButton );
+    d->ambientBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, ambientBiasExpandButton, true);
     d->ambientBias.set(0.0f);
 
     auto ambientBiasHLayout = new QHBoxLayout();
@@ -416,15 +394,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->ambientBias.slider, &QSlider::valueChanged, ambientBiasRGBGroup, [=] {
-      d->ambientBiasR.set( d->ambientBias.get() );
-      d->ambientBiasG.set( d->ambientBias.get() );
-      d->ambientBiasB.set( d->ambientBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->ambientBiasR.set( d->ambientBias.get() );
+        d->ambientBiasG.set( d->ambientBias.get() );
+        d->ambientBiasB.set( d->ambientBias.get() );
+      });
     } );
 
     connect( d->ambientBias.spin, &QDoubleSpinBox::valueChanged, ambientBiasRGBGroup, [=] {
-      d->ambientBiasR.set( d->ambientBias.get() );
-      d->ambientBiasG.set( d->ambientBias.get() );
-      d->ambientBiasB.set( d->ambientBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->ambientBiasR.set( d->ambientBias.get() );
+        d->ambientBiasG.set( d->ambientBias.get() );
+        d->ambientBiasB.set( d->ambientBias.get() );
+      });
     } );
 
     ambientBiasHLayout->addWidget(ambientBiasRGBGroup);
@@ -438,7 +422,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     addSubTitle(l, "Diffuse");
     //--------------------------------DIFFUSE USE--------------------------------------
     auto diffuseUseExpandButton = addExpandIcon(l);
-    d->diffuseUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, diffuseUseExpandButton );
+    d->diffuseUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, diffuseUseExpandButton, true);
 
     auto diffuseUseHLayout = new QHBoxLayout();
     diffuseUseHLayout->setContentsMargins(0,0,0,0);
@@ -453,15 +437,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->diffuseUse.slider, &QSlider::valueChanged, diffuseUseRGBGroup, [=] {
-      d->diffuseUseR.set( d->diffuseUse.get() );
-      d->diffuseUseG.set( d->diffuseUse.get() );
-      d->diffuseUseB.set( d->diffuseUse.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->diffuseUseR.set( d->diffuseUse.get() );
+        d->diffuseUseG.set( d->diffuseUse.get() );
+        d->diffuseUseB.set( d->diffuseUse.get() );
+      });
     } );
 
     connect( d->diffuseUse.spin, &QDoubleSpinBox::valueChanged, diffuseUseRGBGroup, [=] {
-      d->diffuseUseR.set( d->diffuseUse.get() );
-      d->diffuseUseG.set( d->diffuseUse.get() );
-      d->diffuseUseB.set( d->diffuseUse.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->diffuseUseR.set( d->diffuseUse.get() );
+        d->diffuseUseG.set( d->diffuseUse.get() );
+        d->diffuseUseB.set( d->diffuseUse.get() );
+      });
     } );
 
     diffuseUseHLayout->addWidget(diffuseUseRGBGroup);
@@ -474,7 +464,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------DIFFUSE SCALE------------------------------------
     auto diffuseScaleExpandButton = addExpandIcon(l);
-    d->diffuseScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, diffuseScaleExpandButton );
+    d->diffuseScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, diffuseScaleExpandButton, true );
     d->diffuseScale.set(1.0f);
 
     auto diffuseScaleHLayout = new QHBoxLayout();
@@ -490,15 +480,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->diffuseScale.slider, &QSlider::valueChanged, diffuseScaleRGBGroup, [=] {
-      d->diffuseScaleR.set( d->diffuseScale.get() );
-      d->diffuseScaleG.set( d->diffuseScale.get() );
-      d->diffuseScaleB.set( d->diffuseScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->diffuseScaleR.set( d->diffuseScale.get() );
+        d->diffuseScaleG.set( d->diffuseScale.get() );
+        d->diffuseScaleB.set( d->diffuseScale.get() );
+      });
     } );
 
     connect( d->diffuseScale.spin, &QDoubleSpinBox::valueChanged, diffuseScaleRGBGroup, [=] {
-      d->diffuseScaleR.set( d->diffuseScale.get() );
-      d->diffuseScaleG.set( d->diffuseScale.get() );
-      d->diffuseScaleB.set( d->diffuseScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->diffuseScaleR.set( d->diffuseScale.get() );
+        d->diffuseScaleG.set( d->diffuseScale.get() );
+        d->diffuseScaleB.set( d->diffuseScale.get() );
+      });
     } );
 
     diffuseScaleHLayout->addWidget(diffuseScaleRGBGroup);
@@ -511,7 +507,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------DIFFUSE BIAS------------------------------------
     auto diffuseBiasExpandButton = addExpandIcon(l);
-    d->diffuseBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, diffuseBiasExpandButton );
+    d->diffuseBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, diffuseBiasExpandButton, true);
     d->diffuseBias.set(0.0f);
 
     auto diffuseBiasHLayout = new QHBoxLayout();
@@ -527,15 +523,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->diffuseBias.slider, &QSlider::valueChanged, diffuseBiasRGBGroup, [=] {
-      d->diffuseBiasR.set( d->diffuseBias.get() );
-      d->diffuseBiasG.set( d->diffuseBias.get() );
-      d->diffuseBiasB.set( d->diffuseBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->diffuseBiasR.set( d->diffuseBias.get() );
+        d->diffuseBiasG.set( d->diffuseBias.get() );
+        d->diffuseBiasB.set( d->diffuseBias.get() );
+      });
     } );
 
     connect( d->diffuseBias.spin, &QDoubleSpinBox::valueChanged, diffuseBiasRGBGroup, [=] {
-      d->diffuseBiasR.set( d->diffuseBias.get() );
-      d->diffuseBiasG.set( d->diffuseBias.get() );
-      d->diffuseBiasB.set( d->diffuseBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->diffuseBiasR.set( d->diffuseBias.get() );
+        d->diffuseBiasG.set( d->diffuseBias.get() );
+        d->diffuseBiasB.set( d->diffuseBias.get() );
+      });
     } );
 
     diffuseBiasHLayout->addWidget(diffuseBiasRGBGroup);
@@ -549,7 +551,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     addSubTitle(l, "Specular");
     //--------------------------------SPECULAR USE--------------------------------------
     auto specularUseExpandButton = addExpandIcon(l);
-    d->specularUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, specularUseExpandButton );
+    d->specularUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, specularUseExpandButton, true );
 
     auto specularUseHLayout = new QHBoxLayout();
     specularUseHLayout->setContentsMargins(0,0,0,0);
@@ -564,15 +566,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->specularUse.slider, &QSlider::valueChanged, specularUseRGBGroup, [=] {
-      d->specularUseR.set( d->specularUse.get() );
-      d->specularUseG.set( d->specularUse.get() );
-      d->specularUseB.set( d->specularUse.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->specularUseR.set( d->specularUse.get() );
+        d->specularUseG.set( d->specularUse.get() );
+        d->specularUseB.set( d->specularUse.get() );
+      });
     } );
 
     connect( d->specularUse.spin, &QDoubleSpinBox::valueChanged, specularUseRGBGroup, [=] {
-      d->specularUseR.set( d->specularUse.get() );
-      d->specularUseG.set( d->specularUse.get() );
-      d->specularUseB.set( d->specularUse.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->specularUseR.set( d->specularUse.get() );
+        d->specularUseG.set( d->specularUse.get() );
+        d->specularUseB.set( d->specularUse.get() );
+      });
     } );
 
     specularUseHLayout->addWidget(specularUseRGBGroup);
@@ -585,7 +593,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------SPECULAR SCALE------------------------------------
     auto specularScaleExpandButton = addExpandIcon(l);
-    d->specularScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, specularScaleExpandButton );
+    d->specularScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, specularScaleExpandButton, true );
     d->specularScale.set(1.0f);
 
     auto specularScaleHLayout = new QHBoxLayout();
@@ -601,15 +609,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->specularScale.slider, &QSlider::valueChanged, specularScaleRGBGroup, [=] {
-      d->specularScaleR.set( d->specularScale.get() );
-      d->specularScaleG.set( d->specularScale.get() );
-      d->specularScaleB.set( d->specularScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->specularScaleR.set( d->specularScale.get() );
+        d->specularScaleG.set( d->specularScale.get() );
+        d->specularScaleB.set( d->specularScale.get() );
+      });
     } );
 
     connect( d->specularScale.spin, &QDoubleSpinBox::valueChanged, specularScaleRGBGroup, [=] {
-      d->specularScaleR.set( d->specularScale.get() );
-      d->specularScaleG.set( d->specularScale.get() );
-      d->specularScaleB.set( d->specularScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->specularScaleR.set( d->specularScale.get() );
+        d->specularScaleG.set( d->specularScale.get() );
+        d->specularScaleB.set( d->specularScale.get() );
+      });
     } );
 
     specularScaleHLayout->addWidget(specularScaleRGBGroup);
@@ -622,7 +636,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------SPECULAR BIAS------------------------------------
     auto specularBiasExpandButton = addExpandIcon(l);
-    d->specularBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, specularBiasExpandButton );
+    d->specularBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, specularBiasExpandButton, true );
     d->specularBias.set(0.0f);
 
     auto specularBiasHLayout = new QHBoxLayout();
@@ -638,15 +652,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->specularBias.slider, &QSlider::valueChanged, specularBiasRGBGroup, [=] {
-      d->specularBiasR.set( d->specularBias.get() );
-      d->specularBiasG.set( d->specularBias.get() );
-      d->specularBiasB.set( d->specularBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->specularBiasR.set( d->specularBias.get() );
+        d->specularBiasG.set( d->specularBias.get() );
+        d->specularBiasB.set( d->specularBias.get() );
+      });
     } );
 
     connect( d->specularBias.spin, &QDoubleSpinBox::valueChanged, specularBiasRGBGroup, [=] {
-      d->specularBiasR.set( d->specularBias.get() );
-      d->specularBiasG.set( d->specularBias.get() );
-      d->specularBiasB.set( d->specularBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->specularBiasR.set( d->specularBias.get() );
+        d->specularBiasG.set( d->specularBias.get() );
+        d->specularBiasB.set( d->specularBias.get() );
+      });
     } );
 
     specularBiasHLayout->addWidget(specularBiasRGBGroup);
@@ -660,7 +680,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     addSubTitle(l, "OffsetScale");
     //--------------------------------OFFSETSCALE USE--------------------------------------
     auto offsetScaleUseExpandButton = addExpandIcon(l);
-    d->offsetScaleUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, offsetScaleUseExpandButton );
+    d->offsetScaleUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft, offsetScaleUseExpandButton, true );
 
     auto offsetScaleUseHLayout = new QHBoxLayout();
     offsetScaleUseHLayout->setContentsMargins(0,0,0,0);
@@ -675,15 +695,21 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // connect use slider to the set function of all the sliders
     connect( d->offsetScaleUse.slider, &QSlider::valueChanged, offsetScaleUseRGBGroup, [=] {
-      d->offsetScaleUseR.set( d->offsetScaleUse.get() );
-      d->offsetScaleUseG.set( d->offsetScaleUse.get() );
-      d->offsetScaleUseB.set( d->offsetScaleUse.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->offsetScaleUseR.set( d->offsetScaleUse.get() );
+        d->offsetScaleUseG.set( d->offsetScaleUse.get() );
+        d->offsetScaleUseB.set( d->offsetScaleUse.get() );
+      });
     } );
 
     connect( d->offsetScaleUse.spin, &QDoubleSpinBox::valueChanged, offsetScaleUseRGBGroup, [=] {
-      d->offsetScaleUseR.set( d->offsetScaleUse.get() );
-      d->offsetScaleUseG.set( d->offsetScaleUse.get() );
-      d->offsetScaleUseB.set( d->offsetScaleUse.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->offsetScaleUseR.set( d->offsetScaleUse.get() );
+        d->offsetScaleUseG.set( d->offsetScaleUse.get() );
+        d->offsetScaleUseB.set( d->offsetScaleUse.get() );
+      });
     } );
 
     offsetScaleUseHLayout->addWidget(offsetScaleUseRGBGroup);
@@ -696,7 +722,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------OFFSETSCALE SCALE------------------------------------
     auto offsetScaleScaleExpandButton = addExpandIcon(l);
-    d->offsetScaleScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft, offsetScaleScaleExpandButton );
+    d->offsetScaleScale = makeFloatSlider( l, "Scale", 0.0f, 1000.0f, true, 50, Qt::AlignLeft, offsetScaleScaleExpandButton, true );
     d->offsetScaleScale.set(1.0f);
 
     auto offsetScaleScaleHLayout = new QHBoxLayout();
@@ -706,21 +732,27 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     QWidget* offsetScaleScaleRGBGroup = new QWidget(this);
     auto offsetScaleScaleVLayout = new QVBoxLayout(offsetScaleScaleRGBGroup);
     offsetScaleScaleVLayout->setContentsMargins(0,0,0,0);
-    d->offsetScaleScaleR = makeFloatSlider( offsetScaleScaleVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
-    d->offsetScaleScaleG = makeFloatSlider( offsetScaleScaleVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
-    d->offsetScaleScaleB = makeFloatSlider( offsetScaleScaleVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->offsetScaleScaleR = makeFloatSlider( offsetScaleScaleVLayout, "R", 0.0f, 1000.0f, true, 72, Qt::AlignRight);
+    d->offsetScaleScaleG = makeFloatSlider( offsetScaleScaleVLayout, "G", 0.0f, 1000.0f, true, 72, Qt::AlignRight);
+    d->offsetScaleScaleB = makeFloatSlider( offsetScaleScaleVLayout, "B", 0.0f, 1000.0f, true, 72, Qt::AlignRight);
 
     // connect use slider to the set function of all the sliders
     connect( d->offsetScaleScale.slider, &QSlider::valueChanged, offsetScaleScaleRGBGroup, [=] {
-      d->offsetScaleScaleR.set( d->offsetScaleScale.get() );
-      d->offsetScaleScaleG.set( d->offsetScaleScale.get() );
-      d->offsetScaleScaleB.set( d->offsetScaleScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->offsetScaleScaleR.set( d->offsetScaleScale.get() );
+        d->offsetScaleScaleG.set( d->offsetScaleScale.get() );
+        d->offsetScaleScaleB.set( d->offsetScaleScale.get() );
+      });
     } );
 
     connect( d->offsetScaleScale.spin, &QDoubleSpinBox::valueChanged, offsetScaleScaleRGBGroup, [=] {
-      d->offsetScaleScaleR.set( d->offsetScaleScale.get() );
-      d->offsetScaleScaleG.set( d->offsetScaleScale.get() );
-      d->offsetScaleScaleB.set( d->offsetScaleScale.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->offsetScaleScaleR.set( d->offsetScaleScale.get() );
+        d->offsetScaleScaleG.set( d->offsetScaleScale.get() );
+        d->offsetScaleScaleB.set( d->offsetScaleScale.get() );
+      });
     } );
 
     offsetScaleScaleHLayout->addWidget(offsetScaleScaleRGBGroup);
@@ -733,7 +765,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     //--------------------------------OFFSETSCALE BIAS------------------------------------
     auto offsetScaleBiasExpandButton = addExpandIcon(l);
-    d->offsetScaleBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft, offsetScaleBiasExpandButton );
+    d->offsetScaleBias = makeFloatSlider( l, "Bias", 0.0f, 1000.0f, true, 50, Qt::AlignLeft, offsetScaleBiasExpandButton, true);
     d->offsetScaleBias.set(0.0f);
 
     auto offsetScaleBiasHLayout = new QHBoxLayout();
@@ -743,21 +775,27 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     QWidget* offsetScaleBiasRGBGroup = new QWidget(this);
     auto offsetScaleBiasVLayout = new QVBoxLayout(offsetScaleBiasRGBGroup);
     offsetScaleBiasVLayout->setContentsMargins(0,0,0,0);
-    d->offsetScaleBiasR = makeFloatSlider( offsetScaleBiasVLayout, "R", 0.0f, 1.0f, true, 72, Qt::AlignRight);
-    d->offsetScaleBiasG = makeFloatSlider( offsetScaleBiasVLayout, "G", 0.0f, 1.0f, true, 72, Qt::AlignRight);
-    d->offsetScaleBiasB = makeFloatSlider( offsetScaleBiasVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
+    d->offsetScaleBiasR = makeFloatSlider( offsetScaleBiasVLayout, "R", 0.0f, 1000.0f, true, 72, Qt::AlignRight);
+    d->offsetScaleBiasG = makeFloatSlider( offsetScaleBiasVLayout, "G", 0.0f, 1000.0f, true, 72, Qt::AlignRight);
+    d->offsetScaleBiasB = makeFloatSlider( offsetScaleBiasVLayout, "B", 0.0f, 1000.0f, true, 72, Qt::AlignRight);
 
     // connect use slider to the set function of all the sliders
     connect( d->offsetScaleBias.slider, &QSlider::valueChanged, offsetScaleBiasRGBGroup, [=] {
-      d->offsetScaleBiasR.set( d->offsetScaleBias.get() );
-      d->offsetScaleBiasG.set( d->offsetScaleBias.get() );
-      d->offsetScaleBiasB.set( d->offsetScaleBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->offsetScaleBiasR.set( d->offsetScaleBias.get() );
+        d->offsetScaleBiasG.set( d->offsetScaleBias.get() );
+        d->offsetScaleBiasB.set( d->offsetScaleBias.get() );
+      });
     } );
 
     connect( d->offsetScaleBias.spin, &QDoubleSpinBox::valueChanged, offsetScaleBiasRGBGroup, [=] {
-      d->offsetScaleBiasR.set( d->offsetScaleBias.get() );
-      d->offsetScaleBiasG.set( d->offsetScaleBias.get() );
-      d->offsetScaleBiasB.set( d->offsetScaleBias.get() );
+      emitParametersChangedAfter([&]()
+      {
+        d->offsetScaleBiasR.set( d->offsetScaleBias.get() );
+        d->offsetScaleBiasG.set( d->offsetScaleBias.get() );
+        d->offsetScaleBiasB.set( d->offsetScaleBias.get() );
+      });
     } );
 
     offsetScaleBiasHLayout->addWidget(offsetScaleBiasRGBGroup);
@@ -771,20 +809,20 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     //--------------------------------DIFFUSE SCALE------------------------------------
     addSubTitle(l, "Diffuse Scale");
     d->diffuseScaleUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
-    d->diffuseScaleScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
-    d->diffuseScaleBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->diffuseScaleScale = makeFloatSlider( l, "Scale", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
+    d->diffuseScaleBias = makeFloatSlider( l, "Bias", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
 
     //--------------------------------SPOT LIGHT BLEND------------------------------------------
     addSubTitle(l, "Spot Light Blend");
     d->spotLightBlendUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
-    d->spotLightBlendScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
-    d->spotLightBlendBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->spotLightBlendScale = makeFloatSlider( l, "Scale", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
+    d->spotLightBlendBias = makeFloatSlider( l, "Bias", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
 
     //--------------------------------FOV------------------------------------------
     addSubTitle(l, "FOV");
     d->fovUse = makeFloatSlider( l, "Use", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
-    d->fovScale = makeFloatSlider( l, "Scale", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
-    d->fovBias = makeFloatSlider( l, "Bias", 0.0f, 1.0f, true, 50, Qt::AlignLeft );
+    d->fovScale = makeFloatSlider( l, "Scale", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
+    d->fovBias = makeFloatSlider( l, "Bias", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
   }
 
   d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
@@ -802,47 +840,74 @@ void EditLightSwapParametersWidget::setLightSwapParameters(const tp_math_utils::
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
 
+  auto setMasterToMaxOf = [&](FloatEditor& master, const float& x, const float& y, const float& z)
+  {
+    float max = std::max(x, y);
+    max = std::max(max, z);
+    if(master.get() != max)
+      master.set(max);
+  };
+
+  setMasterToMaxOf(d->ambientUse, lightSwapParameters.ambientUse.x, lightSwapParameters.ambientUse.y, lightSwapParameters.ambientUse.z);
   d->ambientUseR         .set(lightSwapParameters.ambientUse.x);
   d->ambientUseG         .set(lightSwapParameters.ambientUse.y);
   d->ambientUseB         .set(lightSwapParameters.ambientUse.z);
+
+  setMasterToMaxOf(d->ambientScale, lightSwapParameters.ambientScale.x, lightSwapParameters.ambientScale.y, lightSwapParameters.ambientScale.z);
   d->ambientScaleR       .set(lightSwapParameters.ambientScale.x);
   d->ambientScaleG       .set(lightSwapParameters.ambientScale.y);
   d->ambientScaleB       .set(lightSwapParameters.ambientScale.z);
+
+  setMasterToMaxOf(d->ambientBias, lightSwapParameters.ambientBias.x, lightSwapParameters.ambientBias.y, lightSwapParameters.ambientBias.z);
   d->ambientBiasR        .set(lightSwapParameters.ambientBias.x);
   d->ambientBiasG        .set(lightSwapParameters.ambientBias.y);
   d->ambientBiasB        .set(lightSwapParameters.ambientBias.z);
 
+  setMasterToMaxOf(d->diffuseUse, lightSwapParameters.diffuseUse.x, lightSwapParameters.diffuseUse.y, lightSwapParameters.diffuseUse.z);
   d->diffuseUseR         .set(lightSwapParameters.diffuseUse.x);
   d->diffuseUseG         .set(lightSwapParameters.diffuseUse.y);
   d->diffuseUseB         .set(lightSwapParameters.diffuseUse.z);
+
+  setMasterToMaxOf(d->diffuseScale, lightSwapParameters.diffuseScale.x, lightSwapParameters.diffuseScale.y, lightSwapParameters.diffuseScale.z);
   d->diffuseScaleR       .set(lightSwapParameters.diffuseScale.x);
   d->diffuseScaleG       .set(lightSwapParameters.diffuseScale.y);
   d->diffuseScaleB       .set(lightSwapParameters.diffuseScale.z);
+
+  setMasterToMaxOf(d->diffuseBias, lightSwapParameters.diffuseBias.x, lightSwapParameters.diffuseBias.y, lightSwapParameters.diffuseBias.z);
   d->diffuseBiasR        .set(lightSwapParameters.diffuseBias.x);
   d->diffuseBiasG        .set(lightSwapParameters.diffuseBias.y);
   d->diffuseBiasB        .set(lightSwapParameters.diffuseBias.z);
 
+  setMasterToMaxOf(d->specularUse, lightSwapParameters.specularUse.x, lightSwapParameters.specularUse.y, lightSwapParameters.specularUse.z);
   d->specularUseR        .set(lightSwapParameters.specularUse.x);
   d->specularUseG        .set(lightSwapParameters.specularUse.y);
   d->specularUseB        .set(lightSwapParameters.specularUse.z);
+
+  setMasterToMaxOf(d->specularScale, lightSwapParameters.specularScale.x, lightSwapParameters.specularScale.y, lightSwapParameters.specularScale.z);
   d->specularScaleR      .set(lightSwapParameters.specularScale.x);
   d->specularScaleG      .set(lightSwapParameters.specularScale.y);
   d->specularScaleB      .set(lightSwapParameters.specularScale.z);
+
+  setMasterToMaxOf(d->specularBias, lightSwapParameters.specularBias.x, lightSwapParameters.specularBias.y, lightSwapParameters.specularBias.z);
   d->specularBiasR       .set(lightSwapParameters.specularBias.x);
   d->specularBiasG       .set(lightSwapParameters.specularBias.y);
   d->specularBiasB       .set(lightSwapParameters.specularBias.z);
 
+  setMasterToMaxOf(d->offsetScaleUse, lightSwapParameters.offsetScaleUse.x, lightSwapParameters.offsetScaleUse.y, lightSwapParameters.offsetScaleUse.z);
   d->offsetScaleUseR     .set(lightSwapParameters.offsetScaleUse.x);
   d->offsetScaleUseG     .set(lightSwapParameters.offsetScaleUse.y);
   d->offsetScaleUseB     .set(lightSwapParameters.offsetScaleUse.z);
+
+  setMasterToMaxOf(d->offsetScaleScale, lightSwapParameters.offsetScaleScale.x, lightSwapParameters.offsetScaleScale.y, lightSwapParameters.offsetScaleScale.z);
   d->offsetScaleScaleR   .set(lightSwapParameters.offsetScaleScale.x);
   d->offsetScaleScaleG   .set(lightSwapParameters.offsetScaleScale.y);
   d->offsetScaleScaleB   .set(lightSwapParameters.offsetScaleScale.z);
+
+  setMasterToMaxOf(d->offsetScaleBias, lightSwapParameters.offsetScaleBias.x, lightSwapParameters.offsetScaleBias.y, lightSwapParameters.offsetScaleBias.z);
   d->offsetScaleBiasR    .set(lightSwapParameters.offsetScaleBias.x);
   d->offsetScaleBiasG    .set(lightSwapParameters.offsetScaleBias.y);
   d->offsetScaleBiasB    .set(lightSwapParameters.offsetScaleBias.z);
 
-  d->initialColor        = lightSwapParameters.initialColor;
 
   d->diffuseScaleUse     .set(lightSwapParameters.diffuseScaleUse);
   d->diffuseScaleScale   .set(lightSwapParameters.diffuseScaleScale);
@@ -855,7 +920,6 @@ void EditLightSwapParametersWidget::setLightSwapParameters(const tp_math_utils::
   d->fovUse              .set(lightSwapParameters.fovUse);
   d->fovScale            .set(lightSwapParameters.fovScale);
   d->fovBias             .set(lightSwapParameters.fovBias);
-  d->updateColors();
 }
 
 //##################################################################################################
@@ -902,8 +966,6 @@ tp_math_utils::LightSwapParameters EditLightSwapParametersWidget::lightSwapParam
   lightSwapParameters.offsetScaleBias.x   = d->offsetScaleBiasR.get();
   lightSwapParameters.offsetScaleBias.y   = d->offsetScaleBiasG.get();
   lightSwapParameters.offsetScaleBias.z   = d->offsetScaleBiasB.get();
-
-  lightSwapParameters.initialColor        = d->initialColor;
 
   lightSwapParameters.diffuseScaleUse     = d->diffuseScaleUse.get();
   lightSwapParameters.diffuseScaleScale   = d->diffuseScaleScale.get();
