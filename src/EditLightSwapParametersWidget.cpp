@@ -124,28 +124,14 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
   QWidget(parent),
   d(new Private())
 {
-  auto mainLayout = new QVBoxLayout(this);
-  mainLayout->setContentsMargins(0,0,0,0);
+  auto l = new QVBoxLayout(this);
+  l->setContentsMargins(0,0,0,0);
 
   {
     auto ll = new QHBoxLayout();
-    mainLayout->addLayout(ll);
+    l->addLayout(ll);
     ll->setContentsMargins(0,0,0,0);
   }
-
-  d->scroll = new QScrollArea();
-  d->scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-  d->scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-  d->scroll->setWidgetResizable(true);
-  mainLayout->addWidget(d->scroll);
-
-  d->scrollContents = new QWidget();
-  d->scroll->setWidget(d->scrollContents);
-  d->scrollContents->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
-  d->scrollContents->installEventFilter(this);
-
-  auto l = new QVBoxLayout(d->scrollContents);
-  l->setContentsMargins(4,4,4,4);
 
   {
 
@@ -824,8 +810,6 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     d->fovScale = makeFloatSlider( l, "Scale", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
     d->fovBias = makeFloatSlider( l, "Bias", 0.0f, 1000.0f, true, 50, Qt::AlignLeft );
   }
-
-  d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
 }
 
 //##################################################################################################
