@@ -182,9 +182,8 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
 
       hLayout->addWidget(label, 0, Qt::AlignLeft);
 
-      if( button ) {
+      if(button)
         hLayout->addWidget(button);
-      }
 
       auto spin = new QDoubleSpinBox();
       spin->setRange(double(min), double(scaleMax));
