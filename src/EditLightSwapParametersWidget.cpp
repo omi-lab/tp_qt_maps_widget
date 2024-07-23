@@ -213,24 +213,6 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
       return floatEditor;
     };
 
-    auto makeCheckbox =[&](QBoxLayout* layout, const QString& name, bool checked)
-    {
-      BoolEditor boolEditor;
-
-      boolEditor.checkbox = new QCheckBox(name, this);
-      boolEditor.checkbox->setChecked(checked);
-
-      layout->addWidget(boolEditor.checkbox, 0, Qt::AlignTop);
-
-      boolEditor.get = [=]{return boolEditor.checkbox->isChecked();};
-      boolEditor.set = [=](bool b)
-      {
-        boolEditor.checkbox->setChecked(b);
-      };
-
-      return boolEditor;
-    };
-
     auto addTitle = [&](QBoxLayout* layout, const QString& name)
     {
       layout->addWidget(new QLabel(QString("<h2>%1</h2>").arg(name)), 2, Qt::AlignLeft);
