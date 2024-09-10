@@ -460,7 +460,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light, std::optional<
   {
     if(std::fabs(float(s->value())-v)>0.0001f)
       s->setValue(double(v));
-  };
+};
 
   d->light = light;
 
@@ -506,6 +506,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light, std::optional<
   d->editLightSwapParametersWidget->setVisible(d->isTemplateCheckbox->isChecked());
   if(lightSwapParamsOpt.has_value())
   {
+    lightSwapParamsOpt->diffuseScaleDefault = light.diffuseScale;
     d->editLightSwapParametersWidget->setLightSwapParameters(lightSwapParamsOpt.value());
   }
 
