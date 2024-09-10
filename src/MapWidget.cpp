@@ -99,11 +99,11 @@ public:
   }
 
   //################################################################################################
-  void update(tp_maps::RenderFromStage renderFromStage=tp_maps::RenderFromStage::Full) override
+  void update(tp_maps::RenderFromStage renderFromStage, const std::vector<tp_utils::StringID>& subviews) override
   {
-    tp_maps::Map::update(renderFromStage);
+    tp_maps::Map::update(renderFromStage, subviews);
 
-    if(!inPaint())
+    if(!inPaint() && tpContains(subviews, tp_maps::defaultSID()))
       mapWidget->update();
   }
 
