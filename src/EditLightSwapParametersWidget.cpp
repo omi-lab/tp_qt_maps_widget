@@ -809,12 +809,11 @@ void EditLightSwapParametersWidget::setLightSwapParameters(const tp_math_utils::
   else
     d->diffuseScaleEnabled.checkbox->setCheckState(Qt::Unchecked);
 
-  d->diffuseScaleMin.set(lightSwapParameters.diffuseScaleBias);
+  d->diffuseScaleMin.set(lightSwapParameters.diffuseScaleMin);
   d->diffuseScaleMax.set(lightSwapParameters.diffuseScaleBias + lightSwapParameters.diffuseScaleScale);
-
   if(d->diffuseScaleEnabled.get())
   {
-    d->diffuseScaleDefault.set((d->diffuseScaleMax.get() - d->diffuseScaleMin.get())/2 + d->diffuseScaleMin.get());
+    d->diffuseScaleDefault.set((d->diffuseScaleMax.get() - lightSwapParameters.diffuseScaleBias)/2 + lightSwapParameters.diffuseScaleBias);
   }
   else
   {
@@ -876,9 +875,10 @@ tp_math_utils::LightSwapParameters EditLightSwapParametersWidget::lightSwapParam
   lightSwapParameters.offsetScaleBias.z   = d->offsetScaleBiasB.get();
 
   lightSwapParameters.diffuseScaleUse     = d->diffuseScaleEnabled.get() ? 1.0f : 0.0f;
-  lightSwapParameters.diffuseScaleBias    = d->diffuseScaleMin.get();
-  lightSwapParameters.diffuseScaleScale   = d->diffuseScaleMax.get() - d->diffuseScaleMin.get();
+  lightSwapParameters.diffuseScaleBias    = d->diffuseScaleDefault.get() - (d->diffuseScaleMax.get() - d->diffuseScaleDefault.get());
+  lightSwapParameters.diffuseScaleScale   = d->diffuseScaleMax.get() - lightSwapParameters.diffuseScaleBias;
   lightSwapParameters.diffuseScaleDefault = d->diffuseScaleDefault.get();
+  lightSwapParameters.diffuseScaleMin     = d->diffuseScaleMin.get();
 
   lightSwapParameters.spotLightBlendUse   = d->spotLightBlendUse.get();
   lightSwapParameters.spotLightBlendScale = d->spotLightBlendScale.get();
