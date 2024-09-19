@@ -37,7 +37,7 @@ struct EditLightWidget::Private
   QLineEdit* nameEdit{nullptr};
 
   QComboBox* typeCombo{nullptr};
-
+  QLabel* animatedLightWarning{nullptr};
   QDoubleSpinBox* positionX{nullptr};
   QDoubleSpinBox* positionY{nullptr};
   QDoubleSpinBox* positionZ{nullptr};
@@ -105,6 +105,10 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   l->addWidget(d->nameEdit);
   connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditLightWidget::lightEdited);
 
+  d->animatedLightWarning = new QLabel("Note: Animated lights cannot be edited");
+  d->animatedLightWarning->setStyleSheet("QLabel { color : red; }");
+  d->animatedLightWarning->setVisible(false);
+  l->addWidget(d->animatedLightWarning);
 
   l->addWidget(new QLabel("Type"));
   d->typeCombo = new QComboBox();
@@ -460,9 +464,30 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light, std::optional<
   {
     if(std::fabs(float(s->value())-v)>0.0001f)
       s->setValue(double(v));
-};
+  };
 
   d->light = light;
+  d->animatedLightWarning->setVisible(d->light.animation.isAnimated());
+  d->typeCombo->setEnabled(!d->light.animation.isAnimated());
+  d->positionX->setEnabled(!d->light.animation.isAnimated());
+  d->positionY->setEnabled(!d->light.animation.isAnimated());
+  d->positionZ->setEnabled(!d->light.animation.isAnimated());
+  d->directionX->setEnabled(!d->light.animation.isAnimated());
+  d->directionY->setEnabled(!d->light.animation.isAnimated());
+  d->directionZ->setEnabled(!d->light.animation.isAnimated());
+  d->ambientColorButton->setEnabled(!d->light.animation.isAnimated());
+  d->diffuseColorButton->setEnabled(!d->light.animation.isAnimated());
+  d->specularColorButton->setEnabled(!d->light.animation.isAnimated());
+  d->diffuseScale->setEnabled(!d->light.animation.isAnimated());
+  d->spotLightConstant->setEnabled(!d->light.animation.isAnimated());
+  d->spotLightLinear->setEnabled(!d->light.animation.isAnimated());
+  d->spotLightQuadratic->setEnabled(!d->light.animation.isAnimated());
+  d->spotLightBlend->setEnabled(!d->light.animation.isAnimated());
+  d->near->setEnabled(!d->light.animation.isAnimated());
+  d->far->setEnabled(!d->light.animation.isAnimated());
+  d->fov->setEnabled(!d->light.animation.isAnimated());
+  d->orthoRadius->setEnabled(!d->light.animation.isAnimated());
+  d->offsetScale->setEnabled(!d->light.animation.isAnimated());
 
   if(lightSwapParamsOpt)
     d->lightSwapParameters = (*lightSwapParamsOpt);
