@@ -390,7 +390,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
   {
     d->sssMethod = new QComboBox();
-    d->sssMethod->addItems({"ChristensenBurley", "RandomWalk"});
+    d->sssMethod->addItems({"ChristensenBurley", "RandomWalk", "RandomWalkFixedRadius"});
     int row = gridLayout->rowCount();
     gridLayout->addWidget(new QLabel("Subsurface method"), row, 0, Qt::AlignLeft);
     gridLayout->addWidget(d->sssMethod, row, 1);
