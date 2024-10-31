@@ -6,6 +6,7 @@
 #include "tp_qt_utils/Globals.h"
 
 #include "tp_utils/FileUtils.h"
+#include "tp_utils/TPSettings.h"
 
 #include <QDialog>
 #include <QBoxLayout>
@@ -15,7 +16,6 @@
 #include <QPointer>
 #include <QDialogButtonBox>
 #include <QScrollArea>
-#include <QSettings>
 #include <QFileDialog>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -234,13 +234,13 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
       l->addWidget(button);
       connect(button, &QPushButton::clicked, this, [&]
       {
-        QString dir = QSettings().value("EditGizmoWidget").toString();
+        QString dir = QString::fromStdString(TPSettings::value("EditGizmoWidget"));
         QString path = QFileDialog::getSaveFileName(this, "Save Gizmo Parameters", dir, "*.json");
 
         if(path.isEmpty())
           return;
 
-        QSettings().setValue("EditGizmoWidget", QFileInfo(path).dir().absolutePath());
+        TPSettings::setValue("EditGizmoWidget", QFileInfo(path).dir().absolutePath().toStdString());
 
         nlohmann::json j;
         d->gizmoParameters.saveState(j);
@@ -253,13 +253,13 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
       l->addWidget(button);
       connect(button, &QPushButton::clicked, this, [&]
       {
-        QString dir = QSettings().value("EditGizmoWidget").toString();
+        QString dir = QString::fromStdString(TPSettings::value("EditGizmoWidget"));
         QString path = QFileDialog::getOpenFileName(this, "Load Gizmo Parameters", dir, "*.json");
 
         if(path.isEmpty())
           return;
 
-        QSettings().setValue("EditGizmoWidget", QFileInfo(path).dir().absolutePath());
+        TPSettings::setValue("EditGizmoWidget", QFileInfo(path).dir().absolutePath().toStdString());
 
         d->gizmoParameters.loadState(tp_utils::readJSONFile(path.toStdString()));
         d->toUI();
