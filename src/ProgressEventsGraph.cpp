@@ -15,6 +15,10 @@
 namespace tp_qt_maps_widget
 {
 
+#ifdef TP_LINUX
+#warning rename this class ProgressEventsGraphWidget
+#endif
+
 namespace
 {
 
@@ -180,6 +184,7 @@ struct ProgressEventsGraph::Private
       {
         auto layer = new tp_maps::LinesLayer();
         layer->setDefaultRenderPass(tp_maps::RenderPass::GUI);
+        layer->setExcludeFromPicking(false);
         layer->setLines({line});
         mapWidget->map()->addLayer(layer);
         layers.push_back(layer);
