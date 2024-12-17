@@ -23,20 +23,14 @@ public:
   ~EditLightWidget() override;
 
   //################################################################################################
-  void setLight(const tp_math_utils::Light& light, std::optional<tp_math_utils::LightSwapParameters> lightSwapParamsOpt);
+  void setLight(const tp_math_utils::Light& light);
 
   //################################################################################################
   tp_math_utils::Light light() const;
 
   //################################################################################################
-  bool isTemplate() const;
-
-  //################################################################################################
-  std::optional<tp_math_utils::LightSwapParameters> lightSwapParameters() const;
-
-  //################################################################################################
   //! Shows a dialog to edit the light and returns true if accepted.
-  static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light, std::optional<tp_math_utils::LightSwapParameters> lightSwapParamsOpt);
+  static bool editLightDialog(QWidget* parent, tp_math_utils::Light& light);
 
 Q_SIGNALS:
   //################################################################################################

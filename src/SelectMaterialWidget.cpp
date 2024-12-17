@@ -22,7 +22,7 @@ namespace tp_qt_maps_widget
 //##################################################################################################
 struct SelectMaterialWidget::Private
 {
-  SelectMaterialWidget* q;
+  Q* q;
   std::vector<tp_math_utils::Material> materials;
 
   QSize iconSize{64, 64};
@@ -34,7 +34,7 @@ struct SelectMaterialWidget::Private
   tp_math_utils::Geometry3D geometry;
 
   //################################################################################################
-  Private(SelectMaterialWidget* q_):
+  Private(Q* q_):
     q(q_)
   {
 

@@ -133,7 +133,7 @@ struct MapWidget::Private
   TP_REF_COUNT_OBJECTS("tp_qt_maps_widget::MapWidget::Private");
   TP_NONCOPYABLE(Private);
 
-  MapWidget* q;
+  Q* q;
   Map_lt* map;
 
   int animationTimerID{-1};
@@ -143,7 +143,7 @@ struct MapWidget::Private
   QString dragDropMimeType;
 
   //################################################################################################
-  Private(MapWidget* q_):
+  Private(Q* q_):
     q(q_)
   {
     map = new Map_lt(q);

@@ -123,118 +123,118 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
   {
 
-//    auto makeFloatSlider = [&](QBoxLayout* layout, const QString& title, float min, float scaleMax, bool linear, int labelWidth = 120, Qt::Alignment labelAlign = Qt::AlignLeft,  QAbstractButton* button = nullptr, bool blockSignal = false)
-//    {
-//      float scale = scaleMax - min;
+    //    auto makeFloatSlider = [&](QBoxLayout* layout, const QString& title, float min, float scaleMax, bool linear, int labelWidth = 120, Qt::Alignment labelAlign = Qt::AlignLeft,  QAbstractButton* button = nullptr, bool blockSignal = false)
+    //    {
+    //      float scale = scaleMax - min;
 
-//      FloatEditor floatEditor;
+    //      FloatEditor floatEditor;
 
-//      auto hLayout = new QHBoxLayout();
-//      hLayout->setContentsMargins(0,0,0,0);
-//      layout->addLayout(hLayout);
+    //      auto hLayout = new QHBoxLayout();
+    //      hLayout->setContentsMargins(0,0,0,0);
+    //      layout->addLayout(hLayout);
 
-//      QLabel* label = new QLabel(title);
-//      label->setFixedWidth(labelWidth);
-//      label->setAlignment( labelAlign | Qt::AlignVCenter);
+    //      QLabel* label = new QLabel(title);
+    //      label->setFixedWidth(labelWidth);
+    //      label->setAlignment( labelAlign | Qt::AlignVCenter);
 
-//      hLayout->addWidget(label, 0, Qt::AlignLeft);
-//      if( button ) {
-//        hLayout->addWidget(button);
-//      }
+    //      hLayout->addWidget(label, 0, Qt::AlignLeft);
+    //      if( button ) {
+    //        hLayout->addWidget(button);
+    //      }
 
-//      auto spin = new QDoubleSpinBox();
-//      spin->setRange(double(min), double(scaleMax));
-//      spin->setDecimals(3);
-//      spin->setSingleStep(0.01);
-//      spin->setFixedWidth(100);
-//      hLayout->addWidget(spin, 1);
+    //      auto spin = new QDoubleSpinBox();
+    //      spin->setRange(double(min), double(scaleMax));
+    //      spin->setDecimals(3);
+    //      spin->setSingleStep(0.01);
+    //      spin->setFixedWidth(100);
+    //      hLayout->addWidget(spin, 1);
 
-//      auto slider = new QSlider(Qt::Horizontal);
-//      slider->setRange(0, 100000);
-//      hLayout->addWidget(slider, Qt::AlignRight);
-//      connect(slider, &QSlider::valueChanged, this, &EditLightSwapParametersWidget::lightSwapParametersEdited);
+    //      auto slider = new QSlider(Qt::Horizontal);
+    //      slider->setRange(0, 100000);
+    //      hLayout->addWidget(slider, Qt::AlignRight);
+    //      connect(slider, &QSlider::valueChanged, this, &EditLightSwapParametersWidget::lightSwapParametersEdited);
 
-//      connect(slider, &QSlider::valueChanged, this, [=]
-//      {
-//        float v = float(slider->value()) / 100000.0f;
-//        v = linear?((v*scale) + min):(v*v*scale);
-//        if(std::fabs(v-float(spin->value())) > 0.000001f)
-//        {
-//          spin->blockSignals(true);
-//          spin->setValue(double(v));
-//          spin->blockSignals(false);
-//          if(!blockSignal)
-//            Q_EMIT lightSwapParametersEdited();
-//        }
-//      });
+    //      connect(slider, &QSlider::valueChanged, this, [=]
+    //      {
+    //        float v = float(slider->value()) / 100000.0f;
+    //        v = linear?((v*scale) + min):(v*v*scale);
+    //        if(std::fabs(v-float(spin->value())) > 0.000001f)
+    //        {
+    //          spin->blockSignals(true);
+    //          spin->setValue(double(v));
+    //          spin->blockSignals(false);
+    //          if(!blockSignal)
+    //            Q_EMIT lightSwapParametersEdited();
+    //        }
+    //      });
 
-//      auto spinValueChanged = [=]
-//      {
-//        if(slider->isSliderDown())
-//          return;
+    //      auto spinValueChanged = [=]
+    //      {
+    //        if(slider->isSliderDown())
+    //          return;
 
-//        auto s = (float(spin->value())-min)/scale;
-//        int newSliderValue = int((linear?s:std::sqrt(s))*100000.0f);
-//        if(newSliderValue != slider->value())
-//        {
-//          slider->blockSignals(true);
-//          slider->setValue(newSliderValue);
-//          slider->blockSignals(false);
-//          if(!blockSignal)
-//            Q_EMIT lightSwapParametersEdited();
-//        }
-//      };
+    //        auto s = (float(spin->value())-min)/scale;
+    //        int newSliderValue = int((linear?s:std::sqrt(s))*100000.0f);
+    //        if(newSliderValue != slider->value())
+    //        {
+    //          slider->blockSignals(true);
+    //          slider->setValue(newSliderValue);
+    //          slider->blockSignals(false);
+    //          if(!blockSignal)
+    //            Q_EMIT lightSwapParametersEdited();
+    //        }
+    //      };
 
-//      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
+    //      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
 
-//      floatEditor.get = [=]{return spin->value();};
-//      floatEditor.set = [=](float v)
-//      {
-//        spin->setValue(double(v));
-//        spinValueChanged();
-//      };
+    //      floatEditor.get = [=]{return spin->value();};
+    //      floatEditor.set = [=](float v)
+    //      {
+    //        spin->setValue(double(v));
+    //        spinValueChanged();
+    //      };
 
-//      floatEditor.slider = slider;
-//      floatEditor.spin = spin;
+    //      floatEditor.slider = slider;
+    //      floatEditor.spin = spin;
 
-//      return floatEditor;
-//    };
+    //      return floatEditor;
+    //    };
 
     auto makeLabeledSpin = [&](QBoxLayout* layout, const QString& title, float min, float max, int labelWidth = 100)
     {
-        FloatEditor floatEditor;
+      FloatEditor floatEditor;
 
-        auto hLayout = new QHBoxLayout();
-        hLayout->setContentsMargins(0,0,0,0);
-        layout->addLayout(hLayout);
+      auto hLayout = new QHBoxLayout();
+      hLayout->setContentsMargins(0,0,0,0);
+      layout->addLayout(hLayout);
 
-        QLabel* label = new QLabel(title);
-        label->setFixedWidth(labelWidth);
-        hLayout->addWidget(label, 0, Qt::AlignLeft);
+      QLabel* label = new QLabel(title);
+      label->setFixedWidth(labelWidth);
+      hLayout->addWidget(label, 0, Qt::AlignLeft);
 
-        auto spin = new QDoubleSpinBox();
-        spin->setRange(double(min), double(max));
-        spin->setDecimals(3);
-        spin->setSingleStep(0.01);
-        spin->setFixedWidth(100);
-        hLayout->addWidget(spin, 1, Qt::AlignLeft);
+      auto spin = new QDoubleSpinBox();
+      spin->setRange(double(min), double(max));
+      spin->setDecimals(3);
+      spin->setSingleStep(0.01);
+      spin->setFixedWidth(100);
+      hLayout->addWidget(spin, 1, Qt::AlignLeft);
 
-        auto spinValueChanged = [=]
-        {
-            Q_EMIT lightSwapParametersEdited();
-        };
+      auto spinValueChanged = [=]
+      {
+        Q_EMIT lightSwapParametersEdited();
+      };
 
-        connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, spinValueChanged);
 
-        floatEditor.get = [=]{return spin->value();};
-        floatEditor.set = [=](float v)
-        {
-            spin->setValue(double(v));
-            spinValueChanged();
-        };
+      floatEditor.get = [=]{return spin->value();};
+      floatEditor.set = [=](float v)
+      {
+        spin->setValue(double(v));
+        spinValueChanged();
+      };
 
-        floatEditor.spin = spin;
-        return floatEditor;
+      floatEditor.spin = spin;
+      return floatEditor;
     };
     
     auto makeCheckbox =[&](QBoxLayout* layout, const QString& name, bool checked)
@@ -260,48 +260,38 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
       return boolEditor;
     };
 
-    auto addTitle = [&](QBoxLayout* layout, const QString& name)
-    {
-      layout->addWidget(new QLabel(QString("<h2>%1</h2>").arg(name)), 2, Qt::AlignLeft);
-    };
 
-    auto addSubTitle = [&](QBoxLayout* layout, const QString& name)
-    {
-      layout->addWidget(new QLabel(QString("<h3>%1</h3>").arg(name)), 2, Qt::AlignLeft);
-    };
+    //    auto addExpandIcon = [&](QBoxLayout* layout)
+    //    {
+    //      QIcon normalIcon = tp_qt_maps::loadIconFromResource("/omi_scene_builder/right_chevron.png");
+    //      QIcon expandedIcon = tp_qt_maps::loadIconFromResource("/omi_scene_builder/down_chevron.png");
 
-//    auto addExpandIcon = [&](QBoxLayout* layout)
-//    {
-//      QIcon normalIcon = tp_qt_maps::loadIconFromResource("/omi_scene_builder/right_chevron.png");
-//      QIcon expandedIcon = tp_qt_maps::loadIconFromResource("/omi_scene_builder/down_chevron.png");
+    //      QPushButton* button = new QPushButton(normalIcon,"");
+    //      QString buttonStyle = "QPushButton{border:none;background-color:rgba(255, 255, 255,0);}";
+    //      button->setStyleSheet(buttonStyle); // Style sheet
+    //      int size = 16;
+    //      button->setIconSize(QSize(size,size));
+    //      button->setMinimumSize(size,size);
+    //      button->setMaximumSize(size,size);
+    //      layout->addWidget(button);// The horizontal layout
 
-//      QPushButton* button = new QPushButton(normalIcon,"");
-//      QString buttonStyle = "QPushButton{border:none;background-color:rgba(255, 255, 255,0);}";
-//      button->setStyleSheet(buttonStyle); // Style sheet
-//      int size = 16;
-//      button->setIconSize(QSize(size,size));
-//      button->setMinimumSize(size,size);
-//      button->setMaximumSize(size,size);
-//      layout->addWidget(button);// The horizontal layout
+    //      button->setCheckable(true);
 
-//      button->setCheckable(true);
+    //      connect( button, &QAbstractButton::toggled, button, [=]( bool b) {
+    //        b ? button->setIcon(expandedIcon) : button->setIcon(normalIcon);
+    //      });
 
-//      connect( button, &QAbstractButton::toggled, button, [=]( bool b) {
-//        b ? button->setIcon(expandedIcon) : button->setIcon(normalIcon);
-//      });
+    //      return button;
+    //    };
 
-//      return button;
-//    };
+    //    auto emitParametersChangedAfter = [&](const std::function<void()>& closure)
+    //    {
+    //      blockSignals(true);
+    //      closure();
+    //      blockSignals(false);
+    //      Q_EMIT lightSwapParametersEdited();
+    //    };
 
-//    auto emitParametersChangedAfter = [&](const std::function<void()>& closure)
-//    {
-//      blockSignals(true);
-//      closure();
-//      blockSignals(false);
-//      Q_EMIT lightSwapParametersEdited();
-//    };
-
-    addTitle(l, "Light Swap Properties");
     // addSubTitle(l, "Ambient");
     // //--------------------------------AMBIENT USE--------------------------------------
     // auto ambientUseExpandButton = addExpandIcon(l);
@@ -319,7 +309,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     // d->ambientUseB = makeFloatSlider( ambientUseVLayout, "B", 0.0f, 1.0f, true, 72, Qt::AlignRight);
 
     // // connect use slider to the set function of all the sliders
-    // connect( d->ambientUse.slider, &QSlider::valueChanged, ambientUseRGBGroup, [=] 
+    // connect( d->ambientUse.slider, &QSlider::valueChanged, ambientUseRGBGroup, [=]
     // {
     //   emitParametersChangedAfter([&]()
     //   {
@@ -329,7 +319,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     //   });
     // });
 
-    // connect( d->ambientUse.spin, &QDoubleSpinBox::valueChanged, ambientUseRGBGroup, [=] 
+    // connect( d->ambientUse.spin, &QDoubleSpinBox::valueChanged, ambientUseRGBGroup, [=]
     // {
     //   emitParametersChangedAfter([&]()
     //   {
@@ -373,7 +363,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
     //   });
     // } );
 
-    // connect( d->ambientScale.spin, &QDoubleSpinBox::valueChanged, ambientScaleRGBGroup, [=] 
+    // connect( d->ambientScale.spin, &QDoubleSpinBox::valueChanged, ambientScaleRGBGroup, [=]
     // {
     //   emitParametersChangedAfter([&]()
     //   {
@@ -434,9 +424,10 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // ambientBiasRGBGroup->setVisible(false);
 
-    addSubTitle(l, "Diffuse");
-    //--------------------------------DIFFUSE USE--------------------------------------
-    d->diffuseEnabled = makeCheckbox( l, "Enable user color" , false);
+    {
+      l->addWidget(new QLabel("Diffuse"));
+      d->diffuseEnabled = makeCheckbox( l, "Enable user color" , false);
+    }
 
     // addSubTitle(l, "Specular");
     // //--------------------------------SPECULAR USE--------------------------------------
@@ -696,9 +687,8 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget( QWidget* parent):
 
     // offsetScaleBiasRGBGroup->setVisible(false);
 
-    //--------------------------------DIFFUSE SCALE------------------------------------
-    addSubTitle(l, "Diffuse Scale");
     {
+      l->addWidget(new QLabel("Diffuse scale"));
       auto ll = new QVBoxLayout();
       ll->setContentsMargins(0,0,0,0);
       l->addLayout(ll);
@@ -747,13 +737,13 @@ void EditLightSwapParametersWidget::setLightSwapParameters(const tp_math_utils::
   blockSignals(true);
   TP_CLEANUP([&]{blockSignals(false);});
 
-//  auto setMasterToMaxOf = [&](FloatEditor& master, const float& x, const float& y, const float& z)
-//  {
-//    float max = std::max(x, y);
-//    max = std::max(max, z);
-//    if(master.get() != max)
-//      master.set(max);
-//  };
+  //  auto setMasterToMaxOf = [&](FloatEditor& master, const float& x, const float& y, const float& z)
+  //  {
+  //    float max = std::max(x, y);
+  //    max = std::max(max, z);
+  //    if(master.get() != max)
+  //      master.set(max);
+  //  };
 
   // setMasterToMaxOf(d->ambientUse, lightSwapParameters.ambientUse.x, lightSwapParameters.ambientUse.y, lightSwapParameters.ambientUse.z);
   // d->ambientUseR         .set(lightSwapParameters.ambientUse.x);

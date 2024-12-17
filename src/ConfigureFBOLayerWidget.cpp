@@ -23,7 +23,7 @@ namespace tp_qt_maps_widget
 //##################################################################################################
 struct ConfigureFBOLayerWidget::Private
 {
-  ConfigureFBOLayerWidget* q;
+  Q* q;
 
   tp_maps::FBOLayer* fboLayer;
 
@@ -44,7 +44,7 @@ struct ConfigureFBOLayerWidget::Private
   QComboBox* source{nullptr};
 
   //################################################################################################
-  Private(ConfigureFBOLayerWidget* q_, tp_maps::FBOLayer* fboLayer_):
+  Private(Q* q_, tp_maps::FBOLayer* fboLayer_):
     q(q_),
     fboLayer(fboLayer_)
   {
