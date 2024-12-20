@@ -1,5 +1,7 @@
 #include "tp_qt_maps_widget/EditLightWidget.h"
 
+#include "tp_qt_widgets/SpinSlider.h"
+
 #include "tp_utils/JSONUtils.h"
 
 #include "glm/gtx/norm.hpp" // IWYU pragma: keep
@@ -47,7 +49,7 @@ struct EditLightWidget::Private
   QPushButton* diffuseColorButton {nullptr};
   QPushButton* specularColorButton{nullptr};
 
-  QSlider* diffuseScale{nullptr};
+  tp_qt_widgets::SpinSlider* diffuseScale{nullptr};
 
   QDoubleSpinBox* spotLightConstant {nullptr};
   QDoubleSpinBox* spotLightLinear   {nullptr};
@@ -297,11 +299,10 @@ EditLightWidget::EditLightWidget(QWidget* parent):
 
   {
     l->addWidget(new QLabel("Diffuse scale"));
-    d->diffuseScale = new QSlider(Qt::Horizontal);
+    d->diffuseScale = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Exponential);
     l->addWidget(d->diffuseScale);
-    d->diffuseScale->setRange(1, 10000);
-    d->diffuseScale->setSingleStep(1);
-    connect(d->diffuseScale, &QSlider::valueChanged, this, &EditLightWidget::lightEdited);
+    d->diffuseScale->setRange(0.1f, 1000.0f);
+    d->diffuseScale->edited.addCallback([&](float){lightEdited();});
   }
 
   l->addWidget(new QLabel("Spot light constant, linear and quadratic attenuation coefficients"));
@@ -481,12 +482,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
 
   d->updateColors();
 
-  {
-    float scaled = light.diffuseScale*10.0f;
-    scaled*=float(d->diffuseScale->maximum());
-    scaled = std::sqrt(scaled);
-    d->diffuseScale    ->setValue(int(scaled));
-  }
+  d->diffuseScale->setValue(double(light.diffuseScale));
 
   setValue(d->spotLightConstant , light.constant );
   setValue(d->spotLightLinear   , light.linear   );
@@ -513,13 +509,7 @@ tp_math_utils::Light EditLightWidget::light() const
 
   d->light.setPosition({d->positionX->value(), d->positionY->value(), d->positionZ->value()});
 
-  {
-    float scaled = float(d->diffuseScale->value());
-    scaled*=scaled;
-    scaled/=float(d->diffuseScale->maximum());
-    scaled/=10.0f;
-    d->light.diffuseScale     = scaled;
-  }
+  d->light.diffuseScale = float(d->diffuseScale->value());
 
   d->light.constant  = float(d->spotLightConstant ->value());
   d->light.linear    = float(d->spotLightLinear   ->value());

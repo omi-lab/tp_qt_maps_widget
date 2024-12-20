@@ -72,6 +72,9 @@ struct EditMaterialWidget::Private
   QScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
 
+#ifdef TP_LINUX
+#warning use color button here
+#endif
   QPushButton* albedoColorButton  {nullptr};
   QPushButton* sssColorButton     {nullptr};
   QPushButton* emissionColorButton{nullptr};
