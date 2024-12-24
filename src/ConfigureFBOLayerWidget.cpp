@@ -144,6 +144,8 @@ struct ConfigureFBOLayerWidget::Private
       fboNames->clear();
       for(auto& i : fboLayer->map()->buffers().storedBuffers())
         fboNames->addItem(QString::fromStdString(i.first));
+      for(auto& i : fboLayer->map()->intermediateBuffers())
+        fboNames->addItem(QString::fromStdString(i.first));
       fboNames->setCurrentText(QString::fromStdString(window.fboName));
       fboNames->blockSignals(false);
     }
