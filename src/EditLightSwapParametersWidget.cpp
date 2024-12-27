@@ -61,7 +61,7 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget(Visibility visibili
   d->specular = new EditVec3SwapParametersWidget(VectorComponents::RGB, HelperButtons::Color, 0.0f, 4.0f, 0.0f, 1.0f);
   addSection("Specular", visibility.specular, d->specular);
 
-  d->diffuseScale = new EditFloatSwapParametersWidget(HelperButtons::Default, 0.0f, 1000.0f, 0.0f, 1000.0f);
+  d->diffuseScale = new EditFloatSwapParametersWidget(HelperButtons::Range, 0.0f, 1000.0f, 0.0f, 1000.0f);
   addSection("Diffuse scale", visibility.diffuseScale, d->diffuseScale);
 
   d->spotLightBlend = new EditFloatSwapParametersWidget(HelperButtons::Default, 0.0f, 4.0f, 0.0f, 1.0f);

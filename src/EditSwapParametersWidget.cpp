@@ -9,10 +9,116 @@
 #include <QBoxLayout>
 #include <QAbstractButton>
 #include <QLabel>
+#include <QDialog>
 #include <QPushButton>
+#include <QDialogButtonBox>
+#include <QPointer>
 
 namespace tp_qt_maps_widget
 {
+
+namespace
+{
+//##################################################################################################
+class ButtonsLayout_lt
+{
+  QHBoxLayout* ll;
+public:
+
+  //################################################################################################
+  ButtonsLayout_lt(QVBoxLayout* l)
+  {
+    ll = new QHBoxLayout();
+    ll->setContentsMargins(0, 0, 0, 0);
+    l->addLayout(ll);
+  }
+
+  //################################################################################################
+  ~ButtonsLayout_lt()
+  {
+    ll->addStretch();
+  }
+
+  //################################################################################################
+  template<typename T>
+  void addButton(const char* icon, const char* text, T clicked)
+  {
+    auto button = new QPushButton();
+    button->setIcon(QIcon(icon));
+    button->setToolTip(text);
+    button->setStyleSheet("QPushButton {border: 0px;}");
+    button->setFixedSize(14, 14);
+    button->setIconSize(QSize(14, 14));
+    ll->addWidget(button);
+    QObject::connect(button, &QPushButton::clicked, button, clicked);
+  };
+};
+
+//##################################################################################################
+tp_math_utils::FloatSwapParameters getRange(QWidget* parent, float min, float max, float currentScale, float currentBias)
+{
+  tp_math_utils::FloatSwapParameters range;
+  range.use = 0.0f;
+
+  QPointer<QDialog> dialog = new QDialog(parent);
+  TP_CLEANUP([&]{delete dialog;});
+
+  auto l = new QVBoxLayout(dialog);
+
+  l->addWidget(new QLabel("Min"));
+
+  auto minSlider = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Linear);
+  minSlider->setRange(min, max);
+  l->addWidget(minSlider);
+
+  l->addWidget(new QLabel("Max"));
+
+  auto maxSlider = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Linear);
+  maxSlider->setRange(min, max);
+  l->addWidget(maxSlider);
+
+  minSlider->edited.addCallback([&](float v)
+  {
+    v+=0.01f;
+    if(maxSlider->value()<v)
+      maxSlider->setValue(v);
+  });
+
+  maxSlider->edited.addCallback([&](float v)
+  {
+    v-=0.01f;
+    if(minSlider->value()>v)
+      minSlider->setValue(v);
+  });
+
+  minSlider->setValue(currentBias);
+  maxSlider->setValue(currentBias+currentScale);
+
+  l->addStretch();
+
+  auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
+  l->addWidget(buttons);
+  QObject::connect(buttons, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
+  QObject::connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+
+  if(dialog->exec() == QDialog::Accepted)
+  {
+    float min = minSlider->value();
+    float max = maxSlider->value();
+
+    if(max<min+0.01f)
+      max = min+0.01f;
+
+    float delta = max - min;
+
+    range.use = 1.0f;
+    range.bias = min;
+    range.scale = delta;
+  }
+
+  return range;
+}
+}
 
 //##################################################################################################
 struct EditVec3ComponentWidget::Private
@@ -179,6 +285,46 @@ EditVec3SwapParametersWidget::EditVec3SwapParametersWidget(VectorComponents vect
   auto l = new QVBoxLayout(this);
   l->setContentsMargins(0, 0, 0, 0);
 
+  {
+    ButtonsLayout_lt buttons(l);
+    buttons.addButton(":/tp_qt_icons_technical/cross_red.png", "Disable", [this]
+    {
+      d->use  ->setVec3({0.0f, 0.0f, 0.0f});
+      d->scale->setVec3({1.0f, 1.0f, 1.0f});
+      d->bias ->setVec3({0.0f, 0.0f, 0.0f});
+      edited();
+    });
+
+    switch(helperButtons)
+    {
+      case HelperButtons::Default: break;
+
+      case HelperButtons::Color:
+      buttons.addButton(":/tp_qt_icons_technical/rgb.png", "Take color", [this]
+      {
+        d->use  ->setVec3({1.0f, 1.0f, 1.0f});
+        d->scale->setVec3({1.0f, 1.0f, 1.0f});
+        d->bias ->setVec3({0.0f, 0.0f, 0.0f});
+        edited();
+      });
+      break;
+
+      case HelperButtons::Range:
+      buttons.addButton(":/tp_qt_icons_technical/wide.png", "Set range", [this, scaleMin, scaleMax]
+      {
+        auto r = getRange(this, scaleMin, scaleMax, d->scale->vec3().x, d->bias->vec3().x);
+        if(r.use>0.0f)
+        {
+          d->use  ->setVec3({1.0f, 1.0f, 1.0f});
+          d->scale->setVec3({r.scale, r.scale, r.scale});
+          d->bias ->setVec3({r.bias, r.bias, r.bias});
+          edited();
+        }
+      });
+      break;
+    }
+  }
+
   d->use   = new EditVec3ComponentWidget(vectorComponents, tp_qt_widgets::SliderMode::Linear, 0.0f    , 1.0f    , "Use"  );
   d->scale = new EditVec3ComponentWidget(vectorComponents, tp_qt_widgets::SliderMode::Linear, scaleMin, scaleMax, "Scale");
   d->bias  = new EditVec3ComponentWidget(vectorComponents, tp_qt_widgets::SliderMode::Linear, biasMin , biasMax , "Bias" );
@@ -215,10 +361,6 @@ tp_math_utils::Vec3SwapParameters EditVec3SwapParametersWidget::vec3SwapParamete
   vec3SwapParameters.bias  = d->bias ->vec3();
   return vec3SwapParameters;
 }
-
-
-
-
 
 //##################################################################################################
 struct EditFloatSwapParametersWidget::Private
@@ -268,6 +410,39 @@ EditFloatSwapParametersWidget::EditFloatSwapParametersWidget(HelperButtons helpe
 
     return spinSlider;
   };
+
+  {
+    ButtonsLayout_lt buttons(l);
+    buttons.addButton(":/tp_qt_icons_technical/cross_red.png", "Disable", [this]
+    {
+      d->use  ->setValue(0.0f);
+      d->scale->setValue(1.0f);
+      d->bias ->setValue(0.0f);
+      edited();
+    });
+
+    switch(helperButtons)
+    {
+      case HelperButtons::Default: break;
+
+      case HelperButtons::Color: break;
+
+      case HelperButtons::Range:
+      buttons.addButton(":/tp_qt_icons_technical/wide.png", "Set range", [this, scaleMin, scaleMax]
+      {
+        auto r = getRange(this, scaleMin, scaleMax, d->scale->value(), d->bias->value());
+        if(r.use>0.0f)
+        {
+          d->use  ->setValue(1.0f);
+          d->scale->setValue(r.scale);
+          d->bias ->setValue(r.bias);
+          edited();
+        }
+      });
+      break;
+    }
+  }
+
 
   d->use   = addLine(tp_qt_widgets::SliderMode::Linear, 0.0f    , 1.0f    , "Use"  );
   d->scale = addLine(tp_qt_widgets::SliderMode::Linear, scaleMin, scaleMax, "Scale");
