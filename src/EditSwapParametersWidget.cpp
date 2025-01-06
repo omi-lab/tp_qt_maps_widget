@@ -12,6 +12,7 @@
 #include <QDialog>
 #include <QPushButton>
 #include <QDialogButtonBox>
+#include <QInputDialog>
 #include <QPointer>
 
 namespace tp_qt_maps_widget
@@ -249,7 +250,7 @@ void EditVec3ComponentWidget::setVec3(const glm::vec3& vec3)
 //##################################################################################################
 glm::vec3 EditVec3ComponentWidget::vec3() const
 {
-  return {d->x->value(), d->x->value(), d->x->value()};
+  return {d->x->value(), d->y->value(), d->z->value()};
 }
 
 //##################################################################################################
@@ -439,6 +440,7 @@ EditFloatSwapParametersWidget::EditFloatSwapParametersWidget(HelperButtons helpe
           edited();
         }
       });
+
       break;
     }
   }

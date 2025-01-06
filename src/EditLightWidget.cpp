@@ -1,6 +1,7 @@
 #include "tp_qt_maps_widget/EditLightWidget.h"
 
 #include "tp_qt_widgets/SpinSlider.h"
+#include "tp_qt_widgets/ColorButton.h"
 
 #include "tp_utils/JSONUtils.h"
 
@@ -11,16 +12,10 @@
 #include <QLabel>
 #include <QComboBox>
 #include <QDoubleSpinBox>
-#include <QSlider>
-#include <QPushButton>
 #include <QPointer>
 #include <QDialogButtonBox>
-#include <QColorDialog>
-#include <QImage>
-#include <QPixmap>
 #include <QLineEdit>
 #include <QCheckBox>
-#include <QPainter>
 #include <QToolButton>
 #include <QClipboard>
 #include <QGuiApplication>
@@ -45,11 +40,13 @@ struct EditLightWidget::Private
   QDoubleSpinBox* directionY{nullptr};
   QDoubleSpinBox* directionZ{nullptr};
 
-  QPushButton* ambientColorButton {nullptr};
-  QPushButton* diffuseColorButton {nullptr};
-  QPushButton* specularColorButton{nullptr};
+  tp_qt_widgets::ColorButton* ambientColorButton {nullptr};
+  tp_qt_widgets::ColorButton* diffuseColorButton {nullptr};
+  tp_qt_widgets::ColorButton* specularColorButton{nullptr};
 
+  const float powerScale{830.0f};
   tp_qt_widgets::SpinSlider* diffuseScale{nullptr};
+  tp_qt_widgets::SpinSlider* power{nullptr};
 
   QDoubleSpinBox* spotLightConstant {nullptr};
   QDoubleSpinBox* spotLightLinear   {nullptr};
@@ -69,22 +66,9 @@ struct EditLightWidget::Private
   //################################################################################################
   void updateColors()
   {
-    auto makeIcon = [](const glm::vec3& c)
-    {
-      QImage image(24, 24, QImage::Format_ARGB32);
-      image.fill(QColor(0,0,0,0));
-      {
-        QPainter p(&image);
-        p.setBrush(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)));
-        p.setPen(Qt::black);
-        p.drawRoundedRect(2,2,20,20,2.0, 2.0);
-      }
-      return QIcon(QPixmap::fromImage(image));
-    };
-
-    ambientColorButton ->setIcon(makeIcon(light.ambient ));
-    diffuseColorButton ->setIcon(makeIcon(light.diffuse ));
-    specularColorButton->setIcon(makeIcon(light.specular));
+    ambientColorButton ->setColor<glm::vec3>(light.ambient );
+    diffuseColorButton ->setColor<glm::vec3>(light.diffuse );
+    specularColorButton->setColor<glm::vec3>(light.specular);
   }
 };
 
@@ -271,22 +255,20 @@ EditLightWidget::EditLightWidget(QWidget* parent):
 
     auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor)
     {
-      auto button = new QPushButton(text);
-      button->setStyleSheet("text-align:left; padding-left:2;");
+      auto button = new tp_qt_widgets::ColorButton(text);
       ll->addWidget(button);
 
-      connect(button, &QAbstractButton::clicked, this, [=]
+      button->edited.addCallback([=]()
       {
+        QColor color = button->qColor();
+
         glm::vec3& c = getColor();
-        QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
-        if(color.isValid())
-        {
-          c.x = float(color.redF());
-          c.y = float(color.greenF());
-          c.z = float(color.blueF());
-          d->updateColors();
-          Q_EMIT lightEdited();
-        }
+        c.x = color.redF();
+        c.y = color.greenF();
+        c.z = color.blueF();
+
+        d->updateColors();
+        Q_EMIT lightEdited();
       });
 
       return button;
@@ -300,9 +282,26 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   {
     l->addWidget(new QLabel("Diffuse scale"));
     d->diffuseScale = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Exponential);
+    d->diffuseScale->setDecimals(6);
     l->addWidget(d->diffuseScale);
     d->diffuseScale->setRange(0.1f, 1000.0f);
-    d->diffuseScale->edited.addCallback([&](float){lightEdited();});
+    d->diffuseScale->edited.addCallback([&](float)
+    {
+      d->power->setValue(d->diffuseScale->value() * d->powerScale);
+      lightEdited();
+    });
+  }
+
+  {
+    l->addWidget(new QLabel("Power"));
+    d->power = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Exponential);
+    l->addWidget(d->power);
+    d->power->setRange(0.1f*d->powerScale, 1000.0f*d->powerScale);
+    d->power->edited.addCallback([&](float)
+    {
+      d->diffuseScale->setValue(d->power->value() / d->powerScale);
+      lightEdited();
+    });
   }
 
   l->addWidget(new QLabel("Spot light constant, linear and quadratic attenuation coefficients"));
@@ -458,6 +457,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
   d->diffuseColorButton->setEnabled(!d->light.animation.isAnimated());
   d->specularColorButton->setEnabled(!d->light.animation.isAnimated());
   d->diffuseScale->setEnabled(!d->light.animation.isAnimated());
+  d->power->setEnabled(!d->light.animation.isAnimated());
   d->spotLightConstant->setEnabled(!d->light.animation.isAnimated());
   d->spotLightLinear->setEnabled(!d->light.animation.isAnimated());
   d->spotLightQuadratic->setEnabled(!d->light.animation.isAnimated());
@@ -483,6 +483,7 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
   d->updateColors();
 
   d->diffuseScale->setValue(double(light.diffuseScale));
+  d->power->setValue(d->diffuseScale->value() * d->powerScale);
 
   setValue(d->spotLightConstant , light.constant );
   setValue(d->spotLightLinear   , light.linear   );

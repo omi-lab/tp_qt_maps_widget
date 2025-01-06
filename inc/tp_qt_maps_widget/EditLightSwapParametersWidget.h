@@ -24,6 +24,7 @@ public:
     bool ambient{true};
     bool specular{true};
     bool diffuseScale{true};
+    bool power{true};
     bool spotLightBlend{true};
     bool fov{true};
     bool offsetScale{true};

@@ -92,11 +92,11 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditFloatSwapParametersWidget : public QWi
 public:
   //################################################################################################
   EditFloatSwapParametersWidget(HelperButtons helperButtons,
-                               float scaleMin,
-                               float scaleMax,
-                               float biasMin,
-                               float biasMax,
-                               QWidget* parent = nullptr);
+                                float scaleMin,
+                                float scaleMax,
+                                float biasMin,
+                                float biasMax,
+                                QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditFloatSwapParametersWidget() override;

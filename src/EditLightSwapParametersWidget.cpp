@@ -18,12 +18,32 @@ struct EditLightSwapParametersWidget::Private
   EditVec3SwapParametersWidget* ambient {nullptr};
   EditVec3SwapParametersWidget* specular{nullptr};
 
+  const float powerScale{830.0f};
   EditFloatSwapParametersWidget* diffuseScale{nullptr};
+  EditFloatSwapParametersWidget* power{nullptr};
 
   EditFloatSwapParametersWidget* spotLightBlend{nullptr};
   EditFloatSwapParametersWidget* fov{nullptr};
 
   EditVec3SwapParametersWidget* offsetScale{nullptr};
+
+  //################################################################################################
+  void toPower()
+  {
+    tp_math_utils::FloatSwapParameters p = diffuseScale->floatSwapParameters();
+    p.scale *= powerScale;
+    p.bias *= powerScale;
+    power->setFloatSwapParameters(p);
+  }
+
+  //################################################################################################
+  void fromPower()
+  {
+    tp_math_utils::FloatSwapParameters p = power->floatSwapParameters();
+    p.scale /= powerScale;
+    p.bias /= powerScale;
+    diffuseScale->setFloatSwapParameters(p);
+  }
 };
 
 //##################################################################################################
@@ -62,7 +82,12 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget(Visibility visibili
   addSection("Specular", visibility.specular, d->specular);
 
   d->diffuseScale = new EditFloatSwapParametersWidget(HelperButtons::Range, 0.0f, 1000.0f, 0.0f, 1000.0f);
+  d->diffuseScale->edited.addCallback([&]{d->toPower();});
   addSection("Diffuse scale", visibility.diffuseScale, d->diffuseScale);
+
+  d->power = new EditFloatSwapParametersWidget(HelperButtons::Range, 0.0f, 1000.0f*d->powerScale, 0.0f, 1000.0f*d->powerScale);
+  d->power->edited.addCallback([&]{d->fromPower();});
+  addSection("Power", visibility.power, d->power);
 
   d->spotLightBlend = new EditFloatSwapParametersWidget(HelperButtons::Default, 0.0f, 4.0f, 0.0f, 1.0f);
   addSection("Spot light blend", visibility.spotLightBlend, d->spotLightBlend);
@@ -91,6 +116,7 @@ void EditLightSwapParametersWidget::setLightSwapParameters(const tp_math_utils::
   d->specular->setVec3SwapParameters(lightSwapParameters.specular);
 
   d->diffuseScale->setFloatSwapParameters(lightSwapParameters.diffuseScale);
+  d->toPower();
 
   d->spotLightBlend->setFloatSwapParameters(lightSwapParameters.spotLightBlend);
   d->fov->setFloatSwapParameters(lightSwapParameters.fov);
