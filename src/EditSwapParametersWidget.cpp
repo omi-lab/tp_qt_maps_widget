@@ -70,12 +70,14 @@ tp_math_utils::FloatSwapParameters getRange(QWidget* parent, float min, float ma
 
   auto minSlider = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Linear);
   minSlider->setRange(min, max);
+  minSlider->setSingleStep(0.1f);
   l->addWidget(minSlider);
 
   l->addWidget(new QLabel("Max"));
 
   auto maxSlider = new tp_qt_widgets::SpinSlider(tp_qt_widgets::SliderMode::Linear);
   maxSlider->setRange(min, max);
+  maxSlider->setSingleStep(0.1f);
   l->addWidget(maxSlider);
 
   minSlider->edited.addCallback([&](float v)
@@ -180,6 +182,7 @@ EditVec3ComponentWidget::EditVec3ComponentWidget(VectorComponents vectorComponen
 
     auto slider = new tp_qt_widgets::SpinSlider(sliderMode);
     slider->setRange(min, max);
+    slider->setSingleStep(0.1f);
     hLayout->addWidget(slider);
 
     return slider;
@@ -405,6 +408,7 @@ EditFloatSwapParametersWidget::EditFloatSwapParametersWidget(HelperButtons helpe
 
     auto spinSlider = new tp_qt_widgets::SpinSlider(sliderMode);
     spinSlider->setRange(min, max);
+    spinSlider->setSingleStep(0.1f);
     ll->addWidget(spinSlider);
 
     spinSlider->edited.addCallback([&](float){edited();});
