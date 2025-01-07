@@ -1,6 +1,7 @@
 #include "tp_qt_maps_widget/EditMaterialWidget.h"
 
 #include "tp_qt_widgets/FileDialogLineEdit.h"
+#include "tp_qt_widgets/ColorButton.h"
 
 #include "tp_image_utils/LoadImages.h"
 
@@ -12,23 +13,16 @@
 
 #include <QDialog>
 #include <QBoxLayout>
-#include <QGridLayout>
 #include <QLabel>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QRadioButton>
-#include <QSlider>
-#include <QPushButton>
 #include <QPointer>
 #include <QDialogButtonBox>
-#include <QColorDialog>
-#include <QImage>
-#include <QPixmap>
 #include <QLineEdit>
 #include <QGuiApplication>
 #include <QClipboard>
-#include <QPainter>
 #include <QDragEnterEvent>
 #include <QDropEvent>
 #include <QMimeData>
@@ -72,10 +66,10 @@ struct EditMaterialWidget::Private
   QScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
 
-  QPushButton* albedoColorButton  {nullptr};
-  QPushButton* sssColorButton     {nullptr};
-  QPushButton* emissionColorButton{nullptr};
-  QPushButton* velvetColorButton  {nullptr};
+  tp_qt_widgets::ColorButton* albedoColorButton  {nullptr};
+  tp_qt_widgets::ColorButton* sssColorButton     {nullptr};
+  tp_qt_widgets::ColorButton* emissionColorButton{nullptr};
+  tp_qt_widgets::ColorButton* velvetColorButton  {nullptr};
 
   FloatEditor albedoScaleSlider;
   FloatEditor sssSlider;
@@ -147,26 +141,13 @@ struct EditMaterialWidget::Private
   //################################################################################################
   void updateColors()
   {
-    auto makeIcon = [](const glm::vec3& c)
-    {
-      QImage image(24, 24, QImage::Format_ARGB32);
-      image.fill(QColor(0,0,0,0));
-      {
-        QPainter p(&image);
-        p.setBrush(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)));
-        p.setPen(Qt::black);
-        p.drawRoundedRect(2,2,20,20,2.0, 2.0);
-      }
-      return QIcon(QPixmap::fromImage(image));
-    };
-
     auto openGLMaterial = material.findOrAddOpenGL();
     auto legacyMaterial = material.findOrAddLegacy();
 
-    albedoColorButton  ->setIcon(makeIcon(openGLMaterial->albedo  ));
-    sssColorButton     ->setIcon(makeIcon(legacyMaterial->sss     ));
-    emissionColorButton->setIcon(makeIcon(legacyMaterial->emission));
-    velvetColorButton  ->setIcon(makeIcon(legacyMaterial->velvet  ));
+    albedoColorButton  ->setColor<glm::vec3>(openGLMaterial->albedo  );
+    sssColorButton     ->setColor<glm::vec3>(legacyMaterial->sss     );
+    emissionColorButton->setColor<glm::vec3>(legacyMaterial->emission);
+    velvetColorButton  ->setColor<glm::vec3>(legacyMaterial->velvet  );
   }
 };
 
@@ -276,24 +257,22 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   {
     int row = gridLayout->rowCount();
 
-    auto button = new QPushButton(text);
-    button->setStyleSheet("text-align:left; padding-left:2;");
+    auto button = new tp_qt_widgets::ColorButton(text);
     gridLayout->addWidget(button, row, 0);
 
     slider = makeFloatEditor(0.0f, scaleMax, row, linear);
 
-    connect(button, &QAbstractButton::clicked, this, [=]
+    button->edited.addCallback([=]()
     {
+      QColor color = button->qColor();
+
       glm::vec3& c = getColor();
-      QColor color = QColorDialog::getColor(QColor::fromRgbF(qreal(c.x), qreal(c.y), qreal(c.z)), this, "Select " + text + " color", QColorDialog::DontUseNativeDialog);
-      if(color.isValid())
-      {
-        c.x = color.redF();
-        c.y = color.greenF();
-        c.z = color.blueF();
-        d->updateColors();
-        Q_EMIT materialEdited();
-      }
+      c.x = color.redF();
+      c.y = color.greenF();
+      c.z = color.blueF();
+
+      d->updateColors();
+      Q_EMIT materialEdited();
     });
 
     return button;

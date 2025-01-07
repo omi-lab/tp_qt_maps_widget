@@ -16,8 +16,22 @@ class TP_QT_MAPS_WIDGET_SHARED_EXPORT EditLightSwapParametersWidget : public QWi
   Q_OBJECT
   TP_DQ;
 public:
+
   //################################################################################################
-  EditLightSwapParametersWidget(QWidget* parent = nullptr);
+  struct Visibility
+  {
+    bool diffuse{true};
+    bool ambient{true};
+    bool specular{true};
+    bool diffuseScale{true};
+    bool power{true};
+    bool spotLightBlend{true};
+    bool fov{true};
+    bool offsetScale{true};
+  };
+
+  //################################################################################################
+  EditLightSwapParametersWidget(Visibility visibility, QWidget* parent = nullptr);
 
   //################################################################################################
   ~EditLightSwapParametersWidget() override;
