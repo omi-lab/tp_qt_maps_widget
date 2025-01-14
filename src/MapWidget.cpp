@@ -14,6 +14,10 @@
 #include "tp_utils/JSONUtils.h"
 #include "tp_utils/StackTrace.h"
 
+#ifdef TP_DEBUG_RENDER_PASSES
+#include "tp_utils/FileUtils.h"
+#endif
+
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include <QDrag>
@@ -100,7 +104,7 @@ public:
   }
 
   //################################################################################################
-  void update(tp_maps::RenderFromStage renderFromStage, const std::vector<tp_utils::StringID>& subviews) override
+  void update(const tp_maps::RenderFromStage& renderFromStage, const std::vector<tp_utils::StringID>& subviews) override
   {
     tp_maps::Map::update(renderFromStage, subviews);
 
@@ -280,8 +284,23 @@ void MapWidget::resizeGL(int width, int height)
 //##################################################################################################
 void MapWidget::paintGL()
 {
+
+#ifdef TP_DEBUG_RENDER_PASSES
+  static size_t counter=0;
+  counter++;
+
+  std::string rootFolder="/home/tom/Desktop/iii/";
+  tp_utils::TeeMessageHandler tee(tp_utils::pathAppend(rootFolder, std::to_string(counter) + ".txt"), false);
+
+  TP_CLEANUP([&]
+  {
+    QImage img = grabFramebuffer();
+    img.save(QString::fromStdString(tp_utils::pathAppend(rootFolder, std::to_string(counter) + ".png")));
+  });
+#endif
+
+
   d->map->paintGL();
-  // workaround on wsl linux for transparency in qt gl widget
   d->map->setWriteAlpha(true);
 }
 

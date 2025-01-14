@@ -143,10 +143,10 @@ struct ConfigureFBOLayerWidget::Private
       fboNames->blockSignals(true);
       fboNames->clear();
       for(auto& i : fboLayer->map()->buffers().storedBuffers())
-        fboNames->addItem(QString::fromStdString(i.first));
-      for(auto& i : fboLayer->map()->intermediateBuffers())
-        fboNames->addItem(QString::fromStdString(i.first));
-      fboNames->setCurrentText(QString::fromStdString(window.fboName));
+        fboNames->addItem(QString::fromStdString(i.first.toString()));
+//      for(auto& i : fboLayer->map()->intermediateBuffers())
+//        fboNames->addItem(QString::fromStdString(i.first));
+      fboNames->setCurrentText(QString::fromStdString(window.fboName.toString()));
       fboNames->blockSignals(false);
     }
 
@@ -283,7 +283,7 @@ void ConfigureFBOLayerWidget::update()
     d->windowsList->blockSignals(true);
     d->windowsList->clear();
     for(const auto& window : d->fboLayer->windows())
-      d->windowsList->addItem(QString::fromStdString(window.fboName));
+      d->windowsList->addItem(QString::fromStdString(window.fboName.toString()));
 
     d->windowsList->clearSelection();
     if(auto item = d->windowsList->item(selectedIndex); item)
