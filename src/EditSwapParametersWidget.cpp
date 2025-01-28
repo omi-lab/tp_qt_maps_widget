@@ -52,7 +52,7 @@ public:
     button->setIconSize(QSize(14, 14));
     ll->addWidget(button);
     QObject::connect(button, &QPushButton::clicked, button, clicked);
-  };
+  }
 };
 
 //##################################################################################################
@@ -202,7 +202,7 @@ EditVec3ComponentWidget::EditVec3ComponentWidget(VectorComponents vectorComponen
   auto vLayout = new QVBoxLayout(group);
   vLayout->setContentsMargins(0, 0, 0, 0);
 
-  const char* c;
+  const char* c="RGB";
   switch(vectorComponents)
   {
     case VectorComponents::RGB: c="RGB"; break;
