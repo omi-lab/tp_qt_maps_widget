@@ -1,4 +1,4 @@
-#include "tp_qt_maps_widget/ProgressEventsGraph.h"
+#include "tp_qt_maps_widget/ProgressEventsGraphWidget.h"
 #include "tp_qt_maps_widget/MapWidget.h"
 
 #include "tp_maps/controllers/GraphController.h"
@@ -14,10 +14,6 @@
 
 namespace tp_qt_maps_widget
 {
-
-#ifdef TP_LINUX
-#warning rename this class ProgressEventsGraphWidget
-#endif
 
 namespace
 {
@@ -74,7 +70,7 @@ protected:
 }
 
 //##################################################################################################
-struct ProgressEventsGraph::Private
+struct ProgressEventsGraphWidget::Private
 {
   MapWidget_lt* mapWidget{nullptr};
   tp_maps::GraphController* graphController{nullptr};
@@ -219,7 +215,7 @@ struct ProgressEventsGraph::Private
 };
 
 //##################################################################################################
-ProgressEventsGraph::ProgressEventsGraph(QWidget* parent):
+ProgressEventsGraphWidget::ProgressEventsGraphWidget(QWidget* parent):
   QWidget(parent),
   d(new Private())
 
@@ -235,13 +231,13 @@ ProgressEventsGraph::ProgressEventsGraph(QWidget* parent):
 }
 
 //##################################################################################################
-ProgressEventsGraph::~ProgressEventsGraph()
+ProgressEventsGraphWidget::~ProgressEventsGraphWidget()
 {
   delete d;
 }
 
 //##################################################################################################
-void ProgressEventsGraph::setProgressEvents(const std::vector<tp_utils::ProgressEvent>& progressEvents)
+void ProgressEventsGraphWidget::setProgressEvents(const std::vector<tp_utils::ProgressEvent>& progressEvents)
 {
   d->progressEvents = progressEvents;
   d->updateDisplay();
