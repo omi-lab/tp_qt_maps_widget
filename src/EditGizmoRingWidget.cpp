@@ -52,12 +52,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, checkBox]
     {
       checkBox->setChecked(d->gizmoRingParameters.enable);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, checkBox](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.enable = checkBox->isChecked();
@@ -71,12 +71,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     r.l->addWidget(button);
     d->edited.connect(button->edited);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, button]
     {
       button->setColor<glm::vec3>(d->gizmoRingParameters.color);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, button](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.color = button->toFloat3<glm::vec3>();
@@ -91,12 +91,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, checkBox]
     {
       checkBox->setChecked(d->gizmoRingParameters.useSelectedColor);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, checkBox](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.useSelectedColor = checkBox->isChecked();
@@ -110,12 +110,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     r.l->addWidget(button);
     d->edited.connect(button->edited);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, button]
     {
       button->setColor<glm::vec3>(d->gizmoRingParameters.selectedColor);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, button](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.selectedColor = button->toFloat3<glm::vec3>();
@@ -133,12 +133,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
 
     combo->addItems(tp_qt_utils::convertStringList(tp_maps::gizmoRingStyles()));
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, combo]
     {
       combo->setCurrentText(QString::fromStdString(tp_maps::gizmoRingStyleToString(d->gizmoRingParameters.style)));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, combo](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.style = tp_maps::gizmoRingStyleFromString(combo->currentText().toStdString());
@@ -158,12 +158,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     spin->setSingleStep(0.01);
     spin->setDecimals(3);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoRingParameters.ringHeight));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.ringHeight = float(spin->value());
@@ -183,12 +183,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     spin->setSingleStep(0.01);
     spin->setDecimals(3);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoRingParameters.outerRadius));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.outerRadius = float(spin->value());
@@ -208,12 +208,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     spin->setSingleStep(0.01);
     spin->setDecimals(3);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoRingParameters.innerRadius));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.innerRadius = float(spin->value());
@@ -233,12 +233,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     spin->setSingleStep(0.01);
     spin->setDecimals(3);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoRingParameters.spikeRadius));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.spikeRadius = float(spin->value());
@@ -258,12 +258,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     spin->setSingleStep(0.01);
     spin->setDecimals(3);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoRingParameters.arrowInnerRadius));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.arrowInnerRadius = float(spin->value());
@@ -283,12 +283,12 @@ EditGizmoRingWidget::EditGizmoRingWidget(bool optionalFields, QWidget* parent):
     spin->setSingleStep(0.01);
     spin->setDecimals(3);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoRingParameters.arrowOuterRadius));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoRingParameters& gizmoRingParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoRingParameters& gizmoRingParameters)
     {
       if(r.enabled())
         gizmoRingParameters.arrowOuterRadius = float(spin->value());

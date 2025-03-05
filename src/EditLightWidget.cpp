@@ -124,7 +124,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   };
 
   {
-    copyPasteTitle("Position", [=]
+    copyPasteTitle("Position", [this]
     {
       QGuiApplication::clipboard()->setText(
             QString::fromStdString(nlohmann::json::array(
@@ -134,7 +134,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
                                        d->positionZ->value()
                                      }).dump(2)
                                    ));
-    }, [=]
+    }, [this]
     {
       nlohmann::json j = tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString());
 
@@ -181,7 +181,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   }
 
   {
-    copyPasteTitle("Direction", [=]
+    copyPasteTitle("Direction", [this]
     {
       QGuiApplication::clipboard()->setText(
             QString::fromStdString(nlohmann::json::array(
@@ -191,7 +191,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
                                        d->directionZ->value()
                                      }).dump(2)
                                    ));
-    }, [=]
+    }, [this]
     {
       nlohmann::json j = tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString());
 
@@ -258,7 +258,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
       auto button = new tp_qt_widgets::ColorButton(text);
       ll->addWidget(button);
 
-      button->edited.addCallback([=]()
+      button->edited.addCallback([this, button, getColor]()
       {
         QColor color = button->qColor();
 

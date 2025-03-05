@@ -49,12 +49,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, checkBox]
     {
       checkBox->setChecked(d->gizmoPlaneParameters.enable);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, checkBox](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.enable = checkBox->isChecked();
@@ -68,12 +68,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
     r.l->addWidget(button);
     d->edited.connect(button->edited);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, button]
     {
       button->setColor<glm::vec3>(d->gizmoPlaneParameters.color);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, button](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.color = button->toFloat3<glm::vec3>();
@@ -88,12 +88,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, checkBox]
     {
       checkBox->setChecked(d->gizmoPlaneParameters.useSelectedColor);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, checkBox](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.useSelectedColor = checkBox->isChecked();
@@ -107,12 +107,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
     r.l->addWidget(button);
     d->edited.connect(button->edited);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, button]
     {
       button->setColor<glm::vec3>(d->gizmoPlaneParameters.selectedColor);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, button](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.selectedColor = button->toFloat3<glm::vec3>();
@@ -131,12 +131,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
     spin->setRange(0.0, 1.0);
     spin->setSingleStep(0.01);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoPlaneParameters.size));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.size = float(spin->value());
@@ -155,12 +155,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
     spin->setRange(0.0, 1.0);
     spin->setSingleStep(0.01);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoPlaneParameters.radius));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.radius = float(spin->value());
@@ -179,12 +179,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
     spin->setRange(0.0, 1.0);
     spin->setSingleStep(0.01);
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, spin]
     {
       spin->setValue(double(d->gizmoPlaneParameters.padding));
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, spin](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.padding = float(spin->value());
@@ -199,12 +199,12 @@ EditGizmoPlaneWidget::EditGizmoPlaneWidget(bool optionalFields, QWidget* parent)
 
     connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
-    d->toUI.addCallback([=]
+    d->toUI.addCallback([this, checkBox]
     {
       checkBox->setChecked(d->gizmoPlaneParameters.center);
     });
 
-    d->fromUI.addCallback([=](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
+    d->fromUI.addCallback([r, checkBox](tp_maps::GizmoPlaneParameters& gizmoPlaneParameters)
     {
       if(r.enabled())
         gizmoPlaneParameters.center = checkBox->isChecked();
