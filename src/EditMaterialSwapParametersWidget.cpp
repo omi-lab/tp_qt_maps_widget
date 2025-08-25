@@ -2,11 +2,11 @@
 #include "tp_qt_maps_widget/EditSwapParametersWidget.h"
 
 #include "tp_qt_widgets/ColorButton.h"
+#include "tp_qt_widgets/WheelSafeScrollArea.h"
 
 #include <QBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QScrollArea>
 #include <QScrollBar>
 #include <QCheckBox>
 
@@ -27,7 +27,7 @@ struct BoolEditor
 //##################################################################################################
 struct EditMaterialSwapParametersWidget::Private
 {
-  QScrollArea* scroll{nullptr};
+  tp_qt_widgets::WheelSafeScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
 
   tp_qt_widgets::ColorButton* colorButton{nullptr};
@@ -57,7 +57,7 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
     ll->setContentsMargins(0,0,0,0);
   }
 
-  d->scroll = new QScrollArea();
+  d->scroll = new tp_qt_widgets::WheelSafeScrollArea();
   d->scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   d->scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   d->scroll->setWidgetResizable(true);
@@ -149,6 +149,7 @@ EditMaterialSwapParametersWidget::EditMaterialSwapParametersWidget( QWidget* par
   }
 
   d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
+  d->scroll->updateWatchedObjects();
 }
 
 //##################################################################################################

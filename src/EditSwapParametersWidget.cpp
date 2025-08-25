@@ -205,8 +205,9 @@ EditVec3ComponentWidget::EditVec3ComponentWidget(VectorComponents vectorComponen
   const char* c="RGB";
   switch(vectorComponents)
   {
-    case VectorComponents::RGB: c="RGB"; break;
-    case VectorComponents::XYZ: c="XYZ"; break;
+    case VectorComponents::RGB:      c="RGB"; break;
+    case VectorComponents::XYZ:      c="XYZ"; break;
+    case VectorComponents::XRotYRot: c="XYZ"; break;
   }
 
   d->x = makeSlider(vLayout, QString(c[0]), 72, Qt::AlignRight);
@@ -224,6 +225,9 @@ EditVec3ComponentWidget::EditVec3ComponentWidget(VectorComponents vectorComponen
   d->x->edited.addCallback([this](float){edited();});
   d->y->edited.addCallback([this](float){edited();});
   d->z->edited.addCallback([this](float){edited();});
+
+  if(vectorComponents == VectorComponents::XRotYRot)
+    d->z->setEnabled(false);
 
   hLayout->addWidget(group);
 

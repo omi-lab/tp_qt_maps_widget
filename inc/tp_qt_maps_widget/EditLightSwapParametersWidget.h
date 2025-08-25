@@ -28,6 +28,8 @@ public:
     bool spotLightBlend{true};
     bool fov{true};
     bool offsetScale{true};
+    bool offsetTranslation{true};
+    bool translation{true};
   };
 
   //################################################################################################

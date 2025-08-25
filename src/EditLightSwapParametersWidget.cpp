@@ -2,8 +2,8 @@
 #include "tp_qt_maps_widget/EditSwapParametersWidget.h"
 
 #include <QBoxLayout>
+#include <QCheckBox>
 #include <QLabel>
-#include <QScrollArea>
 
 namespace tp_qt_maps_widget
 {
@@ -11,7 +11,6 @@ namespace tp_qt_maps_widget
 //##################################################################################################
 struct EditLightSwapParametersWidget::Private
 {
-  QScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
 
   EditVec3SwapParametersWidget* diffuse {nullptr};
@@ -26,6 +25,10 @@ struct EditLightSwapParametersWidget::Private
   EditFloatSwapParametersWidget* fov{nullptr};
 
   EditVec3SwapParametersWidget* offsetScale{nullptr};
+  EditVec3SwapParametersWidget* offsetTranslation{nullptr};
+
+  QCheckBox* excludeFromAngleX{nullptr};
+  QCheckBox* excludeFromAngleY{nullptr};
 
   //################################################################################################
   void toPower()
@@ -60,14 +63,19 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget(Visibility visibili
     ll->setContentsMargins(0,0,0,0);
   }
 
-  auto addSection = [&](auto title, bool visible, auto widget)
+  auto addOtherSection = [&](auto title, bool visible, auto widget)
   {
     if(visible)
       l->addWidget(new QLabel(QString("<h3>%1</h3>").arg(title)), 2, Qt::AlignLeft);
 
-    widget->edited.addCallback([&]{Q_EMIT lightSwapParametersEdited();});
     l->addWidget(widget);
     widget->setVisible(visible);
+  };
+
+  auto addSection = [&](auto title, bool visible, auto widget)
+  {
+    addOtherSection(title, visible, widget);
+    widget->edited.addCallback([&]{Q_EMIT lightSwapParametersEdited();});
   };
 
   l->addWidget(new QLabel("<h2>Light Swap Properties</h2>"), 2, Qt::AlignLeft);
@@ -96,7 +104,24 @@ EditLightSwapParametersWidget::EditLightSwapParametersWidget(Visibility visibili
   addSection("FOV", visibility.fov, d->fov);
 
   d->offsetScale = new EditVec3SwapParametersWidget(VectorComponents::XYZ, HelperButtons::Default, 0.0f, 40.0f, 0.0f, 10.0f);
-  addSection("Offset scale", visibility.offsetScale, d->offsetScale);
+  addSection("Offset scale (radius of the bulb)", visibility.offsetScale, d->offsetScale);
+
+  d->offsetTranslation = new EditVec3SwapParametersWidget(VectorComponents::XRotYRot, HelperButtons::Default, -180.0f, 180.0f, 0.0f, 0.0f);
+  addSection("Offset translation (rotate around the focal point to move the origin)", visibility.offsetTranslation, d->offsetTranslation);
+
+  {
+    auto w = new QWidget();
+    auto l = new QVBoxLayout(w);
+    l->setContentsMargins(0,0,0,0);
+    d->excludeFromAngleX = new QCheckBox("Exclude from angle X translation");
+    d->excludeFromAngleY = new QCheckBox("Exclude from angle Y translation");
+    l->addWidget(d->excludeFromAngleX);
+    l->addWidget(d->excludeFromAngleY);
+    addOtherSection("Translation", visibility.translation, w);
+
+    connect(d->excludeFromAngleX, &QCheckBox::clicked, this, &EditLightSwapParametersWidget::lightSwapParametersEdited);
+    connect(d->excludeFromAngleY, &QCheckBox::clicked, this, &EditLightSwapParametersWidget::lightSwapParametersEdited);
+  }
 }
 
 //##################################################################################################
@@ -122,6 +147,10 @@ void EditLightSwapParametersWidget::setLightSwapParameters(const tp_math_utils::
   d->fov->setFloatSwapParameters(lightSwapParameters.fov);
 
   d->offsetScale->setVec3SwapParameters(lightSwapParameters.offsetScale);
+  d->offsetTranslation->setVec3SwapParameters(lightSwapParameters.offsetTranslation);
+
+  d->excludeFromAngleX->setChecked(lightSwapParameters.excludeFromAngleX);
+  d->excludeFromAngleY->setChecked(lightSwapParameters.excludeFromAngleY);
 }
 
 //##################################################################################################
@@ -139,6 +168,10 @@ tp_math_utils::LightSwapParameters EditLightSwapParametersWidget::lightSwapParam
   lightSwapParameters.fov            = d->fov           ->floatSwapParameters();
 
   lightSwapParameters.offsetScale = d->offsetScale->vec3SwapParameters();
+  lightSwapParameters.offsetTranslation = d->offsetTranslation->vec3SwapParameters();
+
+  lightSwapParameters.excludeFromAngleX = d->excludeFromAngleX->isChecked();
+  lightSwapParameters.excludeFromAngleY = d->excludeFromAngleY->isChecked();
 
   return lightSwapParameters;
 }

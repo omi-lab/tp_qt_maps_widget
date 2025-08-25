@@ -26,7 +26,8 @@ enum class HelperButtons
 enum class VectorComponents
 {
   RGB,
-  XYZ
+  XYZ,
+  XRotYRot
 };
 
 //##################################################################################################

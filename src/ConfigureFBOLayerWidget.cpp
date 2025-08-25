@@ -52,7 +52,7 @@ struct ConfigureFBOLayerWidget::Private
   }
 
   //################################################################################################
-  size_t currentSelection()
+  size_t selectedItem()
   {
     if(auto items = windowsList->selectedItems(); !items.empty())
       return size_t(windowsList->row(items.front()));
@@ -76,7 +76,7 @@ struct ConfigureFBOLayerWidget::Private
   //################################################################################################
   void removeClicked()
   {
-    size_t selectedIndex = currentSelection();
+    size_t selectedIndex = selectedItem();
     std::vector<tp_maps::FBOWindow> windows = fboLayer->windows();
 
     if(selectedIndex<windows.size())
@@ -91,7 +91,7 @@ struct ConfigureFBOLayerWidget::Private
   //################################################################################################
   void edited()
   {
-    size_t selectedIndex = currentSelection();
+    size_t selectedIndex = selectedItem();
     std::vector<tp_maps::FBOWindow> windows = fboLayer->windows();
 
     if(selectedIndex<windows.size())
@@ -111,7 +111,7 @@ struct ConfigureFBOLayerWidget::Private
   //################################################################################################
   void updateSelection()
   {
-    size_t selectedIndex = currentSelection();
+    size_t selectedIndex = selectedItem();
     const auto& windows = fboLayer->windows();
 
     if(selectedIndex >= windows.size())

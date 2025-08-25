@@ -3,6 +3,8 @@
 #include "tp_qt_maps_widget/EditGizmoArrowWidget.h"
 #include "tp_qt_maps_widget/EditGizmoPlaneWidget.h"
 
+#include "tp_qt_widgets/WheelSafeScrollArea.h"
+
 #include "tp_qt_utils/Globals.h"
 
 #include "tp_utils/FileUtils.h"
@@ -15,7 +17,6 @@
 #include <QPushButton>
 #include <QPointer>
 #include <QDialogButtonBox>
-#include <QScrollArea>
 #include <QFileDialog>
 #include <QComboBox>
 #include <QDoubleSpinBox>
@@ -68,12 +69,12 @@ struct EditGizmoWidget::Private
     l->addWidget(widget);
     edited.connect(widget->edited);
 
-    toUI.addCallback([=]
+    toUI.addCallback([this, widget, field]
     {
       widget->setGizmoRingParameters(gizmoParameters.*field);
     });
 
-    fromUI.addCallback([=]
+    fromUI.addCallback([this, widget, field]
     {
       gizmoParameters.*field = widget->gizmoRingParameters();
     });
@@ -90,13 +91,13 @@ struct EditGizmoWidget::Private
     l->addWidget(widget);
     edited.connect(widget->edited);
 
-    toUI.addCallback([=]
+    toUI.addCallback([this, fields, widget]
     {
       auto field = fields.front();
       widget->setGizmoRingParameters(gizmoParameters.*field);
     });
 
-    fromUI.addCallback([=]
+    fromUI.addCallback([this, fields, widget]
     {
       for(auto field : fields)
         widget->updateGizmoRingParameters(gizmoParameters.*field);
@@ -114,12 +115,12 @@ struct EditGizmoWidget::Private
     l->addWidget(widget);
     edited.connect(widget->edited);
 
-    toUI.addCallback([=]
+    toUI.addCallback([this, widget, field]
     {
       widget->setGizmoArrowParameters(gizmoParameters.*field);
     });
 
-    fromUI.addCallback([=]
+    fromUI.addCallback([this, widget, field]
     {
       gizmoParameters.*field = widget->gizmoArrowParameters();
     });
@@ -136,13 +137,13 @@ struct EditGizmoWidget::Private
     l->addWidget(widget);
     edited.connect(widget->edited);
 
-    toUI.addCallback([=]
+    toUI.addCallback([this, widget, fields]
     {
       auto field = fields.front();
       widget->setGizmoArrowParameters(gizmoParameters.*field);
     });
 
-    fromUI.addCallback([=]
+    fromUI.addCallback([this, widget, fields]
     {
       for(auto field : fields)
         widget->updateGizmoArrowParameters(gizmoParameters.*field);
@@ -160,12 +161,12 @@ struct EditGizmoWidget::Private
     l->addWidget(widget);
     edited.connect(widget->edited);
 
-    toUI.addCallback([=]
+    toUI.addCallback([this, widget, field]
     {
       widget->setGizmoPlaneParameters(gizmoParameters.*field);
     });
 
-    fromUI.addCallback([=]
+    fromUI.addCallback([this, widget, field]
     {
       gizmoParameters.*field = widget->gizmoPlaneParameters();
     });
@@ -182,13 +183,13 @@ struct EditGizmoWidget::Private
     l->addWidget(widget);
     edited.connect(widget->edited);
 
-    toUI.addCallback([=]
+    toUI.addCallback([this, widget, fields]
     {
       auto field = fields.front();
       widget->setGizmoPlaneParameters(gizmoParameters.*field);
     });
 
-    fromUI.addCallback([=]
+    fromUI.addCallback([this, widget, fields]
     {
       for(auto field : fields)
         widget->updateGizmoPlaneParameters(gizmoParameters.*field);
@@ -208,9 +209,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
   auto tabWidget = new QTabWidget();
   mainLayout->addWidget(tabWidget);
 
+  std::vector<tp_qt_widgets::WheelSafeScrollArea*> scrolls;
+
   auto addTab = [&](const QString& title)
   {
-    auto scroll = new QScrollArea();
+    auto scroll = new tp_qt_widgets::WheelSafeScrollArea();
+    scrolls.push_back(scroll);
     scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
     scroll->setWidgetResizable(true);
@@ -285,12 +289,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
       combo->addItems(tp_qt_utils::convertStringList(tp_maps::gizmoRenderPasses()));
 
-      d->toUI.addCallback([=]
+      d->toUI.addCallback([this, combo]
       {
         combo->setCurrentText(QString::fromStdString(tp_maps::gizmoRenderPassToString(d->gizmoParameters.gizmoRenderPass)));
       });
 
-      d->fromUI.addCallback([=]
+      d->fromUI.addCallback([this, combo]
       {
         d->gizmoParameters.gizmoRenderPass = tp_maps::gizmoRenderPassFromString(combo->currentText().toStdString());
       });
@@ -305,12 +309,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
       combo->addItems(tp_qt_utils::convertStringList(tp_maps::gizmoRenderPasses()));
 
-      d->toUI.addCallback([=]
+      d->toUI.addCallback([this, combo]
       {
         combo->setCurrentText(QString::fromStdString(tp_maps::gizmoRenderPassToString(d->gizmoParameters.referenceLinesRenderPass)));
       });
 
-      d->fromUI.addCallback([=]
+      d->fromUI.addCallback([this, combo]
       {
         d->gizmoParameters.referenceLinesRenderPass = tp_maps::gizmoRenderPassFromString(combo->currentText().toStdString());
       });
@@ -325,12 +329,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
       combo->addItems(tp_qt_utils::convertStringList(tp_maps::Geometry3DLayer::shaderSelections()));
 
-      d->toUI.addCallback([=]
+      d->toUI.addCallback([this, combo]
       {
         combo->setCurrentText(QString::fromStdString(tp_maps::Geometry3DLayer::shaderSelectionToString(d->gizmoParameters.shaderSelection)));
       });
 
-      d->fromUI.addCallback([=]
+      d->fromUI.addCallback([this, combo]
       {
         d->gizmoParameters.shaderSelection = tp_maps::Geometry3DLayer::shaderSelectionFromString(combo->currentText().toStdString());
       });
@@ -345,12 +349,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
       combo->addItems(tp_qt_utils::convertStringList(tp_maps::gizmoScaleModes()));
 
-      d->toUI.addCallback([=]
+      d->toUI.addCallback([this, combo]
       {
         combo->setCurrentText(QString::fromStdString(tp_maps::gizmoScaleModeToString(d->gizmoParameters.gizmoScaleMode)));
       });
 
-      d->fromUI.addCallback([=]
+      d->fromUI.addCallback([this, combo]
       {
         d->gizmoParameters.gizmoScaleMode = tp_maps::gizmoScaleModeFromString(combo->currentText().toStdString());
       });
@@ -366,12 +370,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
       spin->setRange(0.1, 1000.0);
       spin->setSingleStep(0.01);
 
-      d->toUI.addCallback([=]
+      d->toUI.addCallback([this, spin]
       {
         spin->setValue(double(d->gizmoParameters.gizmoScale));
       });
 
-      d->fromUI.addCallback([=]
+      d->fromUI.addCallback([this, spin]
       {
         d->gizmoParameters.gizmoScale = float(spin->value());
       });
@@ -383,12 +387,12 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
 
       connect(checkBox, &QCheckBox::clicked, this, [&]{edited();});
 
-      d->toUI.addCallback([=]
+      d->toUI.addCallback([this, checkBox]
       {
         checkBox->setChecked(d->gizmoParameters.onlyRenderSelectedAxis);
       });
 
-      d->fromUI.addCallback([=]
+      d->fromUI.addCallback([this, checkBox]
       {
         d->gizmoParameters.onlyRenderSelectedAxis = checkBox->isChecked();
       });
@@ -464,6 +468,8 @@ EditGizmoWidget::EditGizmoWidget(const std::function<void(QVBoxLayout*)>& popula
   }
 
   d->toUI();
+  for(auto scroll : scrolls)
+    scroll->updateWatchedObjects();
 }
 
 //##################################################################################################

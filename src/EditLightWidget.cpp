@@ -85,7 +85,7 @@ EditLightWidget::EditLightWidget(QWidget* parent):
   l->addWidget(d->nameEdit);
   connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditLightWidget::lightEdited);
 
-  d->animatedLightWarning = new QLabel("Note: Animated lights cannot be edited");
+  d->animatedLightWarning = new QLabel("Warning: The light is animated. All keyframes will be updated.");
   d->animatedLightWarning->setStyleSheet("QLabel { color : red; }");
   d->animatedLightWarning->setVisible(false);
   l->addWidget(d->animatedLightWarning);
@@ -253,19 +253,17 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     ll->setContentsMargins(0,0,0,0);
     l->addLayout(ll);
 
-    auto make = [&](const QString& text, const std::function<glm::vec3&()>& getColor)
+    auto make = [&](const QString& text, const std::function<void(const glm::vec3&)>& setColor)
     {
       auto button = new tp_qt_widgets::ColorButton(text);
       ll->addWidget(button);
 
-      button->edited.addCallback([this, button, getColor]()
+      button->edited.addCallback([this, button, setColor]()
       {
         QColor color = button->qColor();
 
-        glm::vec3& c = getColor();
-        c.x = color.redF();
-        c.y = color.greenF();
-        c.z = color.blueF();
+        glm::vec3 c(color.redF(), color.greenF(), color.blueF());
+        setColor(c);
 
         d->updateColors();
         Q_EMIT lightEdited();
@@ -274,9 +272,18 @@ EditLightWidget::EditLightWidget(QWidget* parent):
       return button;
     };
 
-    d->ambientColorButton  = make("Ambient" , [&]()->glm::vec3&{return d->light.ambient;});
-    d->diffuseColorButton  = make("Diffuse" , [&]()->glm::vec3&{return d->light.diffuse;});
-    d->specularColorButton = make("Specular", [&]()->glm::vec3&{return d->light.specular;});
+    d->ambientColorButton  = make("Ambient" , [&](const glm::vec3& color){d->light.ambient = color;});
+    d->diffuseColorButton  = make("Diffuse" , [&](const glm::vec3& color)
+    {
+      d->light.diffuse = color;
+      if(d->light.animation.isAnimated())
+      {
+        for (auto& [_, value] : d->light.animation.diffuse) {
+          value = color;
+        }
+      }
+    });
+    d->specularColorButton  = make("Specular" , [&](const glm::vec3& color){d->light.specular = color;});
   }
 
   {
@@ -287,7 +294,8 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->diffuseScale->setRange(0.1f, 1000.0f);
     d->diffuseScale->edited.addCallback([&](float)
     {
-      d->power->setValue(d->diffuseScale->value() * d->powerScale);
+      float diffuseScale = d->diffuseScale->value();
+      d->power->setValue(diffuseScale * d->powerScale);
       lightEdited();
     });
   }
@@ -299,7 +307,14 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->power->setRange(0.1f*d->powerScale, 1000.0f*d->powerScale);
     d->power->edited.addCallback([&](float)
     {
-      d->diffuseScale->setValue(d->power->value() / d->powerScale);
+      float diffuseScale = d->power->value() / d->powerScale;
+      d->diffuseScale->setValue(diffuseScale);
+      {
+        for(auto& [_, value]: d->light.animation.diffuseScale)
+        {
+          value = diffuseScale;
+        }
+      }
       lightEdited();
     });
   }
@@ -357,7 +372,19 @@ EditLightWidget::EditLightWidget(QWidget* parent):
       spin->setDecimals(3);
       spin->setSingleStep(0.001);
       ll->addWidget(spin);
-      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
+      connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [&]()
+      {
+        if(d->light.animation.isAnimated())
+        {
+          float spotLightBlend = static_cast<float>(d->spotLightBlend->value());
+          for(auto& [_, value]: d->light.animation.spotLightBlend)
+          {
+            value = spotLightBlend;
+          }
+        }
+
+        EditLightWidget::lightEdited();
+      });
       return spin;
     };
 
@@ -399,7 +426,20 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->fov->setRange(2.0, 140.0);
     d->fov->setDecimals(1);
     d->fov->setSingleStep(1.0);
-    connect(d->fov, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
+    connect(d->fov, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [&]()
+    {
+      if(d->light.animation.isAnimated())
+      {
+        float fov = static_cast<float>(d->fov->value());
+        for(auto& [_, value]: d->light.animation.fov)
+        {
+          value = fov;
+        }
+      }
+
+      EditLightWidget::lightEdited();
+    }
+    );
 
     d->orthoRadius = new QDoubleSpinBox();
     ll->addWidget(d->orthoRadius);
@@ -416,7 +456,19 @@ EditLightWidget::EditLightWidget(QWidget* parent):
     d->offsetScale->setRange(0.0002, 100.0);
     d->offsetScale->setDecimals(4);
     d->offsetScale->setSingleStep(0.01);
-    connect(d->offsetScale, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &EditLightWidget::lightEdited);
+    connect(d->offsetScale, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, [&]()
+    {
+      if(d->light.animation.isAnimated())
+      {
+        float offsetScale = static_cast<float>(d->offsetScale->value());
+        for(auto& [_, value]: d->light.animation.offsetScale)
+        {
+          value = offsetScale;
+        }
+      }
+
+      EditLightWidget::lightEdited();
+    });
   }
 
   {
@@ -444,29 +496,30 @@ void EditLightWidget::setLight(const tp_math_utils::Light& light)
       s->setValue(double(v));
   };
 
+  bool isAnimated = d->light.animation.isAnimated();
   d->light = light;
-  d->animatedLightWarning->setVisible(d->light.animation.isAnimated());
-  d->typeCombo->setEnabled(!d->light.animation.isAnimated());
-  d->positionX->setEnabled(!d->light.animation.isAnimated());
-  d->positionY->setEnabled(!d->light.animation.isAnimated());
-  d->positionZ->setEnabled(!d->light.animation.isAnimated());
-  d->directionX->setEnabled(!d->light.animation.isAnimated());
-  d->directionY->setEnabled(!d->light.animation.isAnimated());
-  d->directionZ->setEnabled(!d->light.animation.isAnimated());
-  d->ambientColorButton->setEnabled(!d->light.animation.isAnimated());
-  d->diffuseColorButton->setEnabled(!d->light.animation.isAnimated());
-  d->specularColorButton->setEnabled(!d->light.animation.isAnimated());
-  d->diffuseScale->setEnabled(!d->light.animation.isAnimated());
-  d->power->setEnabled(!d->light.animation.isAnimated());
-  d->spotLightConstant->setEnabled(!d->light.animation.isAnimated());
-  d->spotLightLinear->setEnabled(!d->light.animation.isAnimated());
-  d->spotLightQuadratic->setEnabled(!d->light.animation.isAnimated());
-  d->spotLightBlend->setEnabled(!d->light.animation.isAnimated());
-  d->near->setEnabled(!d->light.animation.isAnimated());
-  d->far->setEnabled(!d->light.animation.isAnimated());
-  d->fov->setEnabled(!d->light.animation.isAnimated());
-  d->orthoRadius->setEnabled(!d->light.animation.isAnimated());
-  d->offsetScale->setEnabled(!d->light.animation.isAnimated());
+  d->animatedLightWarning->setVisible(isAnimated);
+  d->typeCombo->setEnabled(!isAnimated);
+  d->positionX->setEnabled(!isAnimated);
+  d->positionY->setEnabled(!isAnimated);
+  d->positionZ->setEnabled(!isAnimated);
+  d->directionX->setEnabled(!isAnimated);
+  d->directionY->setEnabled(!isAnimated);
+  d->directionZ->setEnabled(!isAnimated);
+  d->ambientColorButton->setEnabled(true);
+  d->diffuseColorButton->setEnabled(true);
+  d->specularColorButton->setEnabled(true);
+  d->diffuseScale->setEnabled(true);
+  d->power->setEnabled(true);
+  d->spotLightConstant->setEnabled(true);
+  d->spotLightLinear->setEnabled(true);
+  d->spotLightQuadratic->setEnabled(true);
+  d->spotLightBlend->setEnabled(true);
+  d->near->setEnabled(true);
+  d->far->setEnabled(true);
+  d->fov->setEnabled(true);
+  d->orthoRadius->setEnabled(true);
+  d->offsetScale->setEnabled(true);
 
   d->nameEdit->setText(QString::fromStdString(light.name.toString()));
 
@@ -511,6 +564,13 @@ tp_math_utils::Light EditLightWidget::light() const
   d->light.setPosition({d->positionX->value(), d->positionY->value(), d->positionZ->value()});
 
   d->light.diffuseScale = float(d->diffuseScale->value());
+  if(d->light.animation.isAnimated())
+  {
+    for(auto& [_, value]: d->light.animation.diffuseScale)
+    {
+      value = d->light.diffuseScale;
+    }
+  }
 
   d->light.constant  = float(d->spotLightConstant ->value());
   d->light.linear    = float(d->spotLightLinear   ->value());
@@ -531,35 +591,6 @@ tp_math_utils::Light EditLightWidget::light() const
   d->light.castShadows = d->castShadows->isChecked();
 
   return d->light;
-}
-
-//##################################################################################################
-bool EditLightWidget::editLightDialog(QWidget* parent, tp_math_utils::Light& light)
-{
-  QPointer<QDialog> dialog = new QDialog(parent);
-  TP_CLEANUP([&]{delete dialog;});
-
-  dialog->setWindowTitle("Edit Light");
-
-  auto l = new QVBoxLayout(dialog);
-
-  auto editLightWidget = new EditLightWidget();
-  l->addWidget(editLightWidget);
-  editLightWidget->setLight(light);
-
-  auto buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
-  l->addWidget(buttons);
-
-  connect(buttons, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
-  connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
-
-  if(dialog->exec() == QDialog::Accepted)
-  {
-    light = editLightWidget->light();
-    return true;
-  }
-
-  return false;
 }
 
 }

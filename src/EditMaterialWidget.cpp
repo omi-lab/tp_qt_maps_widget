@@ -2,6 +2,7 @@
 
 #include "tp_qt_widgets/FileDialogLineEdit.h"
 #include "tp_qt_widgets/ColorButton.h"
+#include "tp_qt_widgets/WheelSafeScrollArea.h"
 
 #include "tp_image_utils/LoadImages.h"
 
@@ -11,7 +12,6 @@
 
 #include "tp_utils/JSONUtils.h"
 
-#include <QDialog>
 #include <QBoxLayout>
 #include <QLabel>
 #include <QComboBox>
@@ -24,9 +24,7 @@
 #include <QGuiApplication>
 #include <QClipboard>
 #include <QDragEnterEvent>
-#include <QDropEvent>
 #include <QMimeData>
-#include <QScrollArea>
 #include <QScrollBar>
 #include <QMessageBox>
 
@@ -63,7 +61,7 @@ struct EditMaterialWidget::Private
 
   QComboBox* shaderType{nullptr};
 
-  QScrollArea* scroll{nullptr};
+  tp_qt_widgets::WheelSafeScrollArea* scroll{nullptr};
   QWidget* scrollContents{nullptr};
 
   tp_qt_widgets::ColorButton* albedoColorButton  {nullptr};
@@ -172,7 +170,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     connect(d->nameEdit, &QLineEdit::editingFinished, this, &EditMaterialWidget::materialEdited);
   }
 
-  d->scroll = new QScrollArea();
+  d->scroll = new tp_qt_widgets::WheelSafeScrollArea();
   d->scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
   d->scroll->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
   d->scroll->setWidgetResizable(true);
@@ -211,7 +209,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     slider->setRange(0, 100000);
     hLayout->addWidget(slider, 3);
 
-    connect(slider, &QSlider::valueChanged, this, [=]
+    connect(slider, &QSlider::valueChanged, this, [this, spin, slider, scale, min, linear]
     {
       float v = float(slider->value()) / 100000.0f;
       v = linear?((v*scale) + min):(v*v*scale);
@@ -224,7 +222,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
       }
     });
 
-    auto spinValueChanged = [=]
+    auto spinValueChanged = [this, slider, spin, linear, scale, min]
     {
       if(slider->isSliderDown())
         return;
@@ -262,7 +260,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
     slider = makeFloatEditor(0.0f, scaleMax, row, linear);
 
-    button->edited.addCallback([=]()
+    button->edited.addCallback([this, button, getColor]()
     {
       QColor color = button->qColor();
 
@@ -420,7 +418,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
     auto button = new QPushButton("Load");
     ll->addWidget(button);
-    connect(button, &QPushButton::clicked, this, [=]
+    connect(button, &QPushButton::clicked, this, [this, edit, isBlendFile]
     {
       QPointer<QDialog> dialog = new QDialog(this);
       TP_CLEANUP([&]{delete dialog;});
@@ -511,12 +509,12 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
 
   if(textureSupported == TextureSupported::Yes)
   {
-    d->material.findOrAddOpenGL()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
+    d->material.findOrAddOpenGL()->viewTypedTextures([this, addTextureBlendEdit](const auto& type, const auto&, const auto& pretty)
     {
       d->textureLineEdits[type] = addTextureBlendEdit(pretty);
     });
 
-    d->material.findOrAddLegacy()->viewTypedTextures([&](const auto& type, const auto&, const auto& pretty)
+    d->material.findOrAddLegacy()->viewTypedTextures([this, addTextureBlendEdit](const auto& type, const auto&, const auto& pretty)
     {
       d->textureLineEdits[type] = addTextureBlendEdit(pretty);
     });
@@ -555,7 +553,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     {
       auto button = new QPushButton("Copy");
       hLayout->addWidget(button);
-      connect(button, &QPushButton::clicked, this, [=]
+      connect(button, &QPushButton::clicked, this, [this]
       {
         nlohmann::json j;
         material().saveState(j);
@@ -565,7 +563,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
     {
       auto button = new QPushButton("Paste");
       hLayout->addWidget(button);
-      connect(button, &QPushButton::clicked, this, [=]
+      connect(button, &QPushButton::clicked, this, [this]
       {
         tp_math_utils::Material material;
         material.loadState(tp_utils::jsonFromString(QGuiApplication::clipboard()->text().toStdString()));
@@ -576,6 +574,7 @@ EditMaterialWidget::EditMaterialWidget(TextureSupported textureSupported,
   }
 
   d->scroll->setMinimumWidth(d->scrollContents->minimumSizeHint().width() + d->scroll->verticalScrollBar()->width());
+  d->scroll->updateWatchedObjects();
 }
 
 //##################################################################################################
