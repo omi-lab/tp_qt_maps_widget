@@ -1,5 +1,4 @@
-#ifndef tp_qt_maps_widget_global_h
-#define tp_qt_maps_widget_global_h
+#pragma once
 
 #include "tp_math_utils/Material.h"
 
@@ -33,5 +32,3 @@ struct OptionalEditRow
 };
 
 }
-
-#endif
